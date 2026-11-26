@@ -21,7 +21,7 @@ A named section that groups To-dos inside a Project.
 _Avoid_: Section, milestone, group
 
 **Sub-to-do**:
-A full To-do that belongs to a parent To-do, one level deep only. It appears in lists on its own, labelled with its parent.
+A full To-do that belongs to a parent To-do, one level deep only. It always sits in its parent's Project, Area and Heading, and appears in lists on its own, labelled with its parent.
 _Avoid_: Subtask, child task
 
 **Checklist item**:
@@ -96,7 +96,7 @@ The later part of Today, for To-dos planned for after the working day.
 A timeline of To-dos with a future Start date, plus Deadlines and repeating To-dos.
 
 **Anytime**:
-Every active To-do that could be done now and has no future Start date.
+Every active To-do that could be done now: it has no future Start date and is not inside a Someday Project or a Project whose Start date is in the future.
 
 **Someday**:
 To-dos and Projects deliberately parked with no commitment to do them.

@@ -20,8 +20,12 @@ _Avoid_: Category, folder, space
 A named section that groups To-dos inside a Project.
 _Avoid_: Section, milestone, group
 
+**Sub-to-do**:
+A full To-do that belongs to a parent To-do, one level deep only. It appears in lists on its own, labelled with its parent.
+_Avoid_: Subtask, child task
+
 **Checklist item**:
-A lightweight step inside a To-do that can only be ticked off.
+A lightweight step inside a To-do that can only be ticked off. It has no dates, Tags or other properties.
 _Avoid_: Subtask, step
 
 **Tag**:
@@ -37,6 +41,35 @@ _Avoid_: When, scheduled date, do date
 **Deadline**:
 The day a To-do or Project must be finished by.
 _Avoid_: Due date
+
+**Time slot**:
+An optional start and end time for a To-do on its Start date, used to block out time in the day timeline.
+_Avoid_: Time block, appointment, event
+
+**Repeat rule**:
+The pattern that makes a To-do recur. It is either **on schedule** (fixed dates) or **after completion** (a gap after the previous one is done). Only the next occurrence exists at any time.
+_Avoid_: Recurrence, template
+
+**Reminder**:
+A notification attached to a To-do, triggered at a time or on arriving at or leaving a Place. A To-do can have several.
+_Avoid_: Alert, alarm
+
+**Place**:
+A saved, named location (e.g. Home, Supermarket) that Reminders can use.
+_Avoid_: Location, geofence
+
+## Planning attributes
+
+**Priority**:
+How important a To-do is: none, low, medium or high.
+
+**Estimate**:
+How many minutes a To-do is expected to take.
+_Avoid_: Duration
+
+**Energy**:
+How much focus a To-do needs: low or high.
+_Avoid_: Effort
 
 ## Built-in lists
 
@@ -65,3 +98,9 @@ _Avoid_: Archive, history, done list
 
 **Trash**:
 Deleted items, which can be restored until emptied.
+
+## Custom views
+
+**Smart List**:
+A saved, named combination of filters (Tags, Areas, Projects, dates, Priority, Energy, Estimate) shown in the sidebar.
+_Avoid_: Perspective, filter, saved search

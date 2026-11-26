@@ -3,6 +3,7 @@
 Decisions from the design interview. Vocabulary is in `../GLOSSARY.md`; hard-to-reverse decisions are in `adr/`.
 
 ## Platform and data
+
 - React Native + Expo, one codebase for iPhone (Expo Go), web and Android (ADR 0001).
 - Local-first database on each device, synced through Supabase. Conflicts are resolved per field, and the most recent edit wins (ADR 0002).
 - Built for one user. Every record carries an owner, so sharing can be added later.
@@ -11,6 +12,7 @@ Decisions from the design interview. Vocabulary is in `../GLOSSARY.md`; hard-to-
 - No import from Things 3.
 
 ## Behaviour rules
+
 - Today: active To-dos with a Start date or Deadline of today or earlier. Choosing "Today" sets the Start date.
 - To-dos in a Someday Project, or a Project starting in the future, are hidden unless they have their own Start date or Deadline.
 - A Sub-to-do is one level deep, always sits in its parent's Project, Area and Heading, and can be promoted to a normal To-do.
@@ -29,6 +31,7 @@ Decisions from the design interview. Vocabulary is in `../GLOSSARY.md`; hard-to-
 - Look: follows the system light/dark setting; one accent colour, teal by default.
 
 ## Milestones
+
 1. Core, offline, single device: Areas, Projects, Headings, To-dos, Checklists, Sub-to-dos, Tags, built-in lists, Start date and Deadline, Completed and Cancelled, Logbook, Trash, Magic Plus, swipe actions and multi-select, Quick Find.
 2. Planning: Repeat rules, Priority, Energy, Estimate, Time slots with the day timeline, Smart Lists, quick entry shorthand.
 3. Sync: sign-in, Supabase sync, attachments, export and backup. A Supabase project is created at this point.
@@ -36,4 +39,5 @@ Decisions from the design interview. Vocabulary is in `../GLOSSARY.md`; hard-to-
 5. Switched off until a developer account exists: share sheet, Place Reminders, widgets, Siri, Watch, email-to-Inbox.
 
 ## Verification, for every milestone
+
 Automated tests for the rules above; the web version checked at iPhone size in a headless browser with screenshots; an Expo Go link for trying it on your phone (falling back to the web version if a tunnel is blocked).

@@ -29,8 +29,18 @@ A lightweight step inside a To-do that can only be ticked off. It has no dates, 
 _Avoid_: Subtask, step
 
 **Tag**:
-A label attached to To-dos, Projects or Areas, used to filter across the whole hierarchy. Tags can be nested.
+A label attached to To-dos, Projects or Areas, used to filter across the whole hierarchy. Tags can be nested, and a parent Tag includes everything tagged with its children.
 _Avoid_: Label, context, category
+
+## Outcomes
+
+**Completed**:
+The outcome of a To-do or Project that was done.
+_Avoid_: Done, finished, closed
+
+**Cancelled**:
+The outcome of a To-do or Project that was abandoned without being done. It is kept in the Logbook, separate from Completed.
+_Avoid_: Deleted, dropped, won't do
 
 ## Dates
 
@@ -77,7 +87,7 @@ _Avoid_: Effort
 Where new To-dos land before they have been organised.
 
 **Today**:
-Everything whose Start date is today or earlier, plus anything chosen for today.
+Every active To-do whose Start date is today or earlier, or whose Deadline is today or earlier.
 
 **This Evening**:
 The later part of Today, for To-dos planned for after the working day.
@@ -97,7 +107,7 @@ The record of completed and cancelled To-dos and Projects.
 _Avoid_: Archive, history, done list
 
 **Trash**:
-Deleted items, which can be restored until emptied.
+Deleted items, which can be restored for 30 days before they are removed for good.
 
 ## Custom views
 

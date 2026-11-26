@@ -4,4 +4,4 @@ Each device keeps its own database, and that local copy is the source of truth, 
 
 ## Consequences
 
-Sync has to detect and resolve conflicting edits made on different devices while offline.
+Sync has to resolve conflicting edits made on different devices while offline. Conflicts are resolved per field, and the most recent edit wins, so changes to different fields of the same To-do both survive.

@@ -41,3 +41,6 @@ yarn-error.*
 /android
 test-results/
 playwright-report/
+
+# Agent worktrees
+.claude/worktrees/

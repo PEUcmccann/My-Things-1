@@ -3,8 +3,8 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { DropTarget, Project } from "../../core";
 import {
   toDoTargetDrop,
+  DragHandle,
   useDrag,
-  useDragHandle,
   useDropList,
   useDropRow,
   useDropTarget,
@@ -92,15 +92,14 @@ function SidebarItem(props: {
 
 function SidebarHandle({ item }: { item: DragItem }) {
   const theme = useTheme();
-  const handlers = useDragHandle(item);
   return (
-    <View
-      {...handlers}
+    <DragHandle
+      item={item}
       style={styles.handle}
       testID={`sidebar-drag-${"id" in item ? item.id : ""}`}
     >
       <Text style={{ color: theme.muted, fontSize: 18 }}>≡</Text>
-    </View>
+    </DragHandle>
   );
 }
 

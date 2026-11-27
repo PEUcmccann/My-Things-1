@@ -44,6 +44,25 @@ module.exports = defineConfig([
     },
   },
   {
+    // Gestures use react-native-gesture-handler (docs/adr/0004).
+    files: ["src/app/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "react-native",
+              importNames: ["PanResponder"],
+              message:
+                "Use react-native-gesture-handler for gestures, not PanResponder (docs/adr/0004).",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ["src/app/**/*.tsx"],
     rules: {
       "no-restricted-syntax": [

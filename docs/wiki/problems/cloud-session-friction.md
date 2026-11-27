@@ -9,3 +9,6 @@ Problems agents hit in Claude Code cloud sessions on this repo.
 - 2026-11-27: the coordinator and the subagent shared one working tree and branch. The coordinator's wiki commit (`9674a5a`) landed mid-run, and the subagent had to stage around `docs/wiki`. Stop-hook prompts to commit kept pointing at the subagent's unfinished files. Lesson: while a subagent is implementing, the coordinator doesn't commit to its tree; a worktree is the alternative.
 
 Related: [Milestone 1 run log](../runs/milestone-1.md).
+
+- 2026-11-27: the gesture-refactor subagent hit the silent no-op edit after Prettier again, even though `afb975b` had added the CLAUDE.md note. The note alone didn't stop it.
+- 2026-11-27: the WebFetch tool failed with a DNS error on `docs.expo.dev`, while `curl` through the proxy worked.

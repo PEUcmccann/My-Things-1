@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState, type ComponentRef } from "react";
-import { PanResponder, StyleSheet, View } from "react-native";
+import { useState } from "react";
+import { StyleSheet, View } from "react-native";
+import { GestureDetector, usePanGesture } from "react-native-gesture-handler";
 import type { ListRef, ToDoEntry } from "../../core";
 import { toDoListDrop, useDrag, useDropList } from "../drag";
 import { useNavigation } from "../navigation";
@@ -40,41 +41,6 @@ export function ToDoList({ entries, list }: Props) {
 
 type Layouts = Map<string, { y: number; h: number }>;
 
-interface EdgeState {
-  top: number;
-  selection: ReturnType<typeof useSelection>;
-}
-
-/** Sliding a finger down the list's left edge selects each row it passes. */
-function edgeResponder(
-  container: { current: ComponentRef<typeof View> | null },
-  layouts: Layouts,
-  latest: { current: EdgeState },
-) {
-  const rowAt = (pageY: number) => {
-    const y = pageY - latest.current.top;
-    for (const [id, l] of layouts) if (y >= l.y && y <= l.y + l.h) return id;
-    return null;
-  };
-  return PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onMoveShouldSetPanResponder: () => true,
-    onPanResponderTerminationRequest: () => false,
-    onPanResponderGrant: (_, g) => {
-      container.current?.measureInWindow((_x, top) => {
-        latest.current.top = top;
-        const id = rowAt(g.y0);
-        if (!latest.current.selection.active) latest.current.selection.start(id ?? undefined);
-        else if (id) latest.current.selection.add(id);
-      });
-    },
-    onPanResponderMove: (_, g) => {
-      const id = rowAt(g.moveY);
-      if (id) latest.current.selection.add(id);
-    },
-  });
-}
-
 function DropList({
   list,
   children,
@@ -92,13 +58,29 @@ function DropList({
   const key = `list:${JSON.stringify(list)}`;
   const ref = useDropList(key, toDoListDrop(app, drag, list));
   const [layouts] = useState<Layouts>(() => new Map());
-  const latest = useRef<EdgeState>({ top: 0, selection });
-  useEffect(() => {
-    latest.current.selection = selection;
+  const [top] = useState({ y: 0 });
+  const rowAt = (y: number) => {
+    const inList = y - top.y;
+    for (const [id, l] of layouts) if (inList >= l.y && inList <= l.y + l.h) return id;
+    return null;
+  };
+  // Sliding a finger down the list's left edge selects each row it passes.
+  const edge = usePanGesture({
+    minDistance: 0,
+    onBegin: (e) => {
+      const y = e.absoluteY;
+      ref.current?.measureInWindow((_x, listTop) => {
+        top.y = listTop;
+        const id = rowAt(y);
+        if (!selection.active) selection.start(id ?? undefined);
+        else if (id) selection.add(id);
+      });
+    },
+    onUpdate: (e) => {
+      const id = rowAt(e.absoluteY);
+      if (id) selection.add(id);
+    },
   });
-  // The responder only reads refs while a gesture runs, never during render.
-  // eslint-disable-next-line react-hooks/refs
-  const [edge] = useState(() => edgeResponder(ref, layouts, latest));
   const onRowLayout = (id: string, y: number, h: number) => layouts.set(id, { y, h });
   return (
     <View
@@ -108,12 +90,13 @@ function DropList({
       testID={`droplist-${list.kind}`}
     >
       {children(key, onRowLayout)}
-      <View
-        {...edge.panHandlers}
-        style={[styles.edge, selection.active && { backgroundColor: theme.border }]}
-        testID="select-edge"
-        accessibilityLabel="Slide to select"
-      />
+      <GestureDetector gesture={edge}>
+        <View
+          style={[styles.edge, selection.active && { backgroundColor: theme.border }]}
+          testID="select-edge"
+          accessibilityLabel="Slide to select"
+        />
+      </GestureDetector>
     </View>
   );
 }

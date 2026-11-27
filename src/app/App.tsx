@@ -9,6 +9,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { DragProvider } from "./drag";
 import { FinishProvider } from "./finish";
@@ -127,13 +128,15 @@ function Loading() {
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <MyThingsProvider loading={<Loading />}>
-        <FinishProvider>
-          <Layout />
-        </FinishProvider>
-      </MyThingsProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={styles.fill}>
+      <SafeAreaProvider>
+        <MyThingsProvider loading={<Loading />}>
+          <FinishProvider>
+            <Layout />
+          </FinishProvider>
+        </MyThingsProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 

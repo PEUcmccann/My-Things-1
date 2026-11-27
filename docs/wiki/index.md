@@ -7,10 +7,12 @@ A historical record kept by the chief-of-staff sessions (`.claude/skills/chief-o
 - [Wiki location](decisions/wiki-location.md): on 2026-11-27 the user chose `docs/wiki/` as the wiki's home.
 - [Run all of Milestone 1](decisions/run-milestone-1.md): on 2026-11-27 the user chose to delegate tickets #4 to #18 together.
 - [M1 product decisions](decisions/m1-product-decisions.md): calls made without the user on 2026-11-27 while building Milestone 1, merged in PR #20.
+- [Web app on GitHub Pages](decisions/web-app-on-pages.md): on 2026-11-27, how the app was made usable on an iPhone without a laptop.
 
 ## Subsystems
 
 - [Work tracking](subsystems/work-tracking.md): where specs and tickets lived as of 2026-11-27, and how agents reached them.
+- [Cloud environment](subsystems/cloud-environment.md): the "My-Things-1" environment and its allowed hosts, from 2026-11-27.
 
 ## Preferences
 
@@ -24,6 +26,7 @@ A historical record kept by the chief-of-staff sessions (`.claude/skills/chief-o
 ## Runs
 
 - [Milestone 1 run log](runs/milestone-1.md): what each delegated M1 ticket produced, and the retros on them.
+- [Milestone 2 run log](runs/milestone-2.md): the M2 tickets and the defaults chosen for them.
 
 ## Retros
 

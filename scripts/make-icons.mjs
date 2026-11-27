@@ -1,4 +1,5 @@
-// Draws the MyThings icon, splash and favicon into assets/ with headless Chrome.
+// Draws the MyThings icon, splash and favicon into assets/, and the Home Screen icons for the
+// web app into public/, with headless Chrome.
 // Run with: node scripts/make-icons.mjs
 import { chromium } from "@playwright/test";
 
@@ -26,6 +27,9 @@ const jobs = [
   ["favicon.png", 48, { bg: true, round: true }],
   ["android-icon-foreground.png", 1024, { bg: false, scale: 0.66 }],
   ["android-icon-monochrome.png", 1024, { bg: false, scale: 0.66, color: "#000000" }],
+  // Square and opaque: iOS rounds the corners itself and fills transparency with black.
+  ["../public/apple-touch-icon.png", 180, { bg: true }],
+  ["../public/icon-512.png", 512, { bg: true }],
 ];
 const browser = await chromium.launch();
 const page = await browser.newPage();

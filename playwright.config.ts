@@ -2,6 +2,9 @@ import { defineConfig, devices } from "@playwright/test";
 
 // The UI checks run against the exported web build at iPhone size.
 // @playwright/test is pinned to the version whose Chromium is preinstalled in cloud sessions.
+// UI_PORT lets agents in parallel worktrees run the checks without sharing a server.
+const port = Number(process.env.UI_PORT ?? 8081);
+
 export default defineConfig({
   testDir: "e2e",
   timeout: 30_000,
@@ -10,12 +13,12 @@ export default defineConfig({
     ...devices["iPhone 13"],
     // Chromium can emulate the iPhone screen and touch; WebKit is not needed.
     defaultBrowserType: "chromium",
-    baseURL: "http://localhost:8081",
+    baseURL: `http://localhost:${port}`,
     screenshot: "only-on-failure",
   },
   webServer: {
-    command: "npx expo export --platform web && node scripts/serve-web.mjs",
-    url: "http://localhost:8081",
+    command: `npx expo export --platform web && PORT=${port} node scripts/serve-web.mjs`,
+    url: `http://localhost:${port}`,
     reuseExistingServer: !process.env.CI,
     timeout: 300_000,
   },

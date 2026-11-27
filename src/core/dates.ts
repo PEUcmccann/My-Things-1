@@ -16,6 +16,22 @@ export function addDays(date: LocalDate, days: number): LocalDate {
   return format(next);
 }
 
+/**
+ * The same day `months` months after `date`, or that month's last day if the day doesn't
+ * exist there (31 January plus one month is 28 or 29 February).
+ */
+export function addMonths(date: LocalDate, months: number): LocalDate {
+  const [y, m, d] = date.split("-").map(Number);
+  const lastDay = new Date(Date.UTC(y, m - 1 + months + 1, 0)).getUTCDate();
+  return format(new Date(Date.UTC(y, m - 1 + months, Math.min(d, lastDay))));
+}
+
+/** Whether year, month (1 to 12) and day make a real date. */
+export function isRealDate(y: number, m: number, d: number): boolean {
+  const date = new Date(Date.UTC(y, m - 1, d));
+  return date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d;
+}
+
 /** Whole days from `from` to `to`. */
 export function daysBetween(from: LocalDate, to: LocalDate): number {
   return Math.round((parse(to).getTime() - parse(from).getTime()) / 86_400_000);

@@ -1,5 +1,45 @@
 import { describe, expect, it } from "vitest";
-import { followEdit } from "./quickEntry";
+import { followEdit, tokenHint } from "./quickEntry";
+
+describe("what a quick entry highlight says it sets", () => {
+  const today = "2026-11-26";
+  const when = (w: Parameters<typeof tokenHint>[0] & { kind: "when" }) => tokenHint(w, today);
+
+  it("names the day a date phrase sets, with the When icon", () => {
+    expect(when({ kind: "when", when: { kind: "date", date: "2026-11-27" } })).toEqual({
+      text: "Tomorrow",
+      icon: "when",
+    });
+    expect(when({ kind: "when", when: { kind: "date", date: "2026-12-12" } })).toEqual({
+      text: "Sat 12 Dec",
+      icon: "when",
+    });
+    expect(when({ kind: "when", when: { kind: "date", date: "2027-01-03" } })).toEqual({
+      text: "Sun 3 Jan 2027",
+      icon: "when",
+    });
+  });
+
+  it("shows today, This Evening and Someday with their list icons", () => {
+    expect(when({ kind: "when", when: { kind: "date", date: today } })).toEqual({
+      text: "Today",
+      icon: "today",
+    });
+    expect(when({ kind: "when", when: { kind: "thisEvening" } })).toEqual({
+      text: "This Evening",
+      icon: "evening",
+    });
+    expect(when({ kind: "when", when: { kind: "someday" } })).toEqual({
+      text: "Someday",
+      icon: "someday",
+    });
+  });
+
+  it("adds nothing for other shorthand, which shows as typed", () => {
+    expect(tokenHint({ kind: "priority", priority: "high" }, today)).toBeNull();
+    expect(tokenHint({ kind: "tag", path: ["errand"] }, today)).toBeNull();
+  });
+});
 
 describe("following an edit to quick entry text", () => {
   const before = "Buy milk #errand !high";

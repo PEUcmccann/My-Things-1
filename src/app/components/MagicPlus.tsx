@@ -9,7 +9,7 @@ import {
 import type { NewToDo } from "../../core";
 import { useDrag, useManualDrag, type NewToDoSpot } from "../drag";
 import { haptics } from "../haptics";
-import { followEdit } from "../quickEntry";
+import { followEdit, tokenHint } from "../quickEntry";
 import { useSelection } from "../selection";
 import { useMyThings } from "../state";
 import { useTheme } from "../theme";
@@ -80,6 +80,7 @@ export function MagicPlus({ placement }: Props) {
     close();
   };
   const preview = spot ? app.previewQuickEntry(title, ignored) : null;
+  const today = app.currentDate();
 
   return (
     <>
@@ -108,21 +109,26 @@ export function MagicPlus({ placement }: Props) {
         />
         {preview && preview.tokens.length > 0 && (
           <View style={styles.tokens} testID="quick-entry-tokens">
-            {preview.tokens.map((t) => (
-              <Pressable
-                key={t.start}
-                onPress={() => setIgnored((offsets) => [...offsets, t.start])}
-                style={[styles.token, { backgroundColor: theme.accent }]}
-                accessibilityRole="button"
-                accessibilityLabel={`Keep ${t.text} in the title`}
-                testID={`quick-entry-token-${t.start}`}
-              >
-                <Text style={[styles.tokenText, { color: theme.onAccent }]}>
-                  {t.text}
-                  {t.newTag ? " (new)" : ""} ×
-                </Text>
-              </Pressable>
-            ))}
+            {preview.tokens.map((t) => {
+              const hint = tokenHint(t.value, today);
+              return (
+                <Pressable
+                  key={t.start}
+                  onPress={() => setIgnored((offsets) => [...offsets, t.start])}
+                  style={[styles.token, { backgroundColor: theme.accent }]}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Keep ${t.text} in the title`}
+                  testID={`quick-entry-token-${t.start}`}
+                >
+                  {hint && <Icon name={hint.icon} size={14} color={theme.onAccent} />}
+                  <Text style={[styles.tokenText, { color: theme.onAccent }]}>
+                    {t.text}
+                    {t.newTag ? " (new)" : ""}
+                    {hint ? ` · ${hint.text}` : ""} ×
+                  </Text>
+                </Pressable>
+              );
+            })}
             <Text style={[styles.cleaned, { color: theme.muted }]} testID="quick-entry-title">
               {preview.title || "Add a title"}
             </Text>
@@ -156,7 +162,14 @@ const styles = StyleSheet.create({
   heading: { fontSize: 18, fontWeight: "600", marginBottom: 12 },
   input: { fontSize: 17, borderWidth: 1, borderRadius: 10, padding: 12 },
   tokens: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6, marginTop: 10 },
-  token: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
+  token: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
   tokenText: { fontSize: 14, fontWeight: "600" },
   cleaned: { fontSize: 14, flexBasis: "100%", marginTop: 2 },
   buttons: { flexDirection: "row", justifyContent: "flex-end", gap: 12, marginTop: 16 },

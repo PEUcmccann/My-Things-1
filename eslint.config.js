@@ -31,6 +31,12 @@ const coreGlossaryTerms = {
   message:
     "Use the GLOSSARY.md term (e.g. To-do, not task; Tag, not label; Deadline, not due date).",
 };
+// "item" anywhere in a name, except as part of "Checklist item" (checklistItems, ChecklistItem).
+const coreNoItem = {
+  selector: "Identifier[name=/(?<!checklist)items?/i]",
+  message:
+    "Use the GLOSSARY.md term for what it holds (toDo, project, heading...), not item. Checklist item is fine.",
+};
 
 module.exports = defineConfig([
   expoConfig,
@@ -43,7 +49,7 @@ module.exports = defineConfig([
     files: ["src/core/**/*.ts"],
     rules: {
       "no-restricted-imports": ["error", { patterns: [coreNoUiImports] }],
-      "no-restricted-syntax": ["error", coreGlossaryTerms],
+      "no-restricted-syntax": ["error", coreGlossaryTerms, coreNoItem],
     },
   },
   {
@@ -66,6 +72,7 @@ module.exports = defineConfig([
       "no-restricted-syntax": [
         "error",
         coreGlossaryTerms,
+        coreNoItem,
         {
           selector: "MemberExpression[property.name='rrule']",
           message:

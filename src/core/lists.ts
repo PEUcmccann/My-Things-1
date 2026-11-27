@@ -59,15 +59,15 @@ export interface TodayList {
   thisEvening: ToDoEntry[];
 }
 
-function isDue(item: Pick<ToDo, "startDate" | "deadline">, today: LocalDate): boolean {
-  const started = item.startDate !== null && item.startDate <= today;
-  const deadlineReached = item.deadline !== null && item.deadline <= today;
+function isDue(toDo: Pick<ToDo, "startDate" | "deadline">, today: LocalDate): boolean {
+  const started = toDo.startDate !== null && toDo.startDate <= today;
+  const deadlineReached = toDo.deadline !== null && toDo.deadline <= today;
   return started || deadlineReached;
 }
 
 /** Not yet organised: no Area, Project, Start date or Someday. */
-function isInInbox(item: ToDo): boolean {
-  return !item.areaId && !item.projectId && !item.startDate && !item.someday;
+function isInInbox(toDo: ToDo): boolean {
+  return !toDo.areaId && !toDo.projectId && !toDo.startDate && !toDo.someday;
 }
 
 /**
@@ -120,11 +120,11 @@ export function listQueries(ctx: Context) {
     const due = store
       .all("toDos")
       .filter(
-        (item) => ctx.isOpenInLists(item) && isDue(item, today) && !ctx.isHeldBackByProject(item),
+        (toDo) => ctx.isOpenInLists(toDo) && isDue(toDo, today) && !ctx.isHeldBackByProject(toDo),
       )
       .sort((a, b) => todayKey(a) - todayKey(b) || byPosition(a, b));
-    for (const item of due) {
-      (item.evening ? list.thisEvening : list.main).push(ctx.entry(item));
+    for (const toDo of due) {
+      (toDo.evening ? list.thisEvening : list.main).push(ctx.entry(toDo));
     }
     return list;
   }
@@ -137,7 +137,7 @@ export function listQueries(ctx: Context) {
     inbox(): ToDoEntry[] {
       return store
         .all("toDos")
-        .filter((item) => ctx.isOpenInLists(item) && isInInbox(item))
+        .filter((toDo) => ctx.isOpenInLists(toDo) && isInInbox(toDo))
         .sort(byPosition)
         .map(ctx.entry);
     },
@@ -150,18 +150,20 @@ export function listQueries(ctx: Context) {
       const today = clock.today();
       const entries: UpcomingEntry[] = [];
       const add = (
-        item: { startDate: LocalDate | null; deadline: LocalDate | null },
+        dated: { startDate: LocalDate | null; deadline: LocalDate | null },
         make: (date: LocalDate, reason: UpcomingReason) => UpcomingEntry,
       ) => {
-        if (item.startDate && item.startDate > today) entries.push(make(item.startDate, "start"));
-        if (item.deadline && item.deadline > today) entries.push(make(item.deadline, "deadline"));
+        if (dated.startDate && dated.startDate > today)
+          entries.push(make(dated.startDate, "start"));
+        if (dated.deadline && dated.deadline > today)
+          entries.push(make(dated.deadline, "deadline"));
       };
-      for (const item of store.all("toDos")) {
-        if (item.outcome !== "active" || !ctx.isOpenInLists(item)) continue;
-        add(item, (date, reason) => ({ kind: "toDo", date, reason, ...ctx.entry(item) }));
-        for (const date of projectedDates(ctx, item, today)) {
+      for (const toDo of store.all("toDos")) {
+        if (toDo.outcome !== "active" || !ctx.isOpenInLists(toDo)) continue;
+        add(toDo, (date, reason) => ({ kind: "toDo", date, reason, ...ctx.entry(toDo) }));
+        for (const date of projectedDates(ctx, toDo, today)) {
           // A later occurrence is created from the series, without "this one" changes.
-          const later = { ...item, ...seriesFieldsFor(ctx, item, date) };
+          const later = { ...toDo, ...seriesFieldsFor(ctx, toDo, date) };
           const tags = later.tagIds
             .map((t) => ctx.find("tags", t))
             .filter((t): t is Tag => Boolean(t));
@@ -204,12 +206,12 @@ export function listQueries(ctx: Context) {
       return store
         .all("toDos")
         .filter(
-          (item) =>
-            ctx.isOpenInLists(item) &&
-            !item.someday &&
-            !(item.startDate && item.startDate > today) &&
-            !isInInbox(item) &&
-            !ctx.isHeldBackByProject(item),
+          (toDo) =>
+            ctx.isOpenInLists(toDo) &&
+            !toDo.someday &&
+            !(toDo.startDate && toDo.startDate > today) &&
+            !isInInbox(toDo) &&
+            !ctx.isHeldBackByProject(toDo),
         )
         .sort(byPosition)
         .map(ctx.entry);
@@ -219,7 +221,7 @@ export function listQueries(ctx: Context) {
     someday(): ToDoEntry[] {
       return store
         .all("toDos")
-        .filter((item) => ctx.isOpenInLists(item) && item.someday)
+        .filter((toDo) => ctx.isOpenInLists(toDo) && toDo.someday)
         .sort(byPosition)
         .map(ctx.entry);
     },

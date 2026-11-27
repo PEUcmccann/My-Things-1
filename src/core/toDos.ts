@@ -182,8 +182,8 @@ export function toDoActions(ctx: Context) {
      * To-do with a Start date has already been organised.
      */
     moveToDo(id: string, to: Destination): void {
-      const item = ctx.require("toDos", id);
-      if (item.parentId) throw new Error("A Sub-to-do moves with its parent");
+      const toDo = ctx.require("toDos", id);
+      if (toDo.parentId) throw new Error("A Sub-to-do moves with its parent");
       const heading = to.kind === "heading" ? ctx.require("headings", to.id) : null;
       const place: Pick<ToDo, "areaId" | "projectId" | "headingId"> = {
         areaId: to.kind === "area" ? ctx.require("areas", to.id).id : null,
@@ -193,7 +193,7 @@ export function toDoActions(ctx: Context) {
       };
       // A repeating To-do keeps its Start date: it always has one.
       const extra =
-        to.kind === "inbox" && !item.repeat ? whenFields({ kind: "none" }, clock.today()) : {};
+        to.kind === "inbox" && !toDo.repeat ? whenFields({ kind: "none" }, clock.today()) : {};
       updateDated(id, { ...place, ...extra });
       for (const child of store.all("toDos")) {
         if (child.parentId === id) ctx.update("toDos", child.id, place);

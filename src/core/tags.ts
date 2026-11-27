@@ -11,7 +11,7 @@ export interface TagNode {
   depth: number;
 }
 
-export interface TaggedItems {
+export interface Tagged {
   areas: Area[];
   projects: Project[];
   toDos: ToDoEntry[];
@@ -22,7 +22,7 @@ const collectionOf = { toDo: "toDos", project: "projects", area: "areas" } as co
 export function tagActions(ctx: Context) {
   const { store } = ctx;
 
-  const own = (item: { tagIds?: string[] }) => item.tagIds ?? [];
+  const own = (record: { tagIds?: string[] }) => record.tagIds ?? [];
 
   function childrenOf(id: string | null): Tag[] {
     return store
@@ -49,11 +49,11 @@ export function tagActions(ctx: Context) {
   }
 
   /** A To-do's own Tags plus those of its Project and Area, used for filtering. */
-  function effectiveToDoTags(item: ToDo): string[] {
+  function effectiveToDoTags(toDo: ToDo): string[] {
     return [
-      ...own(item),
-      ...projectTags(ctx.find("projects", item.projectId)),
-      ...own(ctx.find("areas", item.areaId) ?? {}),
+      ...own(toDo),
+      ...projectTags(ctx.find("projects", toDo.projectId)),
+      ...own(ctx.find("areas", toDo.areaId) ?? {}),
     ];
   }
 
@@ -103,9 +103,9 @@ export function tagActions(ctx: Context) {
       const tag = ctx.require("tags", id);
       for (const child of childrenOf(id)) ctx.update("tags", child.id, { parentId: tag.parentId });
       for (const name of ["toDos", "projects", "areas"] as const) {
-        for (const item of store.all(name)) {
-          if (own(item).includes(id)) {
-            ctx.update(name, item.id, { tagIds: own(item).filter((t) => t !== id) });
+        for (const record of store.all(name)) {
+          if (own(record).includes(id)) {
+            ctx.update(name, record.id, { tagIds: own(record).filter((t) => t !== id) });
           }
         }
       }
@@ -182,7 +182,7 @@ export function tagActions(ctx: Context) {
     },
 
     /** Everything with a Tag (or a Tag nested under it), for the Tag's own screen. */
-    tagged(tagId: string): TaggedItems {
+    tagged(tagId: string): Tagged {
       const wanted = withDescendants([tagId]);
       return {
         areas: store

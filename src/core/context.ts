@@ -28,19 +28,19 @@ export interface Context {
   ): void;
   /** A position after every existing record in the collection. */
   nextPosition(collection: "areas" | "projects" | "headings" | "toDos"): number;
-  isInLogbook(item: Finishable): boolean;
+  isInLogbook(finishable: Finishable): boolean;
   /** Whether a To-do is in the Trash, itself or with its parent To-do or Project. */
-  isTrashed(item: ToDo): boolean;
+  isTrashed(toDo: ToDo): boolean;
   /** Whether a To-do shows in ordinary lists: not in the Trash and not yet in the Logbook. */
-  isOpenInLists(item: ToDo): boolean;
-  entry(item: ToDo): ToDoEntry;
+  isOpenInLists(toDo: ToDo): boolean;
+  entry(toDo: ToDo): ToDoEntry;
   /** Whether a Project shows in ordinary lists and the sidebar. */
   isProjectOpenInLists(project: Project): boolean;
   /**
    * Whether a To-do is held back by its Project: the Project is in Someday or
    * starts in the future, and the To-do has no Start date or Deadline of its own.
    */
-  isHeldBackByProject(item: ToDo): boolean;
+  isHeldBackByProject(toDo: ToDo): boolean;
 }
 
 const names: Record<CollectionName, string> = {
@@ -91,34 +91,34 @@ export function createContext(opts: {
       for (const r of store.all(collection)) max = Math.max(max, r.position ?? 0);
       return Math.floor(max) + 1;
     },
-    isInLogbook(item) {
-      if (item.outcome === "active") return false;
-      if (item.loggedAt) return true;
+    isInLogbook(finishable) {
+      if (finishable.outcome === "active") return false;
+      if (finishable.loggedAt) return true;
       const mode = store.settings().logbookMode;
       if (mode === "immediately") return true;
-      if (mode === "manually" || !item.finishedAt) return false;
-      return toLocalDate(new Date(item.finishedAt)) < clock.today();
+      if (mode === "manually" || !finishable.finishedAt) return false;
+      return toLocalDate(new Date(finishable.finishedAt)) < clock.today();
     },
-    isTrashed(item) {
-      if (item.deletedAt) return true;
-      if (ctx.find("toDos", item.parentId)?.deletedAt) return true;
-      return Boolean(ctx.find("projects", item.projectId)?.deletedAt);
+    isTrashed(toDo) {
+      if (toDo.deletedAt) return true;
+      if (ctx.find("toDos", toDo.parentId)?.deletedAt) return true;
+      return Boolean(ctx.find("projects", toDo.projectId)?.deletedAt);
     },
-    isOpenInLists(item) {
-      return !ctx.isTrashed(item) && !ctx.isInLogbook(item);
+    isOpenInLists(toDo) {
+      return !ctx.isTrashed(toDo) && !ctx.isInLogbook(toDo);
     },
     isProjectOpenInLists(project) {
       return !project.deletedAt && !ctx.isInLogbook(project);
     },
-    isHeldBackByProject(item) {
-      if (item.startDate || item.deadline) return false;
-      const project = ctx.find("projects", item.projectId);
+    isHeldBackByProject(toDo) {
+      if (toDo.startDate || toDo.deadline) return false;
+      const project = ctx.find("projects", toDo.projectId);
       if (!project) return false;
       return project.someday || (project.startDate !== null && project.startDate > clock.today());
     },
-    entry(item) {
-      const parent = ctx.find("toDos", item.parentId);
-      return { toDo: item, parentTitle: parent?.title ?? null };
+    entry(toDo) {
+      const parent = ctx.find("toDos", toDo.parentId);
+      return { toDo, parentTitle: parent?.title ?? null };
     },
   };
   return ctx;

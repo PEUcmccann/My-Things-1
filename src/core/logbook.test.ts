@@ -14,8 +14,8 @@ const logbook = () =>
   app.logbook().map((day) => ({
     date: day.date,
     entries: day.entries.map((e) => {
-      const item = e.kind === "toDo" ? e.toDo : e.project;
-      return `${item.title} (${item.outcome})`;
+      const finished = e.kind === "toDo" ? e.toDo : e.project;
+      return `${finished.title} (${finished.outcome})`;
     }),
   }));
 

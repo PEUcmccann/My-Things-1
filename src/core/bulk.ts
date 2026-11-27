@@ -1,7 +1,7 @@
 import type { Context } from "./context";
 import type { FinishOptions } from "./logbook";
 import type { Destination, When } from "./toDos";
-import type { LocalDate } from "./types";
+import type { Energy, LocalDate, Priority } from "./types";
 
 interface Actions {
   moveToDo(id: string, to: Destination): void;
@@ -11,6 +11,9 @@ interface Actions {
   complete(id: string, opts?: FinishOptions): void;
   cancel(id: string, opts?: FinishOptions): void;
   delete(id: string): void;
+  setPriority(id: string, priority: Priority): void;
+  setEnergy(id: string, energy: Energy | null): void;
+  setEstimate(id: string, minutes: number | null): void;
 }
 
 /** The same action applied to several selected To-dos at once. */
@@ -75,6 +78,18 @@ export function bulkActions(ctx: Context, a: Actions) {
 
     addTagsMany(ids: string[], tagIds: string[]): void {
       for (const id of live(ids)) for (const tag of tagIds) a.addTag({ kind: "toDo", id }, tag);
+    },
+
+    setPriorityMany(ids: string[], priority: Priority): void {
+      for (const id of live(ids)) a.setPriority(id, priority);
+    },
+
+    setEnergyMany(ids: string[], energy: Energy | null): void {
+      for (const id of live(ids)) a.setEnergy(id, energy);
+    },
+
+    setEstimateMany(ids: string[], minutes: number | null): void {
+      for (const id of live(ids)) a.setEstimate(id, minutes);
     },
 
     completeMany(ids: string[], opts: FinishOptions = {}): void {

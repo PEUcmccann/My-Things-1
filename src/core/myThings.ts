@@ -8,6 +8,7 @@ import { headingActions } from "./headings";
 import { listQueries } from "./lists";
 import { logbookActions } from "./logbook";
 import { orderingActions, type ListRef } from "./ordering";
+import { planningActions } from "./planning";
 import type { Store } from "./store";
 import { quickFindQueries } from "./quickFind";
 import { tagActions } from "./tags";
@@ -50,6 +51,7 @@ export function createMyThings({ clock, store, newId = randomId, owner = localOw
     ...headingActions(ctx),
     ...checklistActions(ctx),
     ...tagActions(ctx),
+    ...planningActions(ctx),
     ...quickFindQueries(ctx),
     ...logbookActions(ctx),
     ...listQueries(ctx),

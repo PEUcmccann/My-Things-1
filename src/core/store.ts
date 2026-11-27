@@ -50,7 +50,15 @@ const recordDefaults: { [C in CollectionName]: Partial<Collections[C]> } = {
     loggedAt: null,
   },
   headings: { position: 0, archivedAt: null },
-  toDos: { tagIds: [], notes: "", position: 0, todayPosition: null },
+  toDos: {
+    tagIds: [],
+    notes: "",
+    position: 0,
+    todayPosition: null,
+    priority: "none",
+    energy: null,
+    estimate: null,
+  },
   checklistItems: {},
   tags: {},
 };

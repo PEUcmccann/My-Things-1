@@ -89,6 +89,9 @@ export function toDoActions(ctx: Context) {
         headingId: parent ? parent.headingId : (heading?.id ?? null),
         parentId: parent ? parent.id : null,
         deletedAt: null,
+        priority: "none",
+        energy: null,
+        estimate: null,
       });
       if (input.when) setWhen(meta.id, input.when);
       return meta.id;

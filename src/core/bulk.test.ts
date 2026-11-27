@@ -49,6 +49,31 @@ describe("bulk actions on selected To-dos", () => {
     expect(app.tagsOf({ kind: "toDo", id: child }).map((t) => t.title)).toEqual(["Urgent"]);
   });
 
+  it("set Priority, Energy and Estimate on all of them, including Sub-to-dos", () => {
+    app.setPriorityMany([a, child], "medium");
+    app.setEnergyMany([a, child], "high");
+    app.setEstimateMany([a, child], 30);
+    for (const id of [a, child]) {
+      expect(app.getToDo(id)).toMatchObject({ priority: "medium", energy: "high", estimate: 30 });
+    }
+    expect(app.getToDo(b)).toMatchObject({ priority: "none", energy: null, estimate: null });
+  });
+
+  it("clear Energy and Estimate on all of them", () => {
+    app.setEnergyMany([a, b], "low");
+    app.setEstimateMany([a, b], 10);
+    app.setEnergyMany([a, b], null);
+    app.setEstimateMany([a, b], null);
+    for (const id of [a, b])
+      expect(app.getToDo(id)).toMatchObject({ energy: null, estimate: null });
+  });
+
+  it("refuse an invalid Estimate without changing any of them", () => {
+    app.setEstimateMany([a, b], 15);
+    expect(() => app.setEstimateMany([a, b], 0)).toThrow();
+    expect([a, b].map((id) => app.getToDo(id).estimate)).toEqual([15, 15]);
+  });
+
   it("complete all of them", () => {
     app.completeMany([a, b]);
     expect([a, b].map(outcome)).toEqual(["completed", "completed"]);

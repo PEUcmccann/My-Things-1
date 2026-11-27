@@ -5,8 +5,4 @@ A personal task manager built with React Native and Expo. See `CLAUDE.md` for th
 ## UI checks
 
 `npm run test:ui` builds the web version and runs the Playwright checks in `e2e/` at iPhone size.
-If Playwright cannot download its own browser (as in cloud sessions), point it at an installed Chrome:
-
-```bash
-CHROME_PATH=/usr/bin/google-chrome npm run test:ui
-```
+`@playwright/test` is pinned to the exact version whose Chromium is preinstalled in cloud sessions (`/opt/pw-browsers`), where Playwright cannot download a browser. Keep that pin when upgrading; elsewhere run `npx playwright install chromium` once.

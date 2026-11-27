@@ -1,5 +1,5 @@
 // Draws the MyThings icon, splash and favicon into assets/ with headless Chrome.
-// Run with: CHROME_PATH=/usr/bin/google-chrome node scripts/make-icons.mjs
+// Run with: node scripts/make-icons.mjs
 import { chromium } from "@playwright/test";
 
 const mark = `
@@ -27,9 +27,7 @@ const jobs = [
   ["android-icon-foreground.png", 1024, { bg: false, scale: 0.66 }],
   ["android-icon-monochrome.png", 1024, { bg: false, scale: 0.66, color: "#000000" }],
 ];
-const browser = await chromium.launch(
-  process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {},
-);
+const browser = await chromium.launch();
 const page = await browser.newPage();
 for (const [name, size, opts] of jobs) {
   await page.setViewportSize({ width: size, height: size });

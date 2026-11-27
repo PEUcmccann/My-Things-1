@@ -15,6 +15,7 @@ npm test            # core tests (Vitest)
 npm run lint        # ESLint
 npm run typecheck   # tsc --noEmit
 npm run format      # Prettier
+npm run test:ui     # Playwright UI checks on the web build at iPhone size
 npx expo start      # dev server (Expo Go on the phone, or press w for web)
 ```
 

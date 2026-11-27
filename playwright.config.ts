@@ -1,7 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 // The UI checks run against the exported web build at iPhone size.
-// Set CHROME_PATH to use an installed Chrome instead of Playwright's own download.
+// @playwright/test is pinned to the version whose Chromium is preinstalled in cloud sessions.
 export default defineConfig({
   testDir: "e2e",
   timeout: 30_000,
@@ -11,7 +11,6 @@ export default defineConfig({
     // Chromium can emulate the iPhone screen and touch; WebKit is not needed.
     defaultBrowserType: "chromium",
     baseURL: "http://localhost:8081",
-    launchOptions: process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {},
     screenshot: "only-on-failure",
   },
   webServer: {

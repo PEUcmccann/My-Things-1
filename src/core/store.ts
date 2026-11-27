@@ -1,10 +1,11 @@
-import type { Area, Heading, Project, Settings, ToDo } from "./types";
+import type { Area, ChecklistItem, Heading, Project, Settings, ToDo } from "./types";
 
 export interface Collections {
   areas: Area;
   projects: Project;
   headings: Heading;
   toDos: ToDo;
+  checklistItems: ChecklistItem;
 }
 
 export type CollectionName = keyof Collections;
@@ -28,7 +29,13 @@ export interface Snapshot {
 
 export const defaultSettings: Settings = { logbookMode: "endOfDay" };
 
-const collectionNames: CollectionName[] = ["areas", "projects", "headings", "toDos"];
+const collectionNames: CollectionName[] = [
+  "areas",
+  "projects",
+  "headings",
+  "toDos",
+  "checklistItems",
+];
 
 export interface MemoryStore extends Store {
   snapshot(): Snapshot;

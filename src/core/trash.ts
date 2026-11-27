@@ -10,10 +10,13 @@ export type TrashEntry =
 export function trashActions(ctx: Context) {
   const { store } = ctx;
 
-  /** Removes a To-do for good, with its Sub-to-dos. */
+  /** Removes a To-do for good, with its Sub-to-dos and Checklist. */
   function eraseToDo(id: string): void {
     for (const child of store.all("toDos")) {
-      if (child.parentId === id) store.remove("toDos", child.id);
+      if (child.parentId === id) eraseToDo(child.id);
+    }
+    for (const c of store.all("checklistItems")) {
+      if (c.toDoId === id) store.remove("checklistItems", c.id);
     }
     store.remove("toDos", id);
   }
@@ -21,7 +24,7 @@ export function trashActions(ctx: Context) {
   /** Removes a Project for good, with everything in it. */
   function eraseProject(id: string): void {
     for (const t of store.all("toDos")) {
-      if (t.projectId === id) store.remove("toDos", t.id);
+      if (t.projectId === id && store.get("toDos", t.id)) eraseToDo(t.id);
     }
     for (const h of store.all("headings")) {
       if (h.projectId === id) store.remove("headings", h.id);

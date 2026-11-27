@@ -77,6 +77,7 @@ export function containerActions(ctx: Context) {
       store.put("projects", {
         ...meta,
         title: input.title.trim() || "New Project",
+        notes: "",
         areaId: input.areaId ? ctx.require("areas", input.areaId).id : null,
         outcome: "active",
         finishedAt: null,
@@ -91,6 +92,10 @@ export function containerActions(ctx: Context) {
 
     renameProject(id: string, title: string): void {
       if (title.trim()) ctx.update("projects", id, { title: title.trim() });
+    },
+
+    setProjectNotes(id: string, notes: string): void {
+      ctx.update("projects", id, { notes });
     },
 
     /** Moves a Project into an Area, or out of any Area with null. */

@@ -5,6 +5,28 @@ import { useTheme } from "../theme";
 import { Checkbox } from "./Checkbox";
 import { DateBadges } from "./DateBadges";
 
+/** Small hints on a row: notes, and Checklist progress such as 2/5. */
+function Indicators({ toDoId, hasNotes }: { toDoId: string; hasNotes: boolean }) {
+  const app = useMyThings();
+  const theme = useTheme();
+  const { ticked, total } = app.checklistProgress(toDoId);
+  if (!hasNotes && total === 0) return null;
+  return (
+    <View style={styles.indicators}>
+      {hasNotes ? (
+        <Text style={[styles.indicator, { color: theme.muted }]} testID="row-notes">
+          📝
+        </Text>
+      ) : null}
+      {total > 0 ? (
+        <Text style={[styles.indicator, { color: theme.muted }]} testID="row-checklist">
+          ☑ {ticked}/{total}
+        </Text>
+      ) : null}
+    </View>
+  );
+}
+
 interface Props {
   entry: ToDoEntry;
   onPress?: () => void;
@@ -41,6 +63,7 @@ export function ToDoRow({ entry, onPress }: Props) {
           {toDo.title}
         </Text>
         <DateBadges toDo={toDo} />
+        <Indicators toDoId={toDo.id} hasNotes={toDo.notes.trim().length > 0} />
       </View>
     </Pressable>
   );
@@ -61,4 +84,6 @@ const styles = StyleSheet.create({
   parent: { fontSize: 12, marginBottom: 2 },
   title: { fontSize: 16 },
   struck: { textDecorationLine: "line-through" },
+  indicators: { flexDirection: "row", gap: 10, marginTop: 3 },
+  indicator: { fontSize: 12 },
 });

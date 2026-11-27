@@ -1,4 +1,5 @@
 import type { Clock } from "./clock";
+import { checklistActions } from "./checklist";
 import { containerActions } from "./containers";
 import { createContext } from "./context";
 import { addDays, deadlineFlag, type DeadlineFlag } from "./dates";
@@ -10,6 +11,7 @@ import { toDoActions } from "./toDos";
 import { trashActions } from "./trash";
 import type { LocalDate } from "./types";
 
+export type { ChecklistProgress } from "./checklist";
 export type { ToDoEntry } from "./context";
 export type { AreaContents, NewProject, Progress, SidebarArea, SidebarTree } from "./containers";
 export type { ProjectList, TodayList, UpcomingEntry, UpcomingGroup, UpcomingReason } from "./lists";
@@ -39,6 +41,7 @@ export function createMyThings({ clock, store, newId = randomId, owner = localOw
     ...toDoActions(ctx),
     ...containerActions(ctx),
     ...headingActions(ctx),
+    ...checklistActions(ctx),
     ...logbookActions(ctx),
     ...listQueries(ctx),
     ...trashActions(ctx),

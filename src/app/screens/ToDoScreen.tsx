@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Button } from "../components/Button";
 import { Checkbox } from "../components/Checkbox";
+import { ChecklistEditor } from "../components/ChecklistEditor";
+import { NotesField } from "../components/NotesField";
 import { MovePicker } from "../components/MovePicker";
 import { DatePicker, WhenPicker } from "../components/WhenPicker";
 import { Screen } from "../components/Screen";
@@ -79,6 +81,8 @@ export function ToDoScreen({ id }: { id: string }) {
         />
       </View>
       <View style={styles.fields}>
+        <NotesField value={toDo.notes} onSave={(notes) => app.editToDo(id, { notes })} />
+        <ChecklistEditor toDoId={id} />
         {row("When", whenText(toDo, today), () => setPicker("when"), "todo-when")}
         {row(
           "Deadline",

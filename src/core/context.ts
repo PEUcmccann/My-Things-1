@@ -45,6 +45,7 @@ const names: Record<CollectionName, string> = {
   areas: "Area",
   projects: "Project",
   headings: "Heading",
+  checklistItems: "Checklist item",
   toDos: "To-do",
 };
 

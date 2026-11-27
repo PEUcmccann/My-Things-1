@@ -70,6 +70,7 @@ export function toDoActions(ctx: Context) {
       store.put("toDos", {
         ...meta,
         title: input.title,
+        notes: "",
         outcome: "active",
         finishedAt: null,
         loggedAt: null,
@@ -89,11 +90,13 @@ export function toDoActions(ctx: Context) {
       return meta.id;
     },
 
-    editToDo(id: string, changes: { title?: string }): void {
+    /** Changes a To-do's title (a blank title is ignored) or its notes. */
+    editToDo(id: string, changes: { title?: string; notes?: string }): void {
       const next: Partial<ToDo> = {};
       if (changes.title !== undefined) {
         next.title = changes.title.trim() || ctx.require("toDos", id).title;
       }
+      if (changes.notes !== undefined) next.notes = changes.notes;
       ctx.update("toDos", id, next);
     },
 

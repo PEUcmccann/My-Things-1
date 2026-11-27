@@ -5,6 +5,7 @@ import { Button } from "../components/Button";
 import { Empty } from "../components/Empty";
 import { FieldRow } from "../components/FieldRow";
 import { MagicPlus } from "../components/MagicPlus";
+import { NotesField } from "../components/NotesField";
 import { MenuSheet } from "../components/MenuSheet";
 import { ProgressPie } from "../components/ProgressPie";
 import { PromptSheet } from "../components/PromptSheet";
@@ -99,6 +100,11 @@ export function ProjectScreen({ id }: { id: string }) {
           </View>
         ) : null}
         <View style={styles.fields}>
+          <NotesField
+            value={project.notes}
+            onSave={(notes) => app.setProjectNotes(id, notes)}
+            testID="project-notes"
+          />
           <FieldRow
             label="When"
             value={whenText(project, today)}

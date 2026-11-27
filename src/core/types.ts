@@ -29,6 +29,8 @@ export interface Project extends RecordMeta {
   finishedAt: Moment | null;
   /** Set once the Project has moved to the Logbook. */
   loggedAt: Moment | null;
+  /** Notes in Markdown. */
+  notes: string;
   startDate: LocalDate | null;
   someday: boolean;
   deadline: LocalDate | null;
@@ -45,6 +47,8 @@ export interface Heading extends RecordMeta {
 
 export interface ToDo extends RecordMeta {
   title: string;
+  /** Notes in Markdown. */
+  notes: string;
   outcome: Outcome;
   /** When the To-do was Completed or Cancelled. */
   finishedAt: Moment | null;
@@ -60,6 +64,15 @@ export interface ToDo extends RecordMeta {
   /** The parent To-do of a Sub-to-do. */
   parentId: string | null;
   deletedAt: Moment | null;
+}
+
+/** A small step inside a To-do that can only be ticked off. */
+export interface ChecklistItem extends RecordMeta {
+  toDoId: string;
+  title: string;
+  ticked: boolean;
+  /** Order within the To-do's Checklist, lowest first. */
+  position: number;
 }
 
 export interface Settings {

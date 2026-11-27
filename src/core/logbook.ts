@@ -1,30 +1,70 @@
 import { toLocalDate } from "./clock";
-import type { Context, ToDoEntry } from "./context";
-import type { LocalDate, LogbookMode } from "./types";
+import type { Context, Finishable, ToDoEntry } from "./context";
+import type { LocalDate, LogbookMode, Project } from "./types";
 
-export type LogbookEntry = { kind: "toDo" } & ToDoEntry;
+export type LogbookEntry = ({ kind: "toDo" } & ToDoEntry) | { kind: "project"; project: Project };
 
 export interface LogbookDay {
   date: LocalDate;
   entries: LogbookEntry[];
 }
 
+/** What to do with a Project's open To-dos when the Project is finished. */
+export type Remaining = "complete" | "cancel";
+
+export interface FinishOptions {
+  /** Required when there are open To-dos left: complete or cancel them too. */
+  remaining?: Remaining;
+}
+
+const outcomeOf = { complete: "completed", cancel: "cancelled" } as const;
+
 export function logbookActions(ctx: Context) {
   const { store } = ctx;
 
-  function finish(id: string, outcome: "completed" | "cancelled"): void {
+  function finishedFields(outcome: "completed" | "cancelled") {
     const now = ctx.now();
     const logNow = store.settings().logbookMode === "immediately";
-    ctx.update("toDos", id, { outcome, finishedAt: now, loggedAt: logNow ? now : null });
+    return { outcome, finishedAt: now, loggedAt: logNow ? now : null };
+  }
+
+  function finishToDo(id: string, outcome: "completed" | "cancelled"): void {
+    ctx.update("toDos", id, finishedFields(outcome));
+  }
+
+  function openToDosOf(projectId: string) {
+    return store
+      .all("toDos")
+      .filter((t) => t.projectId === projectId && t.outcome === "active" && !ctx.isTrashed(t));
+  }
+
+  function finishProject(id: string, outcome: "completed" | "cancelled", opts: FinishOptions) {
+    const open = openToDosOf(id);
+    if (open.length > 0 && !opts.remaining) {
+      throw new Error("This Project has open To-dos: choose to complete or cancel them");
+    }
+    for (const t of open) finishToDo(t.id, outcomeOf[opts.remaining!]);
+    ctx.update("projects", id, finishedFields(outcome));
+  }
+
+  /** Stamps everything that has reached the Logbook, so it stays there. */
+  function stampLogged(include: (item: Finishable) => boolean) {
+    const now = ctx.now();
+    for (const t of store.all("toDos")) {
+      if (!t.loggedAt && include(t)) ctx.update("toDos", t.id, { loggedAt: now });
+    }
+    for (const p of store.all("projects")) {
+      if (!p.loggedAt && include(p)) ctx.update("projects", p.id, { loggedAt: now });
+    }
   }
 
   return {
     complete(id: string): void {
-      finish(id, "completed");
+      finishToDo(id, "completed");
     },
 
     cancel(id: string): void {
-      finish(id, "cancelled");
+      finishToDo(id, "cancelled");
     },
 
     /** Makes a Completed or Cancelled To-do active again, in its original place. */
@@ -32,14 +72,32 @@ export function logbookActions(ctx: Context) {
       ctx.update("toDos", id, { outcome: "active", finishedAt: null, loggedAt: null });
     },
 
+    /** How many active To-dos a Project still has. */
+    openToDoCount(projectId: string): number {
+      return openToDosOf(projectId).length;
+    },
+
+    /**
+     * Completes a Project. If it still has open To-dos, `remaining` says whether to
+     * complete or cancel them.
+     */
+    completeProject(id: string, opts: FinishOptions = {}): void {
+      finishProject(id, "completed", opts);
+    },
+
+    /** Cancels a Project, with the same choice for its open To-dos. */
+    cancelProject(id: string, opts: FinishOptions = {}): void {
+      finishProject(id, "cancelled", opts);
+    },
+
+    /** Makes a finished Project active again. Its To-dos keep their own outcomes. */
+    reopenProject(id: string): void {
+      ctx.update("projects", id, { outcome: "active", finishedAt: null, loggedAt: null });
+    },
+
     setLogbookMode(mode: LogbookMode): void {
       // Whatever has reached the Logbook under the old mode stays there.
-      const now = ctx.now();
-      for (const item of store.all("toDos")) {
-        if (!item.loggedAt && ctx.isInLogbook(item)) {
-          ctx.update("toDos", item.id, { loggedAt: now });
-        }
-      }
+      stampLogged((item) => ctx.isInLogbook(item));
       store.saveSettings({ ...store.settings(), logbookMode: mode });
     },
 
@@ -47,40 +105,48 @@ export function logbookActions(ctx: Context) {
       return store.settings().logbookMode;
     },
 
-    /** Moves every finished To-do to the Logbook now, as in the "manually" mode. */
+    /** Moves every finished To-do and Project to the Logbook now. */
     moveFinishedToLogbook(): void {
-      const now = ctx.now();
-      for (const item of store.all("toDos")) {
-        if (item.outcome !== "active" && !item.loggedAt) {
-          ctx.update("toDos", item.id, { loggedAt: now });
-        }
-      }
+      stampLogged((item) => item.outcome !== "active");
     },
 
-    /** Whether there are finished To-dos still waiting to move to the Logbook. */
+    /** Whether there are finished items still waiting to move to the Logbook. */
     hasFinishedOutsideLogbook(): boolean {
-      return store
-        .all("toDos")
-        .some(
-          (item) => !ctx.isTrashed(item) && item.outcome !== "active" && !ctx.isInLogbook(item),
-        );
+      const waiting = (item: Finishable) => item.outcome !== "active" && !ctx.isInLogbook(item);
+      return (
+        store.all("toDos").some((t) => !ctx.isTrashed(t) && waiting(t)) ||
+        store.all("projects").some((p) => !p.deletedAt && waiting(p))
+      );
     },
 
-    /** The Logbook: finished To-dos grouped by the day they were finished, newest first. */
+    /** The Logbook: finished items grouped by the day they were finished, newest first. */
     logbook(): LogbookDay[] {
-      const finished = store
-        .all("toDos")
-        .filter((item) => !ctx.isTrashed(item) && ctx.isInLogbook(item))
-        .sort((a, b) => (b.finishedAt ?? "").localeCompare(a.finishedAt ?? ""));
+      const items: { at: string; entry: LogbookEntry }[] = [
+        ...store
+          .all("toDos")
+          .filter((t) => !ctx.isTrashed(t) && ctx.isInLogbook(t))
+          .map((t) => ({
+            at: t.finishedAt ?? t.updatedAt,
+            entry: { kind: "toDo" as const, ...ctx.entry(t) },
+          })),
+        ...store
+          .all("projects")
+          .filter((p) => !p.deletedAt && ctx.isInLogbook(p))
+          .map((p) => ({
+            at: p.finishedAt ?? p.updatedAt,
+            entry: { kind: "project" as const, project: p },
+          })),
+      ];
+      items.sort((a, b) => b.at.localeCompare(a.at));
       const days: LogbookDay[] = [];
-      for (const item of finished) {
-        const date = toLocalDate(new Date(item.finishedAt ?? item.updatedAt));
+      for (const { at, entry } of items) {
+        const date = toLocalDate(new Date(at));
         let day = days[days.length - 1];
         if (!day || day.date !== date) {
           day = { date, entries: [] };
           days.push(day);
         }
-        day.entries.push({ kind: "toDo", ...ctx.entry(item) });
+        day.entries.push(entry);
       }
       return days;
     },

@@ -7,6 +7,7 @@ import { useTheme } from "../theme";
 import { Empty } from "../components/Empty";
 import { MagicPlus } from "../components/MagicPlus";
 import { Screen } from "../components/Screen";
+import { ProjectRow } from "../components/ProjectRow";
 import { ToDoRow } from "../components/ToDoRow";
 
 interface Section {
@@ -44,12 +45,18 @@ const placements: Partial<Record<BuiltInList, Omit<NewToDo, "title">>> = {
 export function ListScreen({ list }: { list: BuiltInList }) {
   const theme = useTheme();
   const nav = useNavigation();
+  const app = useMyThings();
   const sections = useSections(list);
-  const isEmpty = sections.every((s) => s.entries.length === 0);
+  const projects =
+    list === "today" || list === "anytime" || list === "someday" ? app.projectsIn(list) : [];
+  const isEmpty = projects.length === 0 && sections.every((s) => s.entries.length === 0);
   return (
     <View style={styles.fill}>
       <Screen title={listTitles[list]} testID={`screen-${list}`}>
         {isEmpty ? <Empty text="Nothing here" /> : null}
+        {projects.map((p) => (
+          <ProjectRow key={p.id} project={p} />
+        ))}
         {sections.map((section) =>
           section.entries.length === 0 ? null : (
             <View key={section.key} testID={`section-${section.key}`}>

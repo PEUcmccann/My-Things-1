@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, StyleSheet, Text } from "react-native";
+import { Platform, Pressable, ScrollView, StyleSheet, Text } from "react-native";
 import { useTheme } from "../theme";
 import { Sheet } from "./Sheet";
 
@@ -35,7 +35,9 @@ export function MenuSheet({ visible, title, message, options, onClose, testID }:
             disabled={option.disabled}
             onPress={() => {
               onClose();
-              option.onPress();
+              // iOS cannot show another sheet while this one is still sliding away.
+              if (Platform.OS === "ios") setTimeout(option.onPress, 450);
+              else option.onPress();
             }}
             style={({ pressed }) => [
               styles.option,

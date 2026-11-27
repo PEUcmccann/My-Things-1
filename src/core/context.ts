@@ -1,6 +1,6 @@
 import { toLocalDate, type Clock } from "./clock";
 import type { CollectionName, Collections, Store } from "./store";
-import type { Moment, RecordMeta, ToDo } from "./types";
+import type { Moment, Project, RecordMeta, ToDo } from "./types";
 
 /** The lifecycle fields shared by To-dos and Projects. */
 export type Finishable = Pick<ToDo, "outcome" | "finishedAt" | "loggedAt">;
@@ -32,6 +32,13 @@ export interface Context {
   /** Whether a To-do shows in ordinary lists: not in the Trash and not yet in the Logbook. */
   isOpenInLists(item: ToDo): boolean;
   entry(item: ToDo): ToDoEntry;
+  /** Whether a Project shows in ordinary lists and the sidebar. */
+  isProjectOpenInLists(project: Project): boolean;
+  /**
+   * Whether a To-do is held back by its Project: the Project is in Someday or
+   * starts in the future, and the To-do has no Start date or Deadline of its own.
+   */
+  isHeldBackByProject(item: ToDo): boolean;
 }
 
 const names: Record<CollectionName, string> = {
@@ -88,6 +95,15 @@ export function createContext(opts: {
     },
     isOpenInLists(item) {
       return !ctx.isTrashed(item) && !ctx.isInLogbook(item);
+    },
+    isProjectOpenInLists(project) {
+      return !project.deletedAt && !ctx.isInLogbook(project);
+    },
+    isHeldBackByProject(item) {
+      if (item.startDate || item.deadline) return false;
+      const project = ctx.find("projects", item.projectId);
+      if (!project) return false;
+      return project.someday || (project.startDate !== null && project.startDate > clock.today());
     },
     entry(item) {
       const parent = ctx.find("toDos", item.parentId);

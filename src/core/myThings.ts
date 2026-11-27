@@ -11,8 +11,8 @@ import type { LocalDate } from "./types";
 
 export type { ToDoEntry } from "./context";
 export type { AreaContents, NewProject, Progress, SidebarArea, SidebarTree } from "./containers";
-export type { TodayList, UpcomingEntry, UpcomingGroup, UpcomingReason } from "./lists";
-export type { LogbookDay, LogbookEntry } from "./logbook";
+export type { ProjectList, TodayList, UpcomingEntry, UpcomingGroup, UpcomingReason } from "./lists";
+export type { FinishOptions, LogbookDay, LogbookEntry, Remaining } from "./logbook";
 export type { Destination, NewToDo, When } from "./toDos";
 export type { TrashEntry } from "./trash";
 

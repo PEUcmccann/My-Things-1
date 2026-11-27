@@ -1,11 +1,16 @@
 import { byCreation, type Context, type ToDoEntry } from "./context";
 import { addDays, daysBetween, startOfMonth, startOfWeek } from "./dates";
-import type { LocalDate, ToDo } from "./types";
+import type { LocalDate, Project, RecordMeta, ToDo } from "./types";
 
 /** Why an item shows on a day in Upcoming. */
 export type UpcomingReason = "start" | "deadline";
 
-export type UpcomingEntry = { kind: "toDo"; date: LocalDate; reason: UpcomingReason } & ToDoEntry;
+export type UpcomingEntry = { date: LocalDate; reason: UpcomingReason } & (
+  ({ kind: "toDo" } & ToDoEntry) | { kind: "project"; project: Project }
+);
+
+/** The Projects shown at the top of Today, Anytime or Someday. */
+export type ProjectList = "today" | "anytime" | "someday";
 
 /**
  * A stretch of Upcoming: a single day for the next seven days, then a week
@@ -41,7 +46,7 @@ export interface TodayList {
   thisEvening: ToDoEntry[];
 }
 
-function isDue(item: ToDo, today: LocalDate): boolean {
+function isDue(item: Pick<ToDo, "startDate" | "deadline">, today: LocalDate): boolean {
   const started = item.startDate !== null && item.startDate <= today;
   const deadlineReached = item.deadline !== null && item.deadline <= today;
   return started || deadlineReached;
@@ -75,21 +80,29 @@ export function listQueries(ctx: Context) {
     upcoming(): UpcomingGroup[] {
       const today = clock.today();
       const entries: UpcomingEntry[] = [];
+      const add = (
+        item: { startDate: LocalDate | null; deadline: LocalDate | null },
+        make: (date: LocalDate, reason: UpcomingReason) => UpcomingEntry,
+      ) => {
+        if (item.startDate && item.startDate > today) entries.push(make(item.startDate, "start"));
+        if (item.deadline && item.deadline > today) entries.push(make(item.deadline, "deadline"));
+      };
       for (const item of store.all("toDos")) {
         if (item.outcome !== "active" || !ctx.isOpenInLists(item)) continue;
-        if (item.startDate && item.startDate > today) {
-          entries.push({ kind: "toDo", date: item.startDate, reason: "start", ...ctx.entry(item) });
-        }
-        if (item.deadline && item.deadline > today) {
-          entries.push({
-            kind: "toDo",
-            date: item.deadline,
-            reason: "deadline",
-            ...ctx.entry(item),
-          });
-        }
+        add(item, (date, reason) => ({ kind: "toDo", date, reason, ...ctx.entry(item) }));
       }
-      entries.sort((a, b) => a.date.localeCompare(b.date) || byCreation(a.toDo, b.toDo));
+      for (const project of store.all("projects")) {
+        if (project.outcome !== "active" || !ctx.isProjectOpenInLists(project)) continue;
+        add(project, (date, reason) => ({ kind: "project", date, reason, project }));
+      }
+      const record = (e: UpcomingEntry): RecordMeta => (e.kind === "toDo" ? e.toDo : e.project);
+      // Projects come before To-dos on the same day.
+      entries.sort(
+        (a, b) =>
+          a.date.localeCompare(b.date) ||
+          Number(a.kind === "toDo") - Number(b.kind === "toDo") ||
+          byCreation(record(a), record(b)),
+      );
       const groups: UpcomingGroup[] = [];
       for (const e of entries) {
         const { kind, start } = groupFor(e.date, today);
@@ -117,7 +130,8 @@ export function listQueries(ctx: Context) {
             ctx.isOpenInLists(item) &&
             !item.someday &&
             !(item.startDate && item.startDate > today) &&
-            !isInInbox(item),
+            !isInInbox(item) &&
+            !ctx.isHeldBackByProject(item),
         )
         .sort(byCreation)
         .map(ctx.entry);
@@ -133,6 +147,30 @@ export function listQueries(ctx: Context) {
     },
 
     /**
+     * The Projects shown in Today, Anytime or Someday, by the same rules as
+     * To-dos: Today has Projects whose Start date or Deadline has come, Anytime
+     * those with no future Start date that are not in Someday, and Someday those
+     * parked there.
+     */
+    projectsIn(list: ProjectList): Project[] {
+      const today = clock.today();
+      const matches = (p: Project) => {
+        switch (list) {
+          case "today":
+            return isDue(p, today);
+          case "anytime":
+            return !p.someday && !(p.startDate && p.startDate > today);
+          case "someday":
+            return p.someday;
+        }
+      };
+      return store
+        .all("projects")
+        .filter((p) => ctx.isProjectOpenInLists(p) && matches(p))
+        .sort(byCreation);
+    },
+
+    /**
      * Today: every active To-do whose Start date or Deadline is today or earlier.
      * To-dos finished today stay visible until they move to the Logbook.
      */
@@ -142,6 +180,7 @@ export function listQueries(ctx: Context) {
       for (const item of store.all("toDos")) {
         if (!ctx.isOpenInLists(item)) continue;
         if (!isDue(item, today)) continue;
+        if (ctx.isHeldBackByProject(item)) continue;
         (item.evening ? list.thisEvening : list.main).push(ctx.entry(item));
       }
       return list;

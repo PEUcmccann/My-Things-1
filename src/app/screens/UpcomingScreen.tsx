@@ -3,6 +3,7 @@ import { addDays, daysBetween, startOfWeek, type UpcomingGroup } from "../../cor
 import { Empty } from "../components/Empty";
 import { MagicPlus } from "../components/MagicPlus";
 import { Screen } from "../components/Screen";
+import { ProjectRow } from "../components/ProjectRow";
 import { ToDoRow } from "../components/ToDoRow";
 import { formatDate, formatMonth, formatRange } from "../format";
 import { useNavigation } from "../navigation";
@@ -38,7 +39,7 @@ export function UpcomingScreen() {
           <View key={`${group.kind}-${group.start}`} testID={`upcoming-${group.start}`}>
             <Text style={[styles.heading, { color: theme.text }]}>{groupTitle(group, today)}</Text>
             {group.entries.map((e) => (
-              <View key={`${e.toDo.id}-${e.reason}`}>
+              <View key={`${e.kind === "toDo" ? e.toDo.id : e.project.id}-${e.reason}`}>
                 {e.reason === "deadline" ? (
                   <Text style={[styles.reason, { color: theme.warning }]}>
                     ⚑ Deadline {group.kind === "day" ? "" : formatDate(e.date, today)}
@@ -48,7 +49,11 @@ export function UpcomingScreen() {
                     {formatDate(e.date, today)}
                   </Text>
                 ) : null}
-                <ToDoRow entry={e} onPress={() => nav.push({ name: "toDo", id: e.toDo.id })} />
+                {e.kind === "toDo" ? (
+                  <ToDoRow entry={e} onPress={() => nav.push({ name: "toDo", id: e.toDo.id })} />
+                ) : (
+                  <ProjectRow project={e.project} />
+                )}
               </View>
             ))}
           </View>

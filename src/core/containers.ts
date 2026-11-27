@@ -1,5 +1,6 @@
 import { byCreation, type Context, type ToDoEntry } from "./context";
-import type { Area, Project } from "./types";
+import { whenFields, type When } from "./toDos";
+import type { Area, LocalDate, Project } from "./types";
 
 export interface NewProject {
   title: string;
@@ -31,7 +32,7 @@ export interface SidebarTree {
 export function containerActions(ctx: Context) {
   const { store } = ctx;
 
-  const projectInLists = (p: Project) => !p.deletedAt;
+  const projectInLists = (p: Project) => ctx.isProjectOpenInLists(p);
 
   return {
     createArea(title: string): string {
@@ -78,6 +79,8 @@ export function containerActions(ctx: Context) {
         title: input.title.trim() || "New Project",
         areaId: input.areaId ? ctx.require("areas", input.areaId).id : null,
         outcome: "active",
+        finishedAt: null,
+        loggedAt: null,
         startDate: null,
         someday: false,
         deadline: null,
@@ -97,6 +100,19 @@ export function containerActions(ctx: Context) {
 
     moveProjectToSomeday(id: string): void {
       ctx.update("projects", id, { startDate: null, someday: true });
+    },
+
+    /** Sets a Project's "When". Projects have no This Evening, so it means Today. */
+    setProjectWhen(id: string, when: When): void {
+      const { startDate, someday } = whenFields(
+        when.kind === "thisEvening" ? { kind: "today" } : when,
+        ctx.clock.today(),
+      );
+      ctx.update("projects", id, { startDate, someday });
+    },
+
+    setProjectDeadline(id: string, date: LocalDate | null): void {
+      ctx.update("projects", id, { deadline: date });
     },
 
     getProject(id: string): Project {

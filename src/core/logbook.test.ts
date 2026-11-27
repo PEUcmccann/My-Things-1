@@ -13,7 +13,10 @@ const inboxTitles = () => app.inbox().map((e) => e.toDo.title);
 const logbook = () =>
   app.logbook().map((day) => ({
     date: day.date,
-    entries: day.entries.map((e) => `${e.toDo.title} (${e.toDo.outcome})`),
+    entries: day.entries.map((e) => {
+      const item = e.kind === "toDo" ? e.toDo : e.project;
+      return `${item.title} (${item.outcome})`;
+    }),
   }));
 
 describe("Completed and Cancelled", () => {

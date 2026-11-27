@@ -2,6 +2,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { Button } from "../components/Button";
 import { Empty } from "../components/Empty";
 import { Screen } from "../components/Screen";
+import { ProjectRow } from "../components/ProjectRow";
 import { ToDoRow } from "../components/ToDoRow";
 import { formatDate } from "../format";
 import { useNavigation } from "../navigation";
@@ -34,13 +35,17 @@ export function LogbookScreen() {
       {days.map((day) => (
         <View key={day.date} testID={`logbook-day-${day.date}`}>
           <Text style={[styles.day, { color: theme.muted }]}>{formatDate(day.date, today)}</Text>
-          {day.entries.map((e) => (
-            <ToDoRow
-              key={e.toDo.id}
-              entry={e}
-              onPress={() => nav.push({ name: "toDo", id: e.toDo.id })}
-            />
-          ))}
+          {day.entries.map((e) =>
+            e.kind === "toDo" ? (
+              <ToDoRow
+                key={e.toDo.id}
+                entry={e}
+                onPress={() => nav.push({ name: "toDo", id: e.toDo.id })}
+              />
+            ) : (
+              <ProjectRow key={e.project.id} project={e.project} />
+            ),
+          )}
         </View>
       ))}
     </Screen>

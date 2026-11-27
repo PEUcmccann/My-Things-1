@@ -25,6 +25,10 @@ export interface Project extends RecordMeta {
   title: string;
   areaId: string | null;
   outcome: Outcome;
+  /** When the Project was Completed or Cancelled. */
+  finishedAt: Moment | null;
+  /** Set once the Project has moved to the Logbook. */
+  loggedAt: Moment | null;
   startDate: LocalDate | null;
   someday: boolean;
   deadline: LocalDate | null;

@@ -13,7 +13,10 @@ const upcoming = () =>
   app.upcoming().map((g) => ({
     kind: g.kind,
     start: g.start,
-    entries: g.entries.map((e) => `${e.toDo.title} (${e.reason} ${e.date})`),
+    entries: g.entries.map(
+      (e) =>
+        `${e.kind === "toDo" ? e.toDo.title : `Project: ${e.project.title}`} (${e.reason} ${e.date})`,
+    ),
   }));
 
 /** A To-do filed in an Area, so it has left the Inbox. */

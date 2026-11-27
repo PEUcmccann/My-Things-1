@@ -1,13 +1,14 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import type { LocalDate, ToDo } from "../../core";
-import { useMyThings } from "../state";
+import type { LocalDate, Tag, ToDo } from "../../core";
 import { useTheme } from "../theme";
 import { Icon } from "./Icon";
 import { TagChips } from "./TagChips";
 
 interface Props {
-  /** The current occurrence the projected date belongs to. */
+  /** The current occurrence the projected date belongs to, as the series is. */
   toDo: ToDo;
+  /** The series' Tags, which the later occurrence will have. */
+  tags: Tag[];
   date: LocalDate;
   onPress?: () => void;
 }
@@ -17,8 +18,7 @@ interface Props {
  * it has no checkbox: a dashed outline and the repeat marker take its place, and
  * tapping it opens the current occurrence.
  */
-export function ProjectedRow({ toDo, date, onPress }: Props) {
-  const app = useMyThings();
+export function ProjectedRow({ toDo, tags, date, onPress }: Props) {
   const theme = useTheme();
   return (
     <Pressable
@@ -35,7 +35,7 @@ export function ProjectedRow({ toDo, date, onPress }: Props) {
         <Text style={[styles.title, { color: theme.muted }]} numberOfLines={2}>
           {toDo.title}
         </Text>
-        <TagChips tags={app.tagsOf({ kind: "toDo", id: toDo.id })} />
+        <TagChips tags={tags} />
       </View>
     </Pressable>
   );

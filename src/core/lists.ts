@@ -3,7 +3,7 @@ import { addDays, daysBetween, startOfMonth, startOfWeek } from "./dates";
 import { occurrencesLeft } from "./repeat";
 import { parseRrule, repeatDates } from "./rrule";
 import { seriesFieldsFor } from "./seriesEdits";
-import type { LocalDate, Project, ToDo } from "./types";
+import type { LocalDate, Project, Tag, ToDo } from "./types";
 
 /** Why an item shows on a day in Upcoming. */
 export type UpcomingReason = "start" | "deadline";
@@ -11,10 +11,12 @@ export type UpcomingReason = "start" | "deadline";
 /**
  * An entry in Upcoming. A "projected" entry is a later date of a repeating To-do's
  * rule: it isn't a To-do and isn't stored, and stands for the current occurrence.
+ * Its `toDo` is the current occurrence as the series is, without "this one"
+ * changes (the id is the current occurrence's), and `tags` are the series' Tags.
  */
 export type UpcomingEntry = { date: LocalDate; reason: UpcomingReason } & (
   | ({ kind: "toDo" } & ToDoEntry)
-  | ({ kind: "projected" } & ToDoEntry)
+  | ({ kind: "projected"; tags: Tag[] } & ToDoEntry)
   | { kind: "project"; project: Project }
 );
 
@@ -160,7 +162,10 @@ export function listQueries(ctx: Context) {
         for (const date of projectedDates(ctx, item, today)) {
           // A later occurrence is created from the series, without "this one" changes.
           const later = { ...item, ...seriesFieldsFor(ctx, item, date) };
-          entries.push({ kind: "projected", date, reason: "start", ...ctx.entry(later) });
+          const tags = later.tagIds
+            .map((t) => ctx.find("tags", t))
+            .filter((t): t is Tag => Boolean(t));
+          entries.push({ kind: "projected", date, reason: "start", tags, ...ctx.entry(later) });
         }
       }
       for (const project of store.all("projects")) {

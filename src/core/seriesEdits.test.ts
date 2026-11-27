@@ -314,6 +314,26 @@ describe("Upcoming's projected entries", () => {
     app.editOccurrence(id, "allFuture", () => app.editToDo(id, { title: "Water the cacti" }));
     expect(projected()[0]).toBe("Water the cacti 2026-11-27");
   });
+
+  it('carry the series\' Tags, without "this one" changes', () => {
+    const id = repeatingToDo();
+    const home = app.createTag("Home");
+    const garden = app.createTag("Garden");
+    app.addTag({ kind: "toDo", id }, home);
+    app.editOccurrence(id, "thisOne", () => {
+      app.removeTag({ kind: "toDo", id }, home);
+      app.addTag({ kind: "toDo", id }, garden);
+    });
+    const tagNames = () =>
+      app
+        .upcoming()
+        .flatMap((g) => g.entries)
+        .flatMap((e) => (e.kind === "projected" ? [e.tags.map((t) => t.title)] : []));
+    expect(tagNames()[0]).toEqual(["Home"]);
+    const outdoors = app.createTag("Outdoors");
+    app.editOccurrence(id, "allFuture", () => app.addTag({ kind: "toDo", id }, outdoors));
+    expect(tagNames()[0]).toEqual(["Outdoors", "Home"]);
+  });
 });
 
 describe("which edits ask", () => {

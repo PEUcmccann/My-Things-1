@@ -78,6 +78,7 @@ export function UpcomingScreen() {
                 ) : e.kind === "projected" ? (
                   <ProjectedRow
                     toDo={e.toDo}
+                    tags={e.tags}
                     date={e.date}
                     onPress={() => {
                       if (!selection.active) nav.push({ name: "toDo", id: e.toDo.id });

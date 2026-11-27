@@ -1,4 +1,4 @@
-import { addDays, addMonths, isRealDate, weekday } from "./dates";
+import { addDays, addMonths, isRealDate, localDate, weekday, ymd } from "./dates";
 import type { QuickEntryValue, Recogniser } from "./quickEntry";
 import type { LocalDate } from "./types";
 
@@ -77,14 +77,12 @@ const monthOf = (word: string | undefined) =>
   word !== undefined && Object.hasOwn(monthNames, word) ? monthNames[word] : null;
 const dayOf = (word: string | undefined) =>
   word !== undefined && /^\d{1,2}$/.test(word) ? Number(word) : null;
-const pad = (n: number) => String(n).padStart(2, "0");
 
 /** A day and month on or after today: this year's, or next year's once it has passed. */
 function nextDayMonth(today: LocalDate, month: number, day: number): LocalDate | null {
-  const year = Number(today.slice(0, 4));
-  const thisYear = `${year}-${pad(month)}-${pad(day)}`;
-  const y = thisYear < today ? year + 1 : year;
-  return isRealDate(y, month, day) ? `${y}-${pad(month)}-${pad(day)}` : null;
+  const [year] = ymd(today);
+  const y = localDate(year, month, day) < today ? year + 1 : year;
+  return isRealDate(y, month, day) ? localDate(y, month, day) : null;
 }
 
 /** "12 Dec", "12 December", "Dec 12", "December 12", or ISO "2026-12-12". */

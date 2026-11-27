@@ -1,4 +1,13 @@
-import { addDays, addMonths, daysBetween, startOfWeek, weekday } from "./dates";
+import {
+  addDays,
+  addMonths,
+  daysBetween,
+  daysInMonth,
+  localDate,
+  startOfWeek,
+  weekday,
+  ymd,
+} from "./dates";
 import type { LocalDate } from "./types";
 
 /**
@@ -231,15 +240,6 @@ export function parseRrule(rrule: string): RepeatPattern {
   return pattern;
 }
 
-function ymd(date: LocalDate): [number, number, number] {
-  const [y, m, d] = date.split("-").map(Number);
-  return [y, m, d];
-}
-
-function daysInMonth(year: number, month: number): number {
-  return new Date(Date.UTC(year, month, 0)).getUTCDate();
-}
-
 /** The `n`th item (1-based), or counting back from the end if negative. */
 function nthOf<T>(items: T[], n: number): T | undefined {
   return n > 0 ? items[n - 1] : items[items.length + n];
@@ -251,7 +251,7 @@ function daysInMonthMatching(p: RepeatPattern, startDay: number, y: number, m: n
   // A negative day counts back from the month's end; a day the month lacks is skipped.
   if (p.byMonthDay?.length) return p.byMonthDay.map((n) => (n < 0 ? length + 1 + n : n));
   if (!p.byDay?.length) return [startDay];
-  const first = weekday(`${y}-${String(m).padStart(2, "0")}-01`);
+  const first = weekday(localDate(y, m, 1));
   const daysOn = (code: WeekdayCode) => {
     const offset = (weekdayCodes.indexOf(code) - first + 7) % 7;
     const days: number[] = [];

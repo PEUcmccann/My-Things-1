@@ -10,7 +10,7 @@ module.exports = defineConfig([
   expoConfig,
   prettierConfig,
   {
-    ignores: ["dist/*", ".expo/*", "node_modules/*"],
+    ignores: ["dist/*", ".expo/*", "node_modules/*", ".claude/skills/*"],
   },
   {
     // The core holds every rule of the app and must run without a phone.

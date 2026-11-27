@@ -5,7 +5,7 @@ A personal task manager app built with React Native and Expo. The design decisio
 ## Code layout
 
 - `src/core/` is the core logic module: every rule from `docs/plan.md`, as actions and list queries. It must not import React, React Native or Expo (enforced by ESLint). The clock and storage are passed in.
-- Core code must use `GLOSSARY.md` terms; ESLint rejects avoided words such as `task`, `label` and `dueDate` there.
+- Core code must use `GLOSSARY.md` terms; ESLint rejects avoided words such as `task`, `label` and `dueDate` there, and `task`, `label` and `item` in text in `src/app/`.
 - Tests for the core sit next to it as `*.test.ts` and go through actions and queries only, never internal records.
 
 ## Commands

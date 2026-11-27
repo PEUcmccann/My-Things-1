@@ -6,6 +6,11 @@ const prettierConfig = require("eslint-config-prettier");
 // Words GLOSSARY.md tells us to avoid, so the code speaks the same language as the app.
 const avoidedTerms = "task|label|dueDate|backlog|perspective|recurrence|geofence|alarm";
 
+// Avoided words in text people read in the app. "Checklist item" is a glossary term, so it passes.
+const avoidedText = "/(?<!checklist )\\b(task|label|item)s?\\b/i";
+const textMessage =
+  "Use the GLOSSARY.md term in app text (To-do, not task or item; Tag, not label).";
+
 module.exports = defineConfig([
   expoConfig,
   prettierConfig,
@@ -34,6 +39,22 @@ module.exports = defineConfig([
           selector: `Identifier[name=/${avoidedTerms}/i]`,
           message:
             "Use the GLOSSARY.md term (e.g. To-do, not task; Tag, not label; Deadline, not due date).",
+        },
+      ],
+    },
+  },
+  {
+    files: ["src/app/**/*.tsx"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        { selector: `JSXText[value=${avoidedText}]`, message: textMessage },
+        // Any string with a space reads as prose; one-word strings count only as JSX attributes
+        // (placeholder, title...), so code values like kind: "item" and test IDs pass.
+        { selector: `Literal[value=/\\s/][value=${avoidedText}]`, message: textMessage },
+        {
+          selector: `JSXAttribute[name.name!='testID'] > Literal[value=/^\\S+$/][value=${avoidedText}]`,
+          message: textMessage,
         },
       ],
     },

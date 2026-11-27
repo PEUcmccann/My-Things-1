@@ -29,7 +29,7 @@ export function TrashScreen() {
       }
     >
       <Text style={[styles.note, { color: theme.muted }]}>
-        Items are removed for good 30 days after they were deleted.
+        To-dos and Projects are removed for good 30 days after they were deleted.
       </Text>
       {entries.length === 0 ? <Empty text="The Trash is empty" /> : null}
       {entries.map((e) => {

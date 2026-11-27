@@ -10,9 +10,10 @@ import { NotesField } from "../components/NotesField";
 import { Screen } from "../components/Screen";
 import { TagPicker } from "../components/TagPicker";
 import { ToDoList } from "../components/ToDoList";
+import { TimeSlotPicker } from "../components/TimeSlotPicker";
 import { DatePicker, WhenPicker } from "../components/WhenPicker";
 import { useFinishToDo } from "../finish";
-import { formatDate, whenText } from "../format";
+import { formatDate, timeSlotText, whenText } from "../format";
 import { useNavigation } from "../navigation";
 import { useMyThings } from "../state";
 import { useTheme } from "../theme";
@@ -28,7 +29,12 @@ function placeText(app: MyThings, toDo: ToDo): string {
   return toDo.startDate || toDo.someday ? "No Area or Project" : "📥 Inbox";
 }
 
-type Picker = "when" | "deadline" | "move" | "tags" | null;
+type Picker = "when" | "timeSlot" | "deadline" | "move" | "tags" | null;
+
+/** The next whole hour from now, as a first start time to offer (23:00 at the latest). */
+function nextHour(): number {
+  return Math.min((new Date().getHours() + 1) * 60, 23 * 60);
+}
 
 export function ToDoScreen({ id }: { id: string }) {
   const app = useMyThings();
@@ -95,6 +101,12 @@ export function ToDoScreen({ id }: { id: string }) {
           value={whenText(toDo, today)}
           onPress={() => setPicker("when")}
           testID="todo-when"
+        />
+        <FieldRow
+          label="Time slot"
+          value={timeSlotText(toDo, today) ?? "None"}
+          onPress={() => setPicker("timeSlot")}
+          testID="todo-time-slot"
         />
         <FieldRow
           label="Deadline"
@@ -199,6 +211,14 @@ export function ToDoScreen({ id }: { id: string }) {
         visible={picker === "when"}
         current={toDo.startDate}
         onChoose={(when) => app.setWhen(id, when)}
+        onClose={() => setPicker(null)}
+      />
+      <TimeSlotPicker
+        visible={picker === "timeSlot"}
+        current={toDo.timeSlot}
+        suggestEnd={(start) => app.suggestedSlotEnd(id, start)}
+        defaultStart={nextHour()}
+        onChoose={(slot) => app.setTimeSlot(id, slot)}
         onClose={() => setPicker(null)}
       />
       <DatePicker

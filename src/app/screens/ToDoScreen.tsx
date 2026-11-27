@@ -8,6 +8,7 @@ import { FieldRow } from "../components/FieldRow";
 import { MovePicker } from "../components/MovePicker";
 import { NotesField } from "../components/NotesField";
 import { Screen } from "../components/Screen";
+import { TagPicker } from "../components/TagPicker";
 import { ToDoList } from "../components/ToDoList";
 import { DatePicker, WhenPicker } from "../components/WhenPicker";
 import { useFinishToDo } from "../finish";
@@ -34,7 +35,7 @@ function placeText(app: MyThings, toDo: ToDo): string {
   return toDo.startDate || toDo.someday ? "No Area or Project" : "📥 Inbox";
 }
 
-type Picker = "when" | "deadline" | "move" | null;
+type Picker = "when" | "deadline" | "move" | "tags" | null;
 
 export function ToDoScreen({ id }: { id: string }) {
   const app = useMyThings();
@@ -108,6 +109,17 @@ export function ToDoScreen({ id }: { id: string }) {
           onPress={() => setPicker("deadline")}
           testID="todo-deadline"
         />
+        <FieldRow
+          label="Tags"
+          value={
+            app
+              .tagsOf({ kind: "toDo", id })
+              .map((t) => t.title)
+              .join(", ") || "None"
+          }
+          onPress={() => setPicker("tags")}
+          testID="todo-tags"
+        />
         {parent ? null : (
           <FieldRow
             label="Move"
@@ -177,6 +189,14 @@ export function ToDoScreen({ id }: { id: string }) {
           />
         )}
       </View>
+      <TagPicker
+        visible={picker === "tags"}
+        selected={toDo.tagIds}
+        onToggle={(tagId, on) =>
+          on ? app.addTag({ kind: "toDo", id }, tagId) : app.removeTag({ kind: "toDo", id }, tagId)
+        }
+        onClose={() => setPicker(null)}
+      />
       <MovePicker
         visible={picker === "move"}
         onChoose={(to) => app.moveToDo(id, to)}

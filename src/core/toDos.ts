@@ -72,6 +72,7 @@ export function toDoActions(ctx: Context) {
         ...meta,
         title: input.title,
         notes: "",
+        tagIds: [],
         outcome: "active",
         finishedAt: null,
         loggedAt: null,

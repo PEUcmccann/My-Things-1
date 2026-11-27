@@ -1,4 +1,4 @@
-import type { Area, ChecklistItem, Heading, Project, Settings, ToDo } from "./types";
+import type { Area, ChecklistItem, Heading, Project, Settings, Tag, ToDo } from "./types";
 
 export interface Collections {
   areas: Area;
@@ -6,6 +6,7 @@ export interface Collections {
   headings: Heading;
   toDos: ToDo;
   checklistItems: ChecklistItem;
+  tags: Tag;
 }
 
 export type CollectionName = keyof Collections;
@@ -35,6 +36,7 @@ const collectionNames: CollectionName[] = [
   "headings",
   "toDos",
   "checklistItems",
+  "tags",
 ];
 
 export interface MemoryStore extends Store {

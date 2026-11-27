@@ -8,6 +8,8 @@ import { ListScreen } from "./screens/ListScreen";
 import { ProjectScreen } from "./screens/ProjectScreen";
 import { LogbookScreen } from "./screens/LogbookScreen";
 import { SettingsScreen } from "./screens/SettingsScreen";
+import { TagScreen } from "./screens/TagScreen";
+import { TagsScreen } from "./screens/TagsScreen";
 import { ToDoScreen } from "./screens/ToDoScreen";
 import { TrashScreen } from "./screens/TrashScreen";
 import { UpcomingScreen } from "./screens/UpcomingScreen";
@@ -34,6 +36,10 @@ function CurrentScreen() {
       return <AreaScreen key={route.id} id={route.id} />;
     case "project":
       return <ProjectScreen key={route.id} id={route.id} />;
+    case "tags":
+      return <TagsScreen />;
+    case "tag":
+      return <TagScreen key={route.id} id={route.id} />;
     case "toDo":
       return <ToDoScreen key={route.id} id={route.id} />;
   }

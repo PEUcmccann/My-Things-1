@@ -4,6 +4,7 @@ import { Empty } from "../components/Empty";
 import { MagicPlus } from "../components/MagicPlus";
 import { Screen } from "../components/Screen";
 import { ProjectRow } from "../components/ProjectRow";
+import { useTagFilter } from "../components/TagFilter";
 import { ToDoRow } from "../components/ToDoRow";
 import { formatDate, formatMonth, formatRange } from "../format";
 import { useNavigation } from "../navigation";
@@ -29,11 +30,22 @@ export function UpcomingScreen() {
   const app = useMyThings();
   const theme = useTheme();
   const nav = useNavigation();
-  const groups = app.upcoming();
+  const filter = useTagFilter();
+  const groups = app
+    .upcoming()
+    .map((g) => ({
+      ...g,
+      entries: g.entries.filter((e) =>
+        e.kind === "toDo"
+          ? app.filterByTags([e], filter.selected).length > 0
+          : app.filterProjectsByTags([e.project], filter.selected).length > 0,
+      ),
+    }))
+    .filter((g) => g.entries.length > 0);
   const today = app.currentDate();
   return (
     <View style={styles.fill}>
-      <Screen title="Upcoming" testID="screen-upcoming">
+      <Screen title="Upcoming" testID="screen-upcoming" header={filter.bar}>
         {groups.length === 0 ? <Empty text="Nothing scheduled" /> : null}
         {groups.map((group) => (
           <View key={`${group.kind}-${group.start}`} testID={`upcoming-${group.start}`}>

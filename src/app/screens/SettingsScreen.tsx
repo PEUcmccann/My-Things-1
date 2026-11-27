@@ -3,6 +3,7 @@ import type { LogbookMode } from "../../core";
 import { Button } from "../components/Button";
 import { Choice } from "../components/Choice";
 import { Screen } from "../components/Screen";
+import { useNavigation } from "../navigation";
 import { useMyThings } from "../state";
 import { useTheme } from "../theme";
 
@@ -19,6 +20,7 @@ const logbookOptions: { value: LogbookMode; title: string; detail: string }[] = 
 export function SettingsScreen() {
   const app = useMyThings();
   const theme = useTheme();
+  const nav = useNavigation();
   const mode = app.logbookMode();
   return (
     <Screen title="Settings" testID="screen-settings">
@@ -39,6 +41,12 @@ export function SettingsScreen() {
           />
         </View>
       ) : null}
+      <Text style={[styles.section, { color: theme.muted }]}>Tags</Text>
+      <Button
+        title="Manage Tags"
+        onPress={() => nav.push({ name: "tags" })}
+        testID="settings-tags"
+      />
     </Screen>
   );
 }

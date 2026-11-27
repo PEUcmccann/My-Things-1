@@ -3,6 +3,7 @@ import { Button } from "../components/Button";
 import { Empty } from "../components/Empty";
 import { Screen } from "../components/Screen";
 import { ProjectRow } from "../components/ProjectRow";
+import { useTagFilter } from "../components/TagFilter";
 import { ToDoRow } from "../components/ToDoRow";
 import { formatDate } from "../format";
 import { useNavigation } from "../navigation";
@@ -13,13 +14,25 @@ export function LogbookScreen() {
   const app = useMyThings();
   const theme = useTheme();
   const nav = useNavigation();
-  const days = app.logbook();
+  const filter = useTagFilter();
+  const days = app
+    .logbook()
+    .map((d) => ({
+      ...d,
+      entries: d.entries.filter((e) =>
+        e.kind === "toDo"
+          ? app.filterByTags([e], filter.selected).length > 0
+          : app.filterProjectsByTags([e.project], filter.selected).length > 0,
+      ),
+    }))
+    .filter((d) => d.entries.length > 0);
   const today = app.currentDate();
   const showMove = app.logbookMode() !== "immediately" && app.hasFinishedOutsideLogbook();
   return (
     <Screen
       title="Logbook"
       testID="screen-logbook"
+      header={filter.bar}
       actions={
         showMove ? (
           <Button

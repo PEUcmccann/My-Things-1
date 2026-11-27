@@ -19,6 +19,13 @@ export interface RecordMeta {
 
 export interface Area extends RecordMeta {
   title: string;
+  tagIds: string[];
+}
+
+/** A Tag, which can be nested under a parent Tag. */
+export interface Tag extends RecordMeta {
+  title: string;
+  parentId: string | null;
 }
 
 export interface Project extends RecordMeta {
@@ -31,6 +38,7 @@ export interface Project extends RecordMeta {
   loggedAt: Moment | null;
   /** Notes in Markdown. */
   notes: string;
+  tagIds: string[];
   startDate: LocalDate | null;
   someday: boolean;
   deadline: LocalDate | null;
@@ -49,6 +57,7 @@ export interface ToDo extends RecordMeta {
   title: string;
   /** Notes in Markdown. */
   notes: string;
+  tagIds: string[];
   outcome: Outcome;
   /** When the To-do was Completed or Cancelled. */
   finishedAt: Moment | null;

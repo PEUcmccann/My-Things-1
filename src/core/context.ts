@@ -46,6 +46,7 @@ const names: Record<CollectionName, string> = {
   projects: "Project",
   headings: "Heading",
   checklistItems: "Checklist item",
+  tags: "Tag",
   toDos: "To-do",
 };
 

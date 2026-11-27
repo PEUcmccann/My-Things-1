@@ -74,7 +74,10 @@ export function Sidebar({ wide }: Props) {
             {projects.map((p) => projectItem(p, 1))}
           </View>
         ))}
-        <View style={styles.group}>{item("settings", "⚙️", "Settings", { name: "settings" })}</View>
+        <View style={styles.group}>
+          {item("tags", "🏷", "Tags", { name: "tags" })}
+          {item("settings", "⚙️", "Settings", { name: "settings" })}
+        </View>
       </ScrollView>
       <Pressable
         onPress={() => setDialog("new")}

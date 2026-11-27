@@ -7,6 +7,7 @@ import { headingActions } from "./headings";
 import { listQueries } from "./lists";
 import { logbookActions } from "./logbook";
 import type { Store } from "./store";
+import { tagActions } from "./tags";
 import { toDoActions } from "./toDos";
 import { trashActions } from "./trash";
 import type { LocalDate } from "./types";
@@ -18,6 +19,7 @@ export type { ProjectList, TodayList, UpcomingEntry, UpcomingGroup, UpcomingReas
 export type { FinishOptions, LogbookDay, LogbookEntry, Remaining } from "./logbook";
 export type { Destination, NewToDo, When } from "./toDos";
 export type { TrashEntry } from "./trash";
+export type { Taggable, TaggedItems, TagNode } from "./tags";
 export type { HeadingSection, ProjectContents } from "./headings";
 
 export interface Options {
@@ -42,6 +44,7 @@ export function createMyThings({ clock, store, newId = randomId, owner = localOw
     ...containerActions(ctx),
     ...headingActions(ctx),
     ...checklistActions(ctx),
+    ...tagActions(ctx),
     ...logbookActions(ctx),
     ...listQueries(ctx),
     ...trashActions(ctx),

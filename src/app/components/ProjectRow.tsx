@@ -5,6 +5,7 @@ import { useNavigation } from "../navigation";
 import { useMyThings } from "../state";
 import { useTheme } from "../theme";
 import { ProgressPie } from "./ProgressPie";
+import { TagChips } from "./TagChips";
 
 /** A Project shown in a list, with its progress and dates. Tapping opens it. */
 export function ProjectRow({ project }: { project: Project }) {
@@ -32,6 +33,7 @@ export function ProjectRow({ project }: { project: Project }) {
         >
           {project.title}
         </Text>
+        <TagChips tags={app.tagsOf({ kind: "project", id: project.id })} />
         {project.deadline || (project.startDate && project.startDate > today) ? (
           <View style={styles.badges}>
             {project.startDate && project.startDate > today ? (

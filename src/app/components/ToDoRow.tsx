@@ -5,6 +5,7 @@ import { useMyThings } from "../state";
 import { useTheme } from "../theme";
 import { Checkbox } from "./Checkbox";
 import { DateBadges } from "./DateBadges";
+import { TagChips } from "./TagChips";
 
 /** Small hints on a row: notes, and Checklist progress such as 2/5. */
 function Indicators({ toDoId, hasNotes }: { toDoId: string; hasNotes: boolean }) {
@@ -66,6 +67,7 @@ export function ToDoRow({ entry, onPress }: Props) {
         </Text>
         <DateBadges toDo={toDo} />
         <Indicators toDoId={toDo.id} hasNotes={toDo.notes.trim().length > 0} />
+        <TagChips tags={app.tagsOf({ kind: "toDo", id: toDo.id })} />
       </View>
     </Pressable>
   );

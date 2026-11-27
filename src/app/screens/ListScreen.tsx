@@ -8,6 +8,7 @@ import { Empty } from "../components/Empty";
 import { MagicPlus } from "../components/MagicPlus";
 import { Screen } from "../components/Screen";
 import { ProjectRow } from "../components/ProjectRow";
+import { useTagFilter } from "../components/TagFilter";
 import { ToDoRow } from "../components/ToDoRow";
 
 interface Section {
@@ -46,13 +47,19 @@ export function ListScreen({ list }: { list: BuiltInList }) {
   const theme = useTheme();
   const nav = useNavigation();
   const app = useMyThings();
-  const sections = useSections(list);
-  const projects =
-    list === "today" || list === "anytime" || list === "someday" ? app.projectsIn(list) : [];
+  const filter = useTagFilter();
+  const sections = useSections(list).map((s) => ({
+    ...s,
+    entries: app.filterByTags(s.entries, filter.selected),
+  }));
+  const projects = app.filterProjectsByTags(
+    list === "today" || list === "anytime" || list === "someday" ? app.projectsIn(list) : [],
+    filter.selected,
+  );
   const isEmpty = projects.length === 0 && sections.every((s) => s.entries.length === 0);
   return (
     <View style={styles.fill}>
-      <Screen title={listTitles[list]} testID={`screen-${list}`}>
+      <Screen title={listTitles[list]} testID={`screen-${list}`} header={filter.bar}>
         {isEmpty ? <Empty text="Nothing here" /> : null}
         {projects.map((p) => (
           <ProjectRow key={p.id} project={p} />

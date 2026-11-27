@@ -27,7 +27,9 @@ export type Route =
   | { name: "settings" }
   | { name: "toDo"; id: string }
   | { name: "area"; id: string }
-  | { name: "project"; id: string };
+  | { name: "project"; id: string }
+  | { name: "tags" }
+  | { name: "tag"; id: string };
 
 interface Navigation {
   route: Route;

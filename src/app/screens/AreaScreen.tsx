@@ -7,18 +7,22 @@ import { MenuSheet } from "../components/MenuSheet";
 import { ProgressPie } from "../components/ProgressPie";
 import { PromptSheet } from "../components/PromptSheet";
 import { Screen } from "../components/Screen";
+import { TagChips } from "../components/TagChips";
+import { useTagFilter } from "../components/TagFilter";
+import { TagPicker } from "../components/TagPicker";
 import { ToDoList } from "../components/ToDoList";
 import { useNavigation } from "../navigation";
 import { useMyThings } from "../state";
 import { useTheme } from "../theme";
 
-type Dialog = "menu" | "rename" | "delete" | "newProject" | null;
+type Dialog = "menu" | "rename" | "delete" | "newProject" | "tags" | null;
 
 export function AreaScreen({ id }: { id: string }) {
   const app = useMyThings();
   const theme = useTheme();
   const nav = useNavigation();
   const [dialog, setDialog] = useState<Dialog>(null);
+  const filter = useTagFilter();
   const area = app.findArea(id);
   if (!area) {
     return (
@@ -27,13 +31,21 @@ export function AreaScreen({ id }: { id: string }) {
       </Screen>
     );
   }
-  const { projects, toDos } = app.areaContents(id);
+  const contents = app.areaContents(id);
+  const projects = app.filterProjectsByTags(contents.projects, filter.selected);
+  const toDos = app.filterByTags(contents.toDos, filter.selected);
   const close = () => setDialog(null);
   return (
     <View style={styles.fill}>
       <Screen
         title={area.title}
         testID="screen-area"
+        header={
+          <>
+            <TagChips tags={app.tagsOf({ kind: "area", id })} />
+            {filter.bar}
+          </>
+        }
         actions={<Button small title="•••" onPress={() => setDialog("menu")} testID="area-menu" />}
       >
         {projects.length === 0 && toDos.length === 0 ? <Empty text="Nothing here yet" /> : null}
@@ -68,6 +80,7 @@ export function AreaScreen({ id }: { id: string }) {
             onPress: () => setDialog("newProject"),
             testID: "area-new-project",
           },
+          { title: "Tags…", onPress: () => setDialog("tags"), testID: "area-tags" },
           { title: "Rename", onPress: () => setDialog("rename"), testID: "area-rename" },
           {
             title: "Delete Area…",
@@ -93,6 +106,14 @@ export function AreaScreen({ id }: { id: string }) {
             testID: "area-delete-confirm",
           },
         ]}
+      />
+      <TagPicker
+        visible={dialog === "tags"}
+        selected={area.tagIds}
+        onToggle={(tagId, on) =>
+          on ? app.addTag({ kind: "area", id }, tagId) : app.removeTag({ kind: "area", id }, tagId)
+        }
+        onClose={close}
       />
       {dialog === "rename" ? (
         <PromptSheet

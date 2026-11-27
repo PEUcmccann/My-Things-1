@@ -10,6 +10,9 @@ import { MenuSheet } from "../components/MenuSheet";
 import { ProgressPie } from "../components/ProgressPie";
 import { PromptSheet } from "../components/PromptSheet";
 import { Screen } from "../components/Screen";
+import { TagChips } from "../components/TagChips";
+import { useTagFilter } from "../components/TagFilter";
+import { TagPicker } from "../components/TagPicker";
 import { ToDoList } from "../components/ToDoList";
 import { DatePicker, WhenPicker } from "../components/WhenPicker";
 import { formatDate } from "../format";
@@ -25,6 +28,7 @@ type Dialog =
   | "moveArea"
   | "when"
   | "deadline"
+  | "tags"
   | { finish: "completed" | "cancelled" }
   | null;
 
@@ -40,6 +44,7 @@ export function ProjectScreen({ id }: { id: string }) {
   const theme = useTheme();
   const nav = useNavigation();
   const [dialog, setDialog] = useState<Dialog>(null);
+  const filter = useTagFilter();
   const project = app.findProject(id);
   if (!project) {
     return (
@@ -51,7 +56,14 @@ export function ProjectScreen({ id }: { id: string }) {
   const today = app.currentDate();
   const progress = app.projectProgress(id);
   const share = progress.total ? progress.completed / progress.total : 0;
-  const contents = app.projectContents(id);
+  const raw = app.projectContents(id);
+  const contents = {
+    toDos: app.filterByTags(raw.toDos, filter.selected),
+    headings: raw.headings.map((h) => ({
+      ...h,
+      toDos: app.filterByTags(h.toDos, filter.selected),
+    })),
+  };
   const isEmpty = contents.toDos.length === 0 && contents.headings.length === 0;
   const close = () => setDialog(null);
   const finished = project.outcome !== "active";
@@ -83,6 +95,8 @@ export function ProjectScreen({ id }: { id: string }) {
             <Text style={{ color: theme.muted }}>
               {progress.completed} of {progress.total} Completed
             </Text>
+            <TagChips tags={app.tagsOf({ kind: "project", id })} />
+            {filter.bar}
           </View>
         }
       >
@@ -166,6 +180,7 @@ export function ProjectScreen({ id }: { id: string }) {
             onPress: () => setDialog("newHeading"),
             testID: "project-add-heading",
           },
+          { title: "Tags…", onPress: () => setDialog("tags"), testID: "project-tags" },
           { title: "Rename", onPress: () => setDialog("rename"), testID: "project-rename" },
           { title: "Move to Area…", onPress: () => setDialog("moveArea"), testID: "project-move" },
           {
@@ -209,6 +224,16 @@ export function ProjectScreen({ id }: { id: string }) {
             testID: `project-move-${a.id}`,
           })),
         ]}
+      />
+      <TagPicker
+        visible={dialog === "tags"}
+        selected={project.tagIds}
+        onToggle={(tagId, on) =>
+          on
+            ? app.addTag({ kind: "project", id }, tagId)
+            : app.removeTag({ kind: "project", id }, tagId)
+        }
+        onClose={close}
       />
       <WhenPicker
         visible={dialog === "when"}
@@ -318,7 +343,7 @@ export function ProjectScreen({ id }: { id: string }) {
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
-  progress: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 },
+  progress: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 8, marginTop: 6 },
   fields: { gap: 8, marginBottom: 16 },
   heading: {
     flexDirection: "row",

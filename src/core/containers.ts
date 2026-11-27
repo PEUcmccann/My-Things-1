@@ -37,7 +37,7 @@ export function containerActions(ctx: Context) {
   return {
     createArea(title: string): string {
       const meta = ctx.meta();
-      store.put("areas", { ...meta, title: title.trim() || "New Area" });
+      store.put("areas", { ...meta, title: title.trim() || "New Area", tagIds: [] });
       return meta.id;
     },
 
@@ -78,6 +78,7 @@ export function containerActions(ctx: Context) {
         ...meta,
         title: input.title.trim() || "New Project",
         notes: "",
+        tagIds: [],
         areaId: input.areaId ? ctx.require("areas", input.areaId).id : null,
         outcome: "active",
         finishedAt: null,

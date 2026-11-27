@@ -18,7 +18,7 @@ npm run format      # Prettier
 npx expo start      # dev server (Expo Go on the phone, or press w for web)
 ```
 
-The pre-commit hook runs lint-staged (ESLint + Prettier), the typecheck and the tests. CI (`.github/workflows/ci.yml`) also checks formatting across all files and the web build.
+The pre-commit hook runs lint-staged (ESLint + Prettier), the typecheck and the tests. It rewrites staged files with Prettier, so re-read a file after committing before editing it, and prefer the Edit tool (it fails loudly when text doesn't match). CI (`.github/workflows/ci.yml`) also checks formatting across all files and the web build.
 
 ## Expo notes
 

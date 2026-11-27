@@ -342,7 +342,11 @@ describe("what the next occurrence copies", () => {
 describe("only one occurrence exists", () => {
   const titles = () => [
     ...app.today().main.map((e) => `${e.toDo.title} ${e.toDo.outcome}`),
-    ...app.upcoming().flatMap((g) => g.entries.map((e) => `${e.date} ${e.reason}`)),
+    // Projected dates (#28) aren't occurrences.
+    ...app
+      .upcoming()
+      .flatMap((g) => g.entries.filter((e) => e.kind !== "projected"))
+      .map((e) => `${e.date} ${e.reason}`),
   ];
 
   it("completing creates exactly one next occurrence", () => {
@@ -409,7 +413,13 @@ describe("reopening a finished occurrence", () => {
     expect(app.getToDo(first)).toMatchObject({ outcome: "active", startDate: TODAY });
     expect(app.repeatPatternOf(first)).toEqual({ freq: "daily", interval: 1 });
     expect(app.currentOccurrence(first)?.id).toBe(first);
-    expect(app.upcoming()).toEqual([]);
+    // No occurrence waits in Upcoming, only the rule's projected dates.
+    expect(
+      app
+        .upcoming()
+        .flatMap((g) => g.entries)
+        .filter((e) => e.kind !== "projected"),
+    ).toEqual([]);
     // Completing it again works as before.
     expect(app.getToDo(completeAndNext(first)).startDate).toBe(TOMORROW);
   });

@@ -15,7 +15,7 @@ const upcoming = () =>
     start: g.start,
     entries: g.entries.map(
       (e) =>
-        `${e.kind === "toDo" ? e.toDo.title : `Project: ${e.project.title}`} (${e.reason} ${e.date})`,
+        `${e.kind === "project" ? `Project: ${e.project.title}` : e.toDo.title} (${e.reason} ${e.date})`,
     ),
   }));
 

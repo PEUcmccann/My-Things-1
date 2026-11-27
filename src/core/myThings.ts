@@ -9,6 +9,7 @@ import { listQueries } from "./lists";
 import { logbookActions } from "./logbook";
 import { orderingActions, type ListRef } from "./ordering";
 import { planningActions } from "./planning";
+import { repeatActions } from "./repeat";
 import type { Store } from "./store";
 import { quickFindQueries } from "./quickFind";
 import { tagActions } from "./tags";
@@ -22,6 +23,7 @@ export type { AreaContents, NewProject, Progress, SidebarArea, SidebarTree } fro
 export type { ProjectList, TodayList, UpcomingEntry, UpcomingGroup, UpcomingReason } from "./lists";
 export type { FinishOptions, LogbookDay, LogbookEntry, Remaining } from "./logbook";
 export type { Destination, NewToDo, When } from "./toDos";
+export type { Frequency, RepeatPattern, WeekdayCode } from "./rrule";
 export type { TrashEntry } from "./trash";
 export type { DropTarget, ListRef } from "./ordering";
 export type { MatchField, QuickFindOptions, QuickFindResults, ToDoMatch } from "./quickFind";
@@ -52,6 +54,7 @@ export function createMyThings({ clock, store, newId = randomId, owner = localOw
     ...checklistActions(ctx),
     ...tagActions(ctx),
     ...planningActions(ctx),
+    ...repeatActions(ctx),
     ...quickFindQueries(ctx),
     ...logbookActions(ctx),
     ...listQueries(ctx),

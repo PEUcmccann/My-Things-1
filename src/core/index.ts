@@ -4,3 +4,4 @@ export * from "./store";
 export * from "./types";
 export * from "./dates";
 export { formatEstimate, isValidEstimate } from "./planning";
+export { formatRrule, lastDayOfMonth, parseRrule, weekdayCodes } from "./rrule";

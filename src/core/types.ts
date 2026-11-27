@@ -96,6 +96,25 @@ export interface ToDo extends RecordMeta, Ordered {
   energy: Energy | null;
   /** Minutes, a whole positive number. Not set when null. */
   estimate: number | null;
+  /** Set on the current occurrence of a repeating To-do only. */
+  repeat: RepeatRule | null;
+  /** Shared by every occurrence of one Repeat rule, finished ones included. */
+  seriesId: string | null;
+}
+
+/**
+ * How a Repeat rule works out its next date. "onSchedule" follows fixed dates;
+ * "afterCompletion" (a gap after the previous one is done) comes later.
+ */
+export type RepeatMode = "onSchedule";
+
+/** A To-do's Repeat rule, kept in iCalendar form. */
+export interface RepeatRule {
+  mode: RepeatMode;
+  /** The RRULE value, e.g. "FREQ=WEEKLY;INTERVAL=1;BYDAY=MO,TH;WKST=MO". */
+  rrule: string;
+  /** DTSTART: the rule's first date, which anchors its intervals. */
+  start: LocalDate;
 }
 
 /** How important a To-do is. "none" is the default. */

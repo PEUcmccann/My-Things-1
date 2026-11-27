@@ -1,5 +1,6 @@
 import type { Context } from "./context";
 import type { FinishOptions } from "./logbook";
+import { checkCanBeUndated } from "./repeat";
 import type { Destination, When } from "./toDos";
 import type { Energy, LocalDate, Priority } from "./types";
 
@@ -69,6 +70,10 @@ export function bulkActions(ctx: Context, a: Actions) {
     },
 
     setWhenMany(ids: string[], when: When): void {
+      // Checked for all of them first, so a refusal changes none.
+      if (when.kind === "someday" || when.kind === "none") {
+        for (const id of live(ids)) checkCanBeUndated(ctx.require("toDos", id));
+      }
       for (const id of live(ids)) a.setWhen(id, when);
     },
 

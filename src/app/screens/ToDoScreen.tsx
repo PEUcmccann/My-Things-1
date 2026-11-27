@@ -8,6 +8,7 @@ import { FieldRow } from "../components/FieldRow";
 import { MovePicker } from "../components/MovePicker";
 import { NotesField } from "../components/NotesField";
 import { EnergyPicker, EstimatePicker, PriorityPicker } from "../components/PlanningPickers";
+import { RepeatPicker } from "../components/RepeatPicker";
 import { Screen } from "../components/Screen";
 import { TagPicker } from "../components/TagPicker";
 import { ToDoList } from "../components/ToDoList";
@@ -19,6 +20,7 @@ import {
   formatDate,
   priorityMarks,
   priorityNames,
+  repeatText,
   timeSlotText,
   whenText,
 } from "../format";
@@ -38,7 +40,16 @@ function placeText(app: MyThings, toDo: ToDo): string {
 }
 
 type Picker =
-  "when" | "timeSlot" | "deadline" | "move" | "tags" | "priority" | "energy" | "estimate" | null;
+  | "when"
+  | "repeat"
+  | "timeSlot"
+  | "deadline"
+  | "move"
+  | "tags"
+  | "priority"
+  | "energy"
+  | "estimate"
+  | null;
 
 function priorityText(toDo: ToDo): string {
   if (toDo.priority === "none") return "None";
@@ -73,6 +84,9 @@ export function ToDoScreen({ id }: { id: string }) {
   const children = toDo.parentId
     ? []
     : app.subToDos(id).map((t) => ({ toDo: t, parentTitle: null }));
+  const repeat = app.repeatPatternOf(id);
+  // A new rule's first date is on or after the Start date, or today if that has passed.
+  const repeatFrom = toDo.startDate && toDo.startDate > today ? toDo.startDate : today;
   const saveTitle = () => app.editToDo(id, { title });
   const addChild = () => {
     if (!newChild.trim()) return;
@@ -116,6 +130,14 @@ export function ToDoScreen({ id }: { id: string }) {
           onPress={() => setPicker("when")}
           testID="todo-when"
         />
+        {parent ? null : (
+          <FieldRow
+            label="Repeat"
+            value={repeat && toDo.repeat ? repeatText(repeat, toDo.repeat.start) : "None"}
+            onPress={() => setPicker("repeat")}
+            testID="todo-repeat"
+          />
+        )}
         <FieldRow
           label="Time slot"
           value={timeSlotText(toDo, today) ?? "None"}
@@ -257,7 +279,15 @@ export function ToDoScreen({ id }: { id: string }) {
       <WhenPicker
         visible={picker === "when"}
         current={toDo.startDate}
+        allowUndated={!toDo.repeat}
         onChoose={(when) => app.setWhen(id, when)}
+        onClose={() => setPicker(null)}
+      />
+      <RepeatPicker
+        visible={picker === "repeat"}
+        current={repeat}
+        from={repeatFrom}
+        onChoose={(pattern) => app.setRepeat(id, pattern)}
         onClose={() => setPicker(null)}
       />
       <TimeSlotPicker

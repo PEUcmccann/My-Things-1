@@ -146,6 +146,7 @@ export function SelectionBar() {
       <WhenPicker
         visible={dialog === "when"}
         current={null}
+        allowUndated={!ids.some((id) => app.findToDo(id)?.repeat)}
         onChoose={(when) => {
           app.setWhenMany(ids, when);
           done();

@@ -14,14 +14,31 @@ import { MovePicker } from "./MovePicker";
 import { TagChips } from "./TagChips";
 import { WhenPicker } from "./WhenPicker";
 
-/** Small hints on a row: notes, and Checklist progress such as 2/5. */
-function Indicators({ toDoId, hasNotes }: { toDoId: string; hasNotes: boolean }) {
+/** Small hints on a row: repeating, notes, and Checklist progress such as 2/5. */
+function Indicators({
+  toDoId,
+  hasNotes,
+  repeats,
+}: {
+  toDoId: string;
+  hasNotes: boolean;
+  repeats: boolean;
+}) {
   const app = useMyThings();
   const theme = useTheme();
   const { ticked, total } = app.checklistProgress(toDoId);
-  if (!hasNotes && total === 0) return null;
+  if (!hasNotes && total === 0 && !repeats) return null;
   return (
     <View style={styles.indicators}>
+      {repeats ? (
+        <Text
+          style={[styles.indicator, { color: theme.muted }]}
+          testID="row-repeat"
+          accessibilityLabel="Repeating"
+        >
+          ↻
+        </Text>
+      ) : null}
       {hasNotes ? (
         <Text style={[styles.indicator, { color: theme.muted }]} testID="row-notes">
           📝
@@ -162,7 +179,11 @@ export function ToDoRow({ entry, onPress, listKey }: Props) {
                 {toDo.title}
               </Text>
               <DateBadges item={toDo} planning={toDo} />
-              <Indicators toDoId={toDo.id} hasNotes={toDo.notes.trim().length > 0} />
+              <Indicators
+                toDoId={toDo.id}
+                hasNotes={toDo.notes.trim().length > 0}
+                repeats={toDo.repeat !== null}
+              />
               <TagChips tags={app.tagsOf({ kind: "toDo", id: toDo.id })} />
             </View>
             {Platform.OS === "web" && !selection.active ? (
@@ -201,6 +222,7 @@ export function ToDoRow({ entry, onPress, listKey }: Props) {
       <WhenPicker
         visible={dialog === "when"}
         current={toDo.startDate}
+        allowUndated={!toDo.repeat}
         onChoose={(when) => app.setWhen(toDo.id, when)}
         onClose={() => setDialog(null)}
       />

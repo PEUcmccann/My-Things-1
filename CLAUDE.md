@@ -5,7 +5,7 @@ A personal task manager app built with React Native and Expo. The design decisio
 ## Code layout
 
 - `src/core/` is the core logic module: every rule from `docs/plan.md`, as actions and list queries. It must not import React, React Native or Expo (enforced by ESLint). The clock and storage are passed in.
-- Core code must use `GLOSSARY.md` terms; ESLint rejects avoided words such as `task`, `label` and `dueDate` there.
+- Core code must use `GLOSSARY.md` terms; ESLint rejects avoided words such as `task`, `label` and `dueDate` there, and `task`, `label` and `item` in text in `src/app/`.
 - Tests for the core sit next to it as `*.test.ts` and go through actions and queries only, never internal records.
 
 ## Commands
@@ -15,15 +15,17 @@ npm test            # core tests (Vitest)
 npm run lint        # ESLint
 npm run typecheck   # tsc --noEmit
 npm run format      # Prettier
+npm run test:ui     # Playwright UI checks on the web build at iPhone size
+npm run check:expo  # Expo-pinned packages match the SDK's versions
 npx expo start      # dev server (Expo Go on the phone, or press w for web)
 ```
 
-The pre-commit hook runs lint-staged (ESLint + Prettier), the typecheck and the tests. CI (`.github/workflows/ci.yml`) also checks formatting across all files and the web build.
+The pre-commit hook runs lint-staged (ESLint + Prettier), the Expo version check, the typecheck and the tests. It rewrites staged files with Prettier, so re-read a file after committing before editing it, and prefer the Edit tool (it fails loudly when text doesn't match). CI (`.github/workflows/ci.yml`) also checks formatting across all files and the web build.
 
 ## Expo notes
 
 - Expo SDK 58. Expo changes between SDK versions, so check the versioned docs at https://docs.expo.dev/versions/v58.0.0/ before using an Expo API, rather than relying on memory.
-- Add packages with `npx expo install <package>`, which picks SDK-compatible versions. In cloud sessions the proxy blocks Expo's API, so that may fail; then install the version Expo asks for with npm.
+- Add packages with `npx expo install <package>`, which picks SDK-compatible versions. In cloud sessions the proxy blocks Expo's API, so that may fail; then install the exact range from `node_modules/expo/bundledNativeModules.json` with npm. `npm run check:expo` verifies it.
 - Only Expo Go's bundled native modules can be used (ADR 0003). Never create or edit `ios/` or `android/` by hand.
 
 ## Agent skills

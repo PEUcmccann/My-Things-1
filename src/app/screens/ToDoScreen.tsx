@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-import type { MyThings, ToDo } from "../../core";
+import { formatEstimate, type MyThings, type ToDo } from "../../core";
 import { Button } from "../components/Button";
 import { Checkbox } from "../components/Checkbox";
 import { ChecklistEditor } from "../components/ChecklistEditor";
@@ -8,12 +8,23 @@ import { FieldRow } from "../components/FieldRow";
 import type { IconName } from "../components/Icon";
 import { MovePicker } from "../components/MovePicker";
 import { NotesField } from "../components/NotesField";
+import { EnergyPicker, EstimatePicker, PriorityPicker } from "../components/PlanningPickers";
 import { Screen } from "../components/Screen";
 import { TagPicker } from "../components/TagPicker";
 import { ToDoList } from "../components/ToDoList";
+import { TimeSlotPicker } from "../components/TimeSlotPicker";
 import { DatePicker, WhenPicker } from "../components/WhenPicker";
 import { useFinishToDo } from "../finish";
-import { formatDate, whenIcon, whenText } from "../format";
+import {
+  energyIcons,
+  energyNames,
+  formatDate,
+  priorityMarks,
+  priorityNames,
+  timeSlotText,
+  whenIcon,
+  whenText,
+} from "../format";
 import { useNavigation } from "../navigation";
 import { useMyThings } from "../state";
 import { useTheme } from "../theme";
@@ -31,7 +42,18 @@ function place(app: MyThings, toDo: ToDo): { text: string; icon?: IconName } {
     : { text: "Inbox", icon: "inbox" };
 }
 
-type Picker = "when" | "deadline" | "move" | "tags" | null;
+type Picker =
+  "when" | "timeSlot" | "deadline" | "move" | "tags" | "priority" | "energy" | "estimate" | null;
+
+function priorityText(toDo: ToDo): string {
+  if (toDo.priority === "none") return "None";
+  return `${priorityMarks[toDo.priority]} ${priorityNames[toDo.priority]}`;
+}
+
+/** The next whole hour from now, as a first start time to offer (23:00 at the latest). */
+function nextHour(): number {
+  return Math.min((new Date().getHours() + 1) * 60, 23 * 60);
+}
 
 export function ToDoScreen({ id }: { id: string }) {
   const app = useMyThings();
@@ -102,6 +124,12 @@ export function ToDoScreen({ id }: { id: string }) {
           testID="todo-when"
         />
         <FieldRow
+          label="Time slot"
+          value={timeSlotText(toDo, today) ?? "None"}
+          onPress={() => setPicker("timeSlot")}
+          testID="todo-time-slot"
+        />
+        <FieldRow
           label="Deadline"
           value={toDo.deadline ? formatDate(toDo.deadline, today) : "None"}
           onPress={() => setPicker("deadline")}
@@ -117,6 +145,26 @@ export function ToDoScreen({ id }: { id: string }) {
           }
           onPress={() => setPicker("tags")}
           testID="todo-tags"
+        />
+        <FieldRow
+          label="Priority"
+          value={priorityText(toDo)}
+          onPress={() => setPicker("priority")}
+          testID="todo-priority"
+        />
+        <FieldRow
+          label="Energy"
+          value={toDo.energy ? energyNames[toDo.energy] : "None"}
+          icon={toDo.energy ? energyIcons[toDo.energy] : undefined}
+          iconColor={theme.muted}
+          onPress={() => setPicker("energy")}
+          testID="todo-energy"
+        />
+        <FieldRow
+          label="Estimate"
+          value={toDo.estimate ? formatEstimate(toDo.estimate) : "None"}
+          onPress={() => setPicker("estimate")}
+          testID="todo-estimate"
         />
         {parent ? null : (
           <FieldRow
@@ -197,6 +245,21 @@ export function ToDoScreen({ id }: { id: string }) {
         }
         onClose={() => setPicker(null)}
       />
+      <PriorityPicker
+        visible={picker === "priority"}
+        onChoose={(priority) => app.setPriority(id, priority)}
+        onClose={() => setPicker(null)}
+      />
+      <EnergyPicker
+        visible={picker === "energy"}
+        onChoose={(energy) => app.setEnergy(id, energy)}
+        onClose={() => setPicker(null)}
+      />
+      <EstimatePicker
+        visible={picker === "estimate"}
+        onChoose={(minutes) => app.setEstimate(id, minutes)}
+        onClose={() => setPicker(null)}
+      />
       <MovePicker
         visible={picker === "move"}
         onChoose={(to) => app.moveToDo(id, to)}
@@ -206,6 +269,14 @@ export function ToDoScreen({ id }: { id: string }) {
         visible={picker === "when"}
         current={toDo.startDate}
         onChoose={(when) => app.setWhen(id, when)}
+        onClose={() => setPicker(null)}
+      />
+      <TimeSlotPicker
+        visible={picker === "timeSlot"}
+        current={toDo.timeSlot}
+        suggestEnd={(start) => app.suggestedSlotEnd(id, start)}
+        defaultStart={nextHour()}
+        onChoose={(slot) => app.setTimeSlot(id, slot)}
         onClose={() => setPicker(null)}
       />
       <DatePicker

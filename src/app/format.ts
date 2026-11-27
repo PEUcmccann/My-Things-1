@@ -1,5 +1,39 @@
-import { addDays, daysBetween, type LocalDate, type ToDo } from "../core";
+import {
+  addDays,
+  daysBetween,
+  type Energy,
+  type LocalDate,
+  type Priority,
+  type ToDo,
+} from "../core";
 import type { IconName } from "./components/Icon";
+
+/** Names for each Priority, as the pickers show them. */
+export const priorityNames: Record<Priority, string> = {
+  none: "None",
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+};
+
+/** The badge for a set Priority: ! low, !! medium, !!! high. */
+export const priorityMarks: Record<Exclude<Priority, "none">, string> = {
+  low: "!",
+  medium: "!!",
+  high: "!!!",
+};
+
+/** What a row and the detail show for a set Energy. */
+export const energyNames: Record<Energy, string> = {
+  high: "High energy",
+  low: "Low energy",
+};
+
+/** The icon shown before a set Energy's name, if any. */
+export const energyIcons: Record<Energy, IconName | undefined> = {
+  high: "energy",
+  low: undefined,
+};
 
 const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -56,4 +90,26 @@ export function whenIcon(
   if (toDo.someday) return "someday";
   if (!toDo.startDate || toDo.startDate > today) return undefined;
   return toDo.evening ? "evening" : "today";
+}
+
+/** "14:05", from minutes after 00:00 (24:00 for the end of the day). */
+export function formatTime(minutes: number): string {
+  const h = String(Math.floor(minutes / 60)).padStart(2, "0");
+  const m = String(minutes % 60).padStart(2, "0");
+  return `${h}:${m}`;
+}
+
+/**
+ * A To-do's Time slot, such as "14:00–14:30". With `withDay`, a slot on another day
+ * than today starts with that day, as in "Yesterday 14:00–14:30".
+ */
+export function timeSlotText(
+  toDo: Pick<ToDo, "startDate" | "timeSlot">,
+  today: LocalDate,
+  withDay = true,
+): string | null {
+  if (!toDo.timeSlot) return null;
+  const times = `${formatTime(toDo.timeSlot.start)}–${formatTime(toDo.timeSlot.end)}`;
+  if (!withDay || !toDo.startDate || toDo.startDate === today) return times;
+  return `${formatDate(toDo.startDate, today)} ${times}`;
 }

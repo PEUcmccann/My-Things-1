@@ -171,7 +171,7 @@ export function ToDoRow({ entry, onPress, listKey }: Props) {
               >
                 {toDo.title}
               </Text>
-              <DateBadges item={toDo} />
+              <DateBadges item={toDo} planning={toDo} />
               <Indicators toDoId={toDo.id} hasNotes={toDo.notes.trim().length > 0} />
               <TagChips tags={app.tagsOf({ kind: "toDo", id: toDo.id })} />
             </View>

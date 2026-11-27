@@ -17,7 +17,19 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="MyThings" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <!--
+      black-translucent lets the app paint behind the status bar (SafeAreaView keeps content
+      below it), so the bar takes the app's background. Its text is always white, so light mode
+      switches back to default (dark text on a light bar) before iOS reads the tag.
+    -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <script>
+      if (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) {
+        document
+          .querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')
+          .setAttribute("content", "default");
+      }
+    </script>
     <!-- The app's own backgrounds (src/app/theme.tsx), so the status bar blends in. -->
     <meta name="theme-color" content="#F7F8F8" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#121416" media="(prefers-color-scheme: dark)" />
@@ -29,6 +41,24 @@
       html,
       body {
         height: 100%;
+      }
+      /*
+        The app's background (src/app/theme.tsx) wherever the app doesn't paint: behind the
+        status bar, behind the keyboard and when the page is pulled past its edges.
+      */
+      :root {
+        color-scheme: light dark;
+      }
+      html,
+      body {
+        background-color: #f7f8f8;
+        overscroll-behavior: none;
+      }
+      @media (prefers-color-scheme: dark) {
+        html,
+        body {
+          background-color: #121416;
+        }
       }
       /* These styles disable body scrolling if you are using <ScrollView> */
       body {

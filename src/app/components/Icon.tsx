@@ -11,6 +11,7 @@ import { DotsSixVerticalIcon } from "phosphor-react-native/src/icons/DotsSixVert
 import { DotsThreeIcon } from "phosphor-react-native/src/icons/DotsThree";
 import { FlagIcon } from "phosphor-react-native/src/icons/Flag";
 import { GearSixIcon } from "phosphor-react-native/src/icons/GearSix";
+import { LightningIcon } from "phosphor-react-native/src/icons/Lightning";
 import { ListChecksIcon } from "phosphor-react-native/src/icons/ListChecks";
 import { MagnifyingGlassIcon } from "phosphor-react-native/src/icons/MagnifyingGlass";
 import { MoonIcon } from "phosphor-react-native/src/icons/Moon";
@@ -45,11 +46,18 @@ const icons = {
   area: CubeIcon,
   when: CalendarBlankIcon,
   select: CheckCircleIcon,
+  energy: LightningIcon,
   more: DotsThreeIcon,
   drag: DotsSixVerticalIcon,
 } satisfies Record<string, PhosphorIcon>;
 
 export type IconName = keyof typeof icons;
+
+/**
+ * Plain marks whose fill versions sit in a filled square, which looks wrong inside
+ * Magic Plus and beside rows. They use the bold weight instead.
+ */
+const boldMarks = new Set<IconName>(["add", "more", "drag"]);
 
 interface Props {
   name: IconName;
@@ -58,10 +66,10 @@ interface Props {
   color?: string;
 }
 
-/** An icon from the app's one icon set (Phosphor, fill weight). */
+/** An icon from the app's one icon set (Phosphor, fill weight but for boldMarks). */
 export function Icon({ name, size = 18, color }: Props) {
   const theme = useTheme();
   const Drawn = icons[name];
   const colour = color ?? theme.icons[name as keyof IconColours] ?? theme.text;
-  return <Drawn weight="fill" size={size} color={colour} />;
+  return <Drawn weight={boldMarks.has(name) ? "bold" : "fill"} size={size} color={colour} />;
 }

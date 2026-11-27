@@ -78,3 +78,24 @@ test("a yearly rule on the first Monday of March", async ({ page }) => {
   await expect(page.getByTestId("repeat-preview-0")).toHaveText("Mon 1 Mar 2027");
   await expect(page.getByTestId("repeat-preview-1")).toHaveText("Mon 6 Mar 2028");
 });
+
+test("the repeat picker changes the rule's start date, moving the schedule", async ({ page }) => {
+  // Thursday 26 November 2026, mid-morning.
+  await page.clock.install({ time: new Date(2026, 10, 26, 10, 0) });
+  await page.goto("/");
+  await openList(page, "today");
+  await addToDo(page, "Bins out");
+  await openToDo(page, "Bins out");
+
+  await page.getByTestId("todo-repeat").click();
+  await page.getByTestId("repeat-freq-weekly").click();
+  await page.getByTestId("repeat-interval-more").click();
+  await expect(page.getByTestId("repeat-start")).toContainText("Today");
+  // From Wednesday 2 December, the first Thursday is the 3rd.
+  await page.getByTestId("repeat-start").click();
+  await page.getByTestId("repeat-start-calendar").getByTestId("cal-2026-12-02").click();
+  await expect(page.getByTestId("repeat-start")).toContainText("Thu 3 Dec");
+  await expect(page.getByTestId("repeat-preview-1")).toHaveText("Thu 17 Dec");
+  await page.getByTestId("repeat-save").click();
+  await expect(page.getByTestId("todo-when")).toContainText("Thu 3 Dec");
+});

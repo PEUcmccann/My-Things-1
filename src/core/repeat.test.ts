@@ -6,6 +6,7 @@ import {
   memoryStore,
   parseRrule,
   type MyThings,
+  type RepeatPattern,
 } from "./index";
 import { NEXT_WEEK, NOW, setup, TODAY, TOMORROW } from "./testSetup";
 
@@ -192,6 +193,69 @@ describe("setting a Repeat rule", () => {
     const child = app.createToDo({ title: "Pack", parentId: parent });
     expect(() => app.setRepeat(child, { freq: "daily", interval: 1 })).toThrow();
     expect(app.getToDo(child).repeat).toBeNull();
+  });
+});
+
+describe("changing the rule's start date", () => {
+  it("moves the current occurrence to the first rule date on or after it", () => {
+    const id = app.createToDo({ title: "Bins out", when: { kind: "today" } });
+    app.setRepeat(id, { freq: "weekly", interval: 2, byDay: ["MO"] });
+    expect(app.getToDo(id).startDate).toBe("2026-11-30");
+    // Wednesday 2 December: the first Monday on or after it is the 7th.
+    app.setRepeatStart(id, "2026-12-02");
+    expect(app.getToDo(id).startDate).toBe("2026-12-07");
+    // The schedule now counts its fortnights from there.
+    expect(startDates(id, 3)).toEqual(["2026-12-07", "2026-12-21", "2027-01-04"]);
+  });
+
+  it("can move the schedule earlier, but not before today", () => {
+    const id = app.createToDo({ title: "Bins out", when: { kind: "date", date: NEXT_WEEK } });
+    app.setRepeat(id, { freq: "daily", interval: 2 });
+    app.setRepeatStart(id, TOMORROW);
+    expect(app.getToDo(id).startDate).toBe(TOMORROW);
+    expect(() => app.setRepeatStart(id, "2026-11-20")).toThrow();
+    expect(app.getToDo(id).startDate).toBe(TOMORROW);
+  });
+
+  it("previews the dates from a chosen start", () => {
+    const id = app.createToDo({ title: "Bins out", when: { kind: "today" } });
+    const pattern: RepeatPattern = { freq: "weekly", interval: 2, byDay: ["MO"] };
+    expect(app.repeatPreview(id, pattern, "onSchedule", { start: "2026-12-02" })).toEqual([
+      "2026-12-07",
+      "2026-12-21",
+      "2027-01-04",
+      "2027-01-18",
+      "2027-02-01",
+    ]);
+  });
+
+  it("is the Start date itself after completion", () => {
+    const id = app.createToDo({ title: "Water plants", when: { kind: "today" } });
+    app.setRepeat(id, { freq: "daily", interval: 3 }, "afterCompletion");
+    app.setRepeatStart(id, NEXT_WEEK);
+    expect(app.getToDo(id).startDate).toBe(NEXT_WEEK);
+  });
+
+  it("refuses a start after the rule's end, and a To-do that doesn't repeat", () => {
+    const id = app.createToDo({ title: "Bins out", when: { kind: "today" } });
+    app.setRepeat(id, { freq: "daily", interval: 1, until: "2026-12-01" });
+    expect(() => app.setRepeatStart(id, "2026-12-05")).toThrow();
+    expect(app.getToDo(id).startDate).toBe(TODAY);
+    const plain = app.createToDo({ title: "Buy soil" });
+    expect(() => app.setRepeatStart(plain, TOMORROW)).toThrow();
+  });
+
+  it('keeps the series\' occurrence count and "this one" changes', () => {
+    const id = app.createToDo({ title: "Gym", when: { kind: "today" } });
+    app.setRepeat(id, { freq: "daily", interval: 1, count: 2 });
+    app.editOccurrence(id, "thisOne", () => app.editToDo(id, { title: "Gym (legs)" }));
+    app.setRepeatStart(id, NEXT_WEEK);
+    clock.set(`${NEXT_WEEK}T09:00:00`);
+    const next = completeAndNext(id);
+    expect(app.getToDo(next).title).toBe("Gym");
+    clock.set("2026-12-04T09:00:00");
+    app.complete(next);
+    expect(app.currentOccurrence(next)).toBeUndefined();
   });
 });
 

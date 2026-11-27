@@ -196,24 +196,36 @@ export function checkCanBeUndated(item: ToDo): void {
   if (item.repeat) throw new Error("A repeating To-do always has a Start date");
 }
 
-/** The Start date a To-do gets when `pattern` is set on it in `mode`: the rule's start. */
+/**
+ * The Start date a To-do gets when `pattern` is set on it in `mode`: the rule's start.
+ * A `chosen` start (from the repeat picker) replaces the To-do's own Start date: on
+ * schedule the rule starts on its first date on or after it, after completion on it.
+ */
 function firstDate(
-  item: ToDo,
+  toDo: ToDo,
   pattern: RepeatPattern,
   mode: RepeatMode,
   today: LocalDate,
+  chosen?: LocalDate,
 ): LocalDate {
   if (mode === "afterCompletion" && !isGap(pattern)) {
     throw new Error("A Repeat rule after completion is a gap: it can't choose days");
   }
+  if (chosen !== undefined && chosen < today) {
+    throw new Error("A Repeat rule can't start before today");
+  }
   let start: LocalDate | null;
-  if (item.repeat && item.repeat.mode !== mode && item.startDate) {
+  if (chosen !== undefined && mode === "afterCompletion") {
+    start = chosen;
+  } else if (chosen !== undefined) {
+    start = nextRepeatDate({ ...pattern, interval: 1 }, chosen, addDays(chosen, -1));
+  } else if (toDo.repeat && toDo.repeat.mode !== mode && toDo.startDate) {
     // Switching modes: nothing about the current occurrence moves.
-    start = item.startDate;
+    start = toDo.startDate;
   } else if (mode === "afterCompletion") {
-    start = item.startDate ?? today;
+    start = toDo.startDate ?? today;
   } else {
-    const from = later(item.startDate ?? today, today);
+    const from = later(toDo.startDate ?? today, today);
     // The first date matches the rule's days; the interval counts from there.
     start = nextRepeatDate({ ...pattern, interval: 1 }, from, addDays(from, -1));
   }
@@ -226,43 +238,69 @@ function firstDate(
 /** How many dates the repeat picker's preview shows. */
 export const previewLength = 5;
 
+/** Choices for setting a rule or previewing it. */
+export interface RepeatOptions {
+  /** The rule's start, as chosen in the repeat picker (see `setRepeat`). */
+  start?: LocalDate;
+}
+
 export function repeatActions(ctx: Context) {
   const { clock } = ctx;
+
+  /**
+   * Sets, changes or removes (null) a To-do's Repeat rule.
+   *
+   * On schedule, its Start date moves to the rule's first date on or after its
+   * Start date (or today, if it has none or it has passed), which becomes the
+   * rule's start. After completion, the rule is a gap (FREQ and INTERVAL only) and
+   * the To-do keeps its Start date (today if it has none). Switching an existing
+   * rule from one mode to the other keeps the Start date, which becomes the
+   * rule's start. A chosen `start` (today or later) takes the Start date's place.
+   */
+  function setRepeat(
+    id: string,
+    pattern: RepeatPattern | null,
+    mode: RepeatMode = "onSchedule",
+    opts: RepeatOptions = {},
+  ): void {
+    const toDo = ctx.require("toDos", id);
+    if (pattern === null) {
+      ctx.update("toDos", id, { repeat: null, seriesId: null, seriesValues: null });
+      return;
+    }
+    if (toDo.parentId) throw new Error("A Sub-to-do can't have a Repeat rule of its own");
+    checkPattern(pattern);
+    const start = firstDate(toDo, pattern, mode, clock.today(), opts.start);
+    ctx.update("toDos", id, {
+      repeat: {
+        mode,
+        rrule: formatRrule(pattern, { gap: mode === "afterCompletion" }),
+        start,
+        // A changed rule keeps the series' count; a new rule starts it at 1.
+        occurrence: occurrenceNumber(ctx, toDo),
+      },
+      seriesId: toDo.seriesId ?? ctx.meta().id,
+      // A changed rule keeps "this one" changes; a new series starts without them.
+      seriesValues: toDo.repeat ? toDo.seriesValues : null,
+      startDate: start,
+      someday: false,
+      evening: start === toDo.startDate && toDo.evening,
+    });
+  }
+
   return {
+    setRepeat,
+
     /**
-     * Sets, changes or removes (null) a To-do's Repeat rule.
-     *
-     * On schedule, its Start date moves to the rule's first date on or after its
-     * Start date (or today, if it has none or it has passed), which becomes the
-     * rule's start. After completion, the rule is a gap (FREQ and INTERVAL only) and
-     * the To-do keeps its Start date (today if it has none). Switching an existing
-     * rule from one mode to the other keeps the Start date, which becomes the
-     * rule's start.
+     * Changes the start (DTSTART) of a To-do's Repeat rule, which shifts the whole
+     * schedule, so it applies to all future occurrences. The current occurrence moves
+     * to the rule's first date on or after `date` (after completion, to `date`).
+     * `date` can't be before today.
      */
-    setRepeat(id: string, pattern: RepeatPattern | null, mode: RepeatMode = "onSchedule"): void {
-      const item = ctx.require("toDos", id);
-      if (pattern === null) {
-        ctx.update("toDos", id, { repeat: null, seriesId: null, seriesValues: null });
-        return;
-      }
-      if (item.parentId) throw new Error("A Sub-to-do can't have a Repeat rule of its own");
-      checkPattern(pattern);
-      const start = firstDate(item, pattern, mode, clock.today());
-      ctx.update("toDos", id, {
-        repeat: {
-          mode,
-          rrule: formatRrule(pattern, { gap: mode === "afterCompletion" }),
-          start,
-          // A changed rule keeps the series' count; a new rule starts it at 1.
-          occurrence: occurrenceNumber(ctx, item),
-        },
-        seriesId: item.seriesId ?? ctx.meta().id,
-        // A changed rule keeps "this one" changes; a new series starts without them.
-        seriesValues: item.repeat ? item.seriesValues : null,
-        startDate: start,
-        someday: false,
-        evening: start === item.startDate && item.evening,
-      });
+    setRepeatStart(id: string, date: LocalDate): void {
+      const rule = ctx.require("toDos", id).repeat;
+      if (!rule) throw new Error("This To-do doesn't repeat");
+      setRepeat(id, parseRrule(rule.rrule), rule.mode, { start: date });
     },
 
     /**
@@ -276,14 +314,14 @@ export function repeatActions(ctx: Context) {
       id: string,
       pattern: RepeatPattern,
       mode: RepeatMode = "onSchedule",
-      limit = previewLength,
+      { start: chosen, limit = previewLength }: RepeatOptions & { limit?: number } = {},
     ): LocalDate[] {
       if (mode === "afterCompletion") return [];
       const item = ctx.require("toDos", id);
       let start: LocalDate;
       try {
         checkPattern(pattern);
-        start = firstDate(item, pattern, mode, clock.today());
+        start = firstDate(item, pattern, mode, clock.today(), chosen);
       } catch {
         return [];
       }

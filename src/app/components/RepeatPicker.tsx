@@ -29,9 +29,13 @@ interface Props {
   /** The date a new rule's defaults (weekday, day of the month, month) come from. */
   from: LocalDate;
   today: LocalDate;
-  /** The Start dates the series would have with this rule (empty if not known). */
-  preview: (pattern: RepeatPattern, mode: RepeatMode) => LocalDate[];
-  onChoose: (pattern: RepeatPattern | null, mode: RepeatMode) => void;
+  /**
+   * The Start dates the series would have with this rule (empty if not known), from
+   * a chosen start, or from the To-do's own Start date.
+   */
+  preview: (pattern: RepeatPattern, mode: RepeatMode, start?: LocalDate) => LocalDate[];
+  /** `start` is the rule's start when one was chosen here. */
+  onChoose: (pattern: RepeatPattern | null, mode: RepeatMode, start?: LocalDate) => void;
   onClose: () => void;
 }
 
@@ -126,6 +130,9 @@ function RepeatSheet({ current, currentMode, from, today, preview, onChoose, onC
   const [end, setEnd] = useState<End>(initial.end);
   const [count, setCount] = useState(initial.count);
   const [until, setUntil] = useState<LocalDate | null>(initial.until);
+  // The rule's start (DTSTART), when chosen here; otherwise it comes from the To-do.
+  const [start, setStart] = useState<LocalDate | null>(null);
+  const [choosingStart, setChoosingStart] = useState(false);
 
   const onSchedule = mode === "onSchedule";
   const inMonth = onSchedule && (freq === "monthly" || freq === "yearly");
@@ -157,12 +164,14 @@ function RepeatSheet({ current, currentMode, from, today, preview, onChoose, onC
       : end === "until" && !until
         ? "Choose the date it ends."
         : null;
-  const dates = problem ? [] : preview(pattern, mode);
+  const dates = problem ? [] : preview(pattern, mode, start ?? undefined);
+  // On schedule the rule starts on its first date; after completion on the chosen day.
+  const startsOn = (onSchedule ? dates[0] : start) ?? start ?? from;
   const noDates = !problem && onSchedule && !dates.length;
   const valid = !problem && !noDates;
 
   const choose = (next: RepeatPattern | null) => {
-    onChoose(next, mode);
+    onChoose(next, mode, start ?? undefined);
     onClose();
   };
   const toggleDay = (code: WeekdayCode) =>
@@ -313,6 +322,27 @@ function RepeatSheet({ current, currentMode, from, today, preview, onChoose, onC
             </View>
           </>
         ) : null}
+        <View style={[styles.row, styles.inline]}>
+          <Text style={[styles.label, styles.inlineLabel, { color: theme.muted }]}>Starts</Text>
+          <Button
+            small
+            title={formatDate(startsOn, today)}
+            onPress={() => setChoosingStart((c) => !c)}
+            testID="repeat-start"
+          />
+        </View>
+        {choosingStart ? (
+          <View style={styles.block} testID="repeat-start-calendar">
+            <Calendar
+              today={today}
+              selected={start ?? startsOn}
+              onSelect={(date) => {
+                setStart(date < today ? today : date);
+                setChoosingStart(false);
+              }}
+            />
+          </View>
+        ) : null}
         <Text style={[styles.label, { color: theme.muted }]}>Ends</Text>
         <View style={styles.block}>
           <Segmented options={endOptions} value={end} onChange={setEnd} testID="repeat-end" />
@@ -334,7 +364,7 @@ function RepeatSheet({ current, currentMode, from, today, preview, onChoose, onC
           </View>
         ) : null}
         <Text style={[styles.summary, { color: theme.text }]} testID="repeat-summary">
-          {problem ?? repeatText(pattern, from, mode)}
+          {problem ?? repeatText(pattern, startsOn, mode)}
         </Text>
         {onSchedule ? (
           <View style={styles.preview} testID="repeat-preview">
@@ -395,6 +425,7 @@ const styles = StyleSheet.create({
   wide: { paddingHorizontal: 12 },
   chipText: { fontSize: 14, fontVariant: ["tabular-nums"] },
   label: { fontSize: 13, fontWeight: "600", marginBottom: 6 },
+  inlineLabel: { marginBottom: 0 },
   hint: { fontSize: 13, marginBottom: 12 },
   summary: { fontSize: 15, fontWeight: "600", marginTop: 4 },
   preview: { marginTop: 6, gap: 2 },

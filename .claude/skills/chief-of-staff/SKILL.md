@@ -21,11 +21,11 @@ When a task plainly recurs, offer the user a recurring job for it, harness-permi
 Some procedures you delegate live in other skills. In this repo they are not installed beside this one: they come from the user's account as `anthropic-skills:retro`, `anthropic-skills:to-spec`, `anthropic-skills:to-tickets` and `anthropic-skills:implement-spec`. To run one, invoke that skill (or tell the subagent to) and follow it.
 
 - **Retro** (`anthropic-skills:retro`): run a retro on about one in five of your subagents' sessions, including those an `implement-spec` run dispatches. Pick first the ones where something went wrong. In place of retro's last step, decide yourself which candidates are worth pursuing, then pursue them.
-- **Large chunks of work**: write a spec with `anthropic-skills:to-spec`, break it into tickets with `anthropic-skills:to-tickets`, publish both to the issue tracker, then implement them with `anthropic-skills:implement-spec`.
+- **Large chunks of work**: write a spec with `anthropic-skills:to-spec`, break it into tickets with `anthropic-skills:to-tickets`, publish both to the issue tracker, then implement them with `anthropic-skills:implement-spec`. Run `implement-spec` yourself, in this session, not in a subagent: it starts its own implementer and reviewer subagents, and a subagent can't start more. Delegate only single tickets.
 
 ## Remember
 
-Keep your memory in a **wiki**: a folder of interlinked markdown pages that outlives this session. Knowledge that lives only in your context is lost at compaction; the wiki is how it reaches the next session. Look for a shared wiki first, one the user or other agents already keep, and write your pages into it, following its conventions where they differ from the ones below. Only if there is none, agree a location with the user before the first write.
+Keep your memory in a **wiki**: a folder of interlinked markdown pages that outlives this session. Knowledge that lives only in your context is lost at compaction; the wiki is how it reaches the next session. Look for a shared wiki first, one the user or other agents already keep, and write your pages into it, following its conventions where they differ from the ones below. Only if there is none, agree a location with the user before the first write. While a subagent is working in your working tree, don't commit there: leave wiki edits uncommitted until it reports, or commit them from a separate worktree.
 
 - `index.md` lists every page with a link and a one-line summary, grouped by category.
 - Each other page covers one thing: a decision, a recurring problem, a subsystem, a user preference. Link related pages to each other.

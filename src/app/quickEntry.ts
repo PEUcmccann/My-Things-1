@@ -1,3 +1,26 @@
+import type { QuickEntryValue } from "../core";
+import type { IconName } from "./components/Icon";
+import { whenIcon, whenText } from "./format";
+
+/**
+ * What a highlight adds after the typed text, to show what it sets: the day and icon for a
+ * date phrase ("tomorrow" shows Tomorrow, "12 Dec" shows Sat 12 Dec). Other shorthand
+ * shows as typed, so it adds nothing.
+ */
+export function tokenHint(
+  value: QuickEntryValue,
+  today: string,
+): { text: string; icon: IconName } | null {
+  if (value.kind !== "when") return null;
+  const { when } = value;
+  const fields = {
+    someday: when.kind === "someday",
+    startDate: when.kind === "date" ? when.date : when.kind === "someday" ? null : today,
+    evening: when.kind === "thisEvening",
+  };
+  return { text: whenText(fields, today), icon: whenIcon(fields, today) ?? "when" };
+}
+
 /**
  * Moves the offsets of tokens kept as text along with an edit to the text, so a tapped-away
  * token stays plain text as typing goes on before it. The edit is read as one changed run

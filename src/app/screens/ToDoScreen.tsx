@@ -140,6 +140,7 @@ export function ToDoScreen({ id }: { id: string }) {
         {parent ? null : (
           <FieldRow
             label="Repeat"
+            icon={repeat ? "repeat" : undefined}
             value={repeat && toDo.repeat ? repeatText(repeat, toDo.repeat.start) : "None"}
             onPress={() => setPicker("repeat")}
             testID="todo-repeat"

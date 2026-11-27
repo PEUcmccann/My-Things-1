@@ -17,6 +17,7 @@ import { MagnifyingGlassIcon } from "phosphor-react-native/src/icons/MagnifyingG
 import { MoonIcon } from "phosphor-react-native/src/icons/Moon";
 import { NotePencilIcon } from "phosphor-react-native/src/icons/NotePencil";
 import { PlusIcon } from "phosphor-react-native/src/icons/Plus";
+import { RepeatIcon } from "phosphor-react-native/src/icons/Repeat";
 import { StackIcon } from "phosphor-react-native/src/icons/Stack";
 import { StarIcon } from "phosphor-react-native/src/icons/Star";
 import { TagIcon } from "phosphor-react-native/src/icons/Tag";
@@ -47,6 +48,7 @@ const icons = {
   when: CalendarBlankIcon,
   select: CheckCircleIcon,
   energy: LightningIcon,
+  repeat: RepeatIcon,
   more: DotsThreeIcon,
   drag: DotsSixVerticalIcon,
 } satisfies Record<string, PhosphorIcon>;

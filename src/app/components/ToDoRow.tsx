@@ -32,13 +32,9 @@ function Indicators({
   return (
     <View style={styles.indicators}>
       {repeats ? (
-        <Text
-          style={[styles.indicator, { color: theme.muted }]}
-          testID="row-repeat"
-          accessibilityLabel="Repeating"
-        >
-          ↻
-        </Text>
+        <View testID="row-repeat" accessibilityLabel="Repeating">
+          <Icon name="repeat" size={13} color={theme.muted} />
+        </View>
       ) : null}
       {hasNotes ? (
         <View testID="row-notes" accessibilityLabel="Has notes">

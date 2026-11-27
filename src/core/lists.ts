@@ -1,6 +1,6 @@
-import { byCreation, type Context, type ToDoEntry } from "./context";
+import { byPosition, todayKey, type Context, type ToDoEntry } from "./context";
 import { addDays, daysBetween, startOfMonth, startOfWeek } from "./dates";
-import type { LocalDate, Project, RecordMeta, ToDo } from "./types";
+import type { LocalDate, Project, ToDo } from "./types";
 
 /** Why an item shows on a day in Upcoming. */
 export type UpcomingReason = "start" | "deadline";
@@ -69,7 +69,7 @@ export function listQueries(ctx: Context) {
       return store
         .all("toDos")
         .filter((item) => ctx.isOpenInLists(item) && isInInbox(item))
-        .sort(byCreation)
+        .sort(byPosition)
         .map(ctx.entry);
     },
 
@@ -95,13 +95,13 @@ export function listQueries(ctx: Context) {
         if (project.outcome !== "active" || !ctx.isProjectOpenInLists(project)) continue;
         add(project, (date, reason) => ({ kind: "project", date, reason, project }));
       }
-      const record = (e: UpcomingEntry): RecordMeta => (e.kind === "toDo" ? e.toDo : e.project);
+      const record = (e: UpcomingEntry) => (e.kind === "toDo" ? e.toDo : e.project);
       // Projects come before To-dos on the same day.
       entries.sort(
         (a, b) =>
           a.date.localeCompare(b.date) ||
           Number(a.kind === "toDo") - Number(b.kind === "toDo") ||
-          byCreation(record(a), record(b)),
+          byPosition(record(a), record(b)),
       );
       const groups: UpcomingGroup[] = [];
       for (const e of entries) {
@@ -133,7 +133,7 @@ export function listQueries(ctx: Context) {
             !isInInbox(item) &&
             !ctx.isHeldBackByProject(item),
         )
-        .sort(byCreation)
+        .sort(byPosition)
         .map(ctx.entry);
     },
 
@@ -142,7 +142,7 @@ export function listQueries(ctx: Context) {
       return store
         .all("toDos")
         .filter((item) => ctx.isOpenInLists(item) && item.someday)
-        .sort(byCreation)
+        .sort(byPosition)
         .map(ctx.entry);
     },
 
@@ -167,7 +167,7 @@ export function listQueries(ctx: Context) {
       return store
         .all("projects")
         .filter((p) => ctx.isProjectOpenInLists(p) && matches(p))
-        .sort(byCreation);
+        .sort(byPosition);
     },
 
     /**
@@ -177,10 +177,13 @@ export function listQueries(ctx: Context) {
     today(): TodayList {
       const today = clock.today();
       const list: TodayList = { main: [], thisEvening: [] };
-      for (const item of store.all("toDos")) {
-        if (!ctx.isOpenInLists(item)) continue;
-        if (!isDue(item, today)) continue;
-        if (ctx.isHeldBackByProject(item)) continue;
+      const due = store
+        .all("toDos")
+        .filter(
+          (item) => ctx.isOpenInLists(item) && isDue(item, today) && !ctx.isHeldBackByProject(item),
+        )
+        .sort((a, b) => todayKey(a) - todayKey(b) || byPosition(a, b));
+      for (const item of due) {
         (item.evening ? list.thisEvening : list.main).push(ctx.entry(item));
       }
       return list;

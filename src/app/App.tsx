@@ -1,6 +1,7 @@
 import { StatusBar } from "expo-status-bar";
 import { ActivityIndicator, StyleSheet, useWindowDimensions, View } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { DragProvider } from "./drag";
 import { FinishProvider } from "./finish";
 import { NavigationProvider, useNavigation, type Route } from "./navigation";
 import { AreaScreen } from "./screens/AreaScreen";
@@ -53,18 +54,20 @@ function Layout() {
   return (
     <SafeAreaView style={[styles.fill, { backgroundColor: theme.background }]}>
       <NavigationProvider key={wide ? "wide" : "narrow"} root={root}>
-        {wide ? (
-          <View style={styles.row}>
-            <View style={[styles.side, { borderColor: theme.border }]}>
-              <Sidebar wide />
+        <DragProvider>
+          {wide ? (
+            <View style={styles.row}>
+              <View style={[styles.side, { borderColor: theme.border }]}>
+                <Sidebar wide />
+              </View>
+              <View style={styles.fill}>
+                <CurrentScreen />
+              </View>
             </View>
-            <View style={styles.fill}>
-              <CurrentScreen />
-            </View>
-          </View>
-        ) : (
-          <CurrentScreen />
-        )}
+          ) : (
+            <CurrentScreen />
+          )}
+        </DragProvider>
       </NavigationProvider>
       <StatusBar style={theme.dark ? "light" : "dark"} />
     </SafeAreaView>

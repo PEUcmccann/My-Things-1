@@ -67,7 +67,7 @@ export function AreaScreen({ id }: { id: string }) {
           );
         })}
         {toDos.length > 0 && projects.length > 0 ? <View style={styles.gap} /> : null}
-        <ToDoList entries={toDos} />
+        <ToDoList entries={toDos} list={{ kind: "area", id }} />
       </Screen>
       <MagicPlus placement={{ areaId: id }} />
       <MenuSheet

@@ -1,4 +1,4 @@
-import { byCreation, type Context, type ToDoEntry } from "./context";
+import { byPosition, type Context, type ToDoEntry } from "./context";
 import type { Heading } from "./types";
 
 export interface HeadingSection {
@@ -29,6 +29,7 @@ export function headingActions(ctx: Context) {
       store.put("headings", {
         ...meta,
         projectId,
+        position: ctx.nextPosition("headings"),
         title: title.trim() || "New Heading",
         archivedAt: null,
       });
@@ -83,7 +84,7 @@ export function headingActions(ctx: Context) {
       return store
         .all("headings")
         .filter((h) => h.projectId === projectId && !h.archivedAt)
-        .sort(byCreation);
+        .sort(byPosition);
     },
 
     /** What a Project's screen shows: loose To-dos, then each open Heading's To-dos. */
@@ -91,11 +92,11 @@ export function headingActions(ctx: Context) {
       const open = store
         .all("toDos")
         .filter((t) => t.projectId === projectId && ctx.isOpenInLists(t))
-        .sort(byCreation);
+        .sort(byPosition);
       const headings = store
         .all("headings")
         .filter((h) => h.projectId === projectId && !h.archivedAt)
-        .sort(byCreation);
+        .sort(byPosition);
       const known = new Set(headings.map((h) => h.id));
       return {
         toDos: open.filter((t) => !t.headingId || !known.has(t.headingId)).map(ctx.entry),

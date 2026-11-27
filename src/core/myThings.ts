@@ -6,9 +6,10 @@ import { addDays, deadlineFlag, type DeadlineFlag } from "./dates";
 import { headingActions } from "./headings";
 import { listQueries } from "./lists";
 import { logbookActions } from "./logbook";
+import { orderingActions, type ListRef } from "./ordering";
 import type { Store } from "./store";
 import { tagActions } from "./tags";
-import { toDoActions } from "./toDos";
+import { toDoActions, type NewToDo } from "./toDos";
 import { trashActions } from "./trash";
 import type { LocalDate } from "./types";
 
@@ -19,6 +20,7 @@ export type { ProjectList, TodayList, UpcomingEntry, UpcomingGroup, UpcomingReas
 export type { FinishOptions, LogbookDay, LogbookEntry, Remaining } from "./logbook";
 export type { Destination, NewToDo, When } from "./toDos";
 export type { TrashEntry } from "./trash";
+export type { DropTarget, ListRef } from "./ordering";
 export type { Taggable, TaggedItems, TagNode } from "./tags";
 export type { HeadingSection, ProjectContents } from "./headings";
 
@@ -39,7 +41,7 @@ export const localOwner = "me";
 /** The core of MyThings: every rule, as actions and list queries. */
 export function createMyThings({ clock, store, newId = randomId, owner = localOwner }: Options) {
   const ctx = createContext({ clock, store, newId, owner });
-  return {
+  const base = {
     ...toDoActions(ctx),
     ...containerActions(ctx),
     ...headingActions(ctx),
@@ -62,6 +64,18 @@ export function createMyThings({ clock, store, newId = randomId, owner = localOw
     /** Today's date, from the core's clock. */
     currentDate(): LocalDate {
       return clock.today();
+    },
+  };
+  const ordering = orderingActions(ctx, base);
+  return {
+    ...base,
+    ...ordering,
+
+    /** Creates a To-do, optionally at a spot in a list (before a To-do, or at the end). */
+    createToDo(input: NewToDo & { at?: { list: ListRef; beforeId: string | null } }): string {
+      const id = base.createToDo(input);
+      if (input.at) ordering.placeToDo(input.at.list, id, input.at.beforeId);
+      return id;
     },
   };
 }

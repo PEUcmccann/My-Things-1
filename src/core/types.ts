@@ -17,7 +17,12 @@ export interface RecordMeta {
   updatedAt: Moment;
 }
 
-export interface Area extends RecordMeta {
+/** Where an item sits in its list, lowest first. Positions only matter relative to each other. */
+export interface Ordered {
+  position: number;
+}
+
+export interface Area extends RecordMeta, Ordered {
   title: string;
   tagIds: string[];
 }
@@ -28,7 +33,7 @@ export interface Tag extends RecordMeta {
   parentId: string | null;
 }
 
-export interface Project extends RecordMeta {
+export interface Project extends RecordMeta, Ordered {
   title: string;
   areaId: string | null;
   outcome: Outcome;
@@ -46,14 +51,16 @@ export interface Project extends RecordMeta {
 }
 
 /** A named section of a Project. */
-export interface Heading extends RecordMeta {
+export interface Heading extends RecordMeta, Ordered {
   projectId: string;
   title: string;
   /** Set once the Heading is archived: it and its To-dos leave the Project screen. */
   archivedAt: Moment | null;
 }
 
-export interface ToDo extends RecordMeta {
+export interface ToDo extends RecordMeta, Ordered {
+  /** Order within Today, which has its own order. Falls back to `position`. */
+  todayPosition: number | null;
   title: string;
   /** Notes in Markdown. */
   notes: string;

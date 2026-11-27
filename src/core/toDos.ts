@@ -1,4 +1,4 @@
-import { byCreation, type Context } from "./context";
+import { byPosition, type Context } from "./context";
 import type { LocalDate, ToDo } from "./types";
 
 /** A choice of "When" for a To-do: what the Start date picker offers. */
@@ -70,6 +70,8 @@ export function toDoActions(ctx: Context) {
       const meta = ctx.meta();
       store.put("toDos", {
         ...meta,
+        position: ctx.nextPosition("toDos"),
+        todayPosition: null,
         title: input.title,
         notes: "",
         tagIds: [],
@@ -153,7 +155,7 @@ export function toDoActions(ctx: Context) {
       return store
         .all("toDos")
         .filter((t) => t.parentId === parentId && !t.deletedAt)
-        .sort(byCreation);
+        .sort(byPosition);
     },
 
     getToDo(id: string): ToDo {

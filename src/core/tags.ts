@@ -1,4 +1,4 @@
-import { byCreation, type Context, type ToDoEntry } from "./context";
+import { byCreation, byPosition, type Context, type ToDoEntry } from "./context";
 import type { Area, Project, Tag, ToDo } from "./types";
 
 /** Something a Tag can be attached to. */
@@ -177,15 +177,15 @@ export function tagActions(ctx: Context) {
         areas: store
           .all("areas")
           .filter((a) => hasAny(own(a), wanted))
-          .sort(byCreation),
+          .sort(byPosition),
         projects: store
           .all("projects")
           .filter((p) => ctx.isProjectOpenInLists(p) && hasAny(projectTags(p), wanted))
-          .sort(byCreation),
+          .sort(byPosition),
         toDos: store
           .all("toDos")
           .filter((t) => ctx.isOpenInLists(t) && hasAny(effectiveToDoTags(t), wanted))
-          .sort(byCreation)
+          .sort(byPosition)
           .map(ctx.entry),
       };
     },

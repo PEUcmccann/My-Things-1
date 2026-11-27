@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from "react-native";
-import type { NewToDo, ToDoEntry } from "../../core";
-import { useNavigation, type BuiltInList } from "../navigation";
+import type { ListRef, NewToDo, ToDoEntry } from "../../core";
+import { useDrag } from "../drag";
+import { type BuiltInList } from "../navigation";
 import { listTitles } from "../lists";
 import { useMyThings } from "../state";
 import { useTheme } from "../theme";
@@ -9,30 +10,36 @@ import { MagicPlus } from "../components/MagicPlus";
 import { Screen } from "../components/Screen";
 import { ProjectRow } from "../components/ProjectRow";
 import { useTagFilter } from "../components/TagFilter";
-import { ToDoRow } from "../components/ToDoRow";
+import { ToDoList } from "../components/ToDoList";
 
 interface Section {
   key: string;
   title?: string;
   entries: ToDoEntry[];
+  list: ListRef;
 }
 
 function useSections(list: BuiltInList): Section[] {
   const app = useMyThings();
   switch (list) {
     case "inbox":
-      return [{ key: "inbox", entries: app.inbox() }];
+      return [{ key: "inbox", entries: app.inbox(), list: { kind: "inbox" } }];
     case "today": {
       const { main, thisEvening } = app.today();
       return [
-        { key: "main", entries: main },
-        { key: "evening", title: "🌙 This Evening", entries: thisEvening },
+        { key: "main", entries: main, list: { kind: "today", part: "main" } },
+        {
+          key: "evening",
+          title: "🌙 This Evening",
+          entries: thisEvening,
+          list: { kind: "today", part: "thisEvening" },
+        },
       ];
     }
     case "anytime":
-      return [{ key: "anytime", entries: app.anytime() }];
+      return [{ key: "anytime", entries: app.anytime(), list: { kind: "anytime" } }];
     case "someday":
-      return [{ key: "someday", entries: app.someday() }];
+      return [{ key: "someday", entries: app.someday(), list: { kind: "someday" } }];
     default:
       return [];
   }
@@ -45,7 +52,7 @@ const placements: Partial<Record<BuiltInList, Omit<NewToDo, "title">>> = {
 
 export function ListScreen({ list }: { list: BuiltInList }) {
   const theme = useTheme();
-  const nav = useNavigation();
+  const drag = useDrag();
   const app = useMyThings();
   const filter = useTagFilter();
   const sections = useSections(list).map((s) => ({
@@ -65,18 +72,13 @@ export function ListScreen({ list }: { list: BuiltInList }) {
           <ProjectRow key={p.id} project={p} />
         ))}
         {sections.map((section) =>
-          section.entries.length === 0 ? null : (
+          // An empty part stays as somewhere to drop while dragging.
+          section.entries.length === 0 && !drag.dragging ? null : (
             <View key={section.key} testID={`section-${section.key}`}>
               {section.title ? (
                 <Text style={[styles.sectionTitle, { color: theme.muted }]}>{section.title}</Text>
               ) : null}
-              {section.entries.map((e) => (
-                <ToDoRow
-                  key={e.toDo.id}
-                  entry={e}
-                  onPress={() => nav.push({ name: "toDo", id: e.toDo.id })}
-                />
-              ))}
+              <ToDoList entries={section.entries} list={section.list} />
             </View>
           ),
         )}

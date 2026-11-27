@@ -16,6 +16,7 @@ import { TagPicker } from "../components/TagPicker";
 import { ToDoList } from "../components/ToDoList";
 import { DatePicker, WhenPicker } from "../components/WhenPicker";
 import { formatDate } from "../format";
+import { toDoTargetDrop, useDrag, useDropTarget } from "../drag";
 import { useNavigation } from "../navigation";
 import { useMyThings } from "../state";
 import { useTheme } from "../theme";
@@ -37,6 +38,29 @@ function whenText(project: Project, today: string): string {
   if (!project.startDate) return "No Start date";
   if (project.startDate <= today) return "☀️ Today";
   return formatDate(project.startDate, today);
+}
+
+/** A Heading's title bar, which To-dos and Magic Plus can be dropped on. */
+function HeadingTarget({ id, children }: { id: string; children: React.ReactNode }) {
+  const app = useMyThings();
+  const drag = useDrag();
+  const theme = useTheme();
+  const key = `heading-${id}`;
+  const ref = useDropTarget(key, toDoTargetDrop(app, drag, { kind: "heading", id }));
+  return (
+    <View
+      ref={ref}
+      collapsable={false}
+      style={[
+        styles.heading,
+        { borderColor: theme.accent },
+        drag.hovered === key && { backgroundColor: theme.border },
+      ]}
+      testID={`heading-target-${id}`}
+    >
+      {children}
+    </View>
+  );
 }
 
 export function ProjectScreen({ id }: { id: string }) {
@@ -133,10 +157,10 @@ export function ProjectScreen({ id }: { id: string }) {
           />
         </View>
         {isEmpty ? <Empty text="No To-dos yet" /> : null}
-        <ToDoList entries={contents.toDos} />
+        <ToDoList entries={contents.toDos} list={{ kind: "project", id }} />
         {contents.headings.map(({ heading, toDos }) => (
           <View key={heading.id} testID={`heading-${heading.id}`}>
-            <View style={[styles.heading, { borderColor: theme.accent }]}>
+            <HeadingTarget id={heading.id}>
               <Text style={[styles.headingTitle, { color: theme.accent }]}>{heading.title}</Text>
               <Button
                 small
@@ -150,8 +174,8 @@ export function ProjectScreen({ id }: { id: string }) {
                 onPress={() => setDialog({ heading: heading.id, action: "menu" })}
                 testID={`heading-menu-${heading.id}`}
               />
-            </View>
-            <ToDoList entries={toDos} />
+            </HeadingTarget>
+            <ToDoList entries={toDos} list={{ kind: "heading", id: heading.id }} />
           </View>
         ))}
       </Screen>

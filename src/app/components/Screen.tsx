@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useDrag } from "../drag";
 import { useNavigation } from "../navigation";
 import { useTheme } from "../theme";
 
@@ -16,6 +17,7 @@ interface Props {
 export function Screen({ title, children, actions, header, testID }: Props) {
   const theme = useTheme();
   const nav = useNavigation();
+  const drag = useDrag();
   return (
     <View style={[styles.screen, { backgroundColor: theme.background }]} testID={testID}>
       <View style={styles.header}>
@@ -39,7 +41,11 @@ export function Screen({ title, children, actions, header, testID }: Props) {
         </View>
         {header}
       </View>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        scrollEnabled={!drag.dragging}
+      >
         {children}
       </ScrollView>
     </View>

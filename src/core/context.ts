@@ -1,6 +1,6 @@
 import { toLocalDate, type Clock } from "./clock";
 import type { CollectionName, Collections, Store } from "./store";
-import type { Moment, Project, RecordMeta, ToDo } from "./types";
+import type { Moment, Ordered, Project, RecordMeta, ToDo } from "./types";
 
 /** The lifecycle fields shared by To-dos and Projects. */
 export type Finishable = Pick<ToDo, "outcome" | "finishedAt" | "loggedAt">;
@@ -26,6 +26,8 @@ export interface Context {
     id: string,
     changes: Partial<Collections[C]>,
   ): void;
+  /** A position after every existing record in the collection. */
+  nextPosition(collection: "areas" | "projects" | "headings" | "toDos"): number;
   isInLogbook(item: Finishable): boolean;
   /** Whether a To-do is in the Trash, itself or with its parent To-do or Project. */
   isTrashed(item: ToDo): boolean;
@@ -83,6 +85,11 @@ export function createContext(opts: {
      * finished, "endOfDay" once the day it was finished is over, and "manually" only
      * when the user moves finished items there.
      */
+    nextPosition(collection) {
+      let max = -1;
+      for (const r of store.all(collection)) max = Math.max(max, r.position ?? 0);
+      return Math.floor(max) + 1;
+    },
     isInLogbook(item) {
       if (item.outcome === "active") return false;
       if (item.loggedAt) return true;
@@ -119,4 +126,14 @@ export function createContext(opts: {
 /** Oldest first. */
 export function byCreation(a: RecordMeta, b: RecordMeta): number {
   return a.createdAt.localeCompare(b.createdAt);
+}
+
+/** In list order, then oldest first. */
+export function byPosition(a: RecordMeta & Ordered, b: RecordMeta & Ordered): number {
+  return (a.position ?? 0) - (b.position ?? 0) || byCreation(a, b);
+}
+
+/** Today has its own order; To-dos never placed there use their ordinary position. */
+export function todayKey(t: ToDo): number {
+  return t.todayPosition ?? t.position ?? 0;
 }

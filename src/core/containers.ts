@@ -1,4 +1,4 @@
-import { byCreation, type Context, type ToDoEntry } from "./context";
+import { byPosition, type Context, type ToDoEntry } from "./context";
 import { whenFields, type When } from "./toDos";
 import type { Area, LocalDate, Project } from "./types";
 
@@ -37,7 +37,12 @@ export function containerActions(ctx: Context) {
   return {
     createArea(title: string): string {
       const meta = ctx.meta();
-      store.put("areas", { ...meta, title: title.trim() || "New Area", tagIds: [] });
+      store.put("areas", {
+        ...meta,
+        title: title.trim() || "New Area",
+        tagIds: [],
+        position: ctx.nextPosition("areas"),
+      });
       return meta.id;
     },
 
@@ -69,13 +74,14 @@ export function containerActions(ctx: Context) {
     },
 
     areas(): Area[] {
-      return store.all("areas").sort(byCreation);
+      return store.all("areas").sort(byPosition);
     },
 
     createProject(input: NewProject): string {
       const meta = ctx.meta();
       store.put("projects", {
         ...meta,
+        position: ctx.nextPosition("projects"),
         title: input.title.trim() || "New Project",
         notes: "",
         tagIds: [],
@@ -134,7 +140,7 @@ export function containerActions(ctx: Context) {
       return store
         .all("toDos")
         .filter((t) => t.projectId === id && ctx.isOpenInLists(t))
-        .sort(byCreation)
+        .sort(byPosition)
         .map(ctx.entry);
     },
 
@@ -153,23 +159,23 @@ export function containerActions(ctx: Context) {
         projects: store
           .all("projects")
           .filter((p) => p.areaId === id && projectInLists(p))
-          .sort(byCreation),
+          .sort(byPosition),
         toDos: store
           .all("toDos")
           .filter((t) => t.areaId === id && !t.projectId && ctx.isOpenInLists(t))
-          .sort(byCreation)
+          .sort(byPosition)
           .map(ctx.entry),
       };
     },
 
     /** Areas with their Projects nested underneath, plus Projects with no Area. */
     sidebar(): SidebarTree {
-      const projects = store.all("projects").filter(projectInLists).sort(byCreation);
+      const projects = store.all("projects").filter(projectInLists).sort(byPosition);
       return {
         projects: projects.filter((p) => !p.areaId),
         areas: store
           .all("areas")
-          .sort(byCreation)
+          .sort(byPosition)
           .map((area) => ({ area, projects: projects.filter((p) => p.areaId === area.id) })),
       };
     },

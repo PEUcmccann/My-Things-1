@@ -123,6 +123,7 @@ export function toDoActions(ctx: Context) {
         estimate: null,
         repeat: null,
         seriesId: null,
+        seriesValues: null,
       });
       if (input.when) setWhen(meta.id, input.when);
       return meta.id;

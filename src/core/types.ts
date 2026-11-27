@@ -100,7 +100,43 @@ export interface ToDo extends RecordMeta, Ordered {
   repeat: RepeatRule | null;
   /** Shared by every occurrence of one Repeat rule, finished ones included. */
   seriesId: string | null;
+  /**
+   * On the current occurrence: the series' own values where this occurrence was
+   * changed for "this one" only, so the next occurrence is created from the series
+   * as it was. Null when nothing was changed that way.
+   */
+  seriesValues: SeriesValues | null;
 }
+
+/** The fields of a To-do that the next occurrence copies as they are. */
+export type SeriesField = "title" | "notes" | "priority" | "energy" | "estimate" | "timeSlot";
+
+/**
+ * The series' own values, where the current occurrence differs from them. Each kind
+ * holds only what was changed for "this one"; everything else comes from the current
+ * occurrence.
+ */
+export interface SeriesValues {
+  fields: Partial<Pick<ToDo, SeriesField>>;
+  /** The Deadline as days after the Start date, null for none. */
+  deadlineGap?: number | null;
+  /** Tags by id: "added" to this occurrence only, or "removed" from it only. */
+  tags: Record<string, "added" | "removed">;
+  /** Checklist items by id. */
+  checklist: Record<string, SeriesPart>;
+  /** Sub-to-dos by id. */
+  subToDos: Record<string, SeriesPart>;
+}
+
+/**
+ * How a Checklist item or Sub-to-do of the current occurrence differs from the
+ * series: added to this occurrence only, removed from it only (with what it was), or
+ * renamed for it only (with the series' title).
+ */
+export type SeriesPart =
+  | { kind: "added" }
+  | { kind: "removed"; title: string; position: number; toDo?: ToDo }
+  | { kind: "renamed"; title: string };
 
 /**
  * How a Repeat rule works out its next date. "onSchedule" follows fixed dates;

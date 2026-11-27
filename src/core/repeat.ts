@@ -1,6 +1,7 @@
 import type { Context } from "./context";
 import { addDays, daysBetween } from "./dates";
 import { checkPattern, formatRrule, nextRepeatDate, parseRrule, type RepeatPattern } from "./rrule";
+import { seriesChecklist, seriesFieldsFor, seriesSubToDos } from "./seriesEdits";
 import { eraseToDoFrom } from "./trash";
 import type { LocalDate, RepeatRule, ToDo } from "./types";
 
@@ -42,6 +43,7 @@ function copyToDo(ctx: Context, from: ToDo, changes: Partial<ToDo>): string {
     deletedAt: null,
     tagIds: [...from.tagIds],
     timeSlot: from.timeSlot && { ...from.timeSlot },
+    seriesValues: null,
     ...changes,
   });
   return meta.id;
@@ -55,9 +57,14 @@ function copyToDo(ctx: Context, from: ToDo, changes: Partial<ToDo>): string {
 type CopyStep = (ctx: Context, from: ToDo, toId: string, days: number) => void;
 
 const copyChecklist: CopyStep = (ctx, from, toId) => {
-  for (const item of ctx.store.all("checklistItems")) {
-    if (item.toDoId !== from.id) continue;
-    ctx.store.put("checklistItems", { ...item, ...ctx.meta(), toDoId: toId, ticked: false });
+  for (const { title, position } of seriesChecklist(ctx, from)) {
+    ctx.store.put("checklistItems", {
+      ...ctx.meta(),
+      toDoId: toId,
+      title,
+      position,
+      ticked: false,
+    });
   }
 };
 
@@ -67,8 +74,7 @@ const subToDoSteps: CopyStep[] = [copyChecklist];
 /** Every Sub-to-do not in the Trash, reopened (even Cancelled ones), with its dates shifted. */
 const copySubToDos: CopyStep = (ctx, from, toId, days) => {
   const parent = ctx.require("toDos", toId);
-  for (const child of ctx.store.all("toDos")) {
-    if (child.parentId !== from.id || child.deletedAt) continue;
+  for (const child of seriesSubToDos(ctx, from)) {
     const copyId = copyToDo(ctx, child, {
       parentId: toId,
       areaId: parent.areaId,
@@ -104,6 +110,7 @@ export function createNextOccurrence(ctx: Context, id: string): string | null {
     deadline: shifted(current.deadline, days),
     someday: false,
     repeat: { ...rule },
+    ...seriesFieldsFor(ctx, current, date),
   });
   for (const step of occurrenceSteps) step(ctx, current, nextId, days);
   return nextId;
@@ -164,7 +171,7 @@ export function repeatActions(ctx: Context) {
     setRepeat(id: string, pattern: RepeatPattern | null): void {
       const item = ctx.require("toDos", id);
       if (pattern === null) {
-        ctx.update("toDos", id, { repeat: null, seriesId: null });
+        ctx.update("toDos", id, { repeat: null, seriesId: null, seriesValues: null });
         return;
       }
       if (item.parentId) throw new Error("A Sub-to-do can't have a Repeat rule of its own");
@@ -176,6 +183,8 @@ export function repeatActions(ctx: Context) {
       ctx.update("toDos", id, {
         repeat: { mode: "onSchedule", rrule: formatRrule(pattern), start },
         seriesId: item.seriesId ?? ctx.meta().id,
+        // A changed rule keeps "this one" changes; a new series starts without them.
+        seriesValues: item.repeat ? item.seriesValues : null,
         startDate: start,
         someday: false,
         evening: start === item.startDate && item.evening,

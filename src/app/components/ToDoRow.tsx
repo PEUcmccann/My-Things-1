@@ -9,6 +9,7 @@ import { useMyThings } from "../state";
 import { useTheme } from "../theme";
 import { Checkbox } from "./Checkbox";
 import { DateBadges } from "./DateBadges";
+import { Icon } from "./Icon";
 import { MenuSheet } from "./MenuSheet";
 import { MovePicker } from "./MovePicker";
 import { TagChips } from "./TagChips";
@@ -23,14 +24,17 @@ function Indicators({ toDoId, hasNotes }: { toDoId: string; hasNotes: boolean })
   return (
     <View style={styles.indicators}>
       {hasNotes ? (
-        <Text style={[styles.indicator, { color: theme.muted }]} testID="row-notes">
-          📝
-        </Text>
+        <View testID="row-notes" accessibilityLabel="Has notes">
+          <Icon name="notes" size={13} color={theme.muted} />
+        </View>
       ) : null}
       {total > 0 ? (
-        <Text style={[styles.indicator, { color: theme.muted }]} testID="row-checklist">
-          ☑ {ticked}/{total}
-        </Text>
+        <View style={styles.indicator}>
+          <Icon name="checklist" size={13} color={theme.muted} />
+          <Text style={[styles.indicatorText, { color: theme.muted }]} testID="row-checklist">
+            {ticked}/{total}
+          </Text>
+        </View>
       ) : null}
     </View>
   );
@@ -52,7 +56,7 @@ function RowHandle({ toDo }: { toDo: ToDo }) {
       testID={`drag-${toDo.id}`}
       accessibilityLabel="Drag to move"
     >
-      <Text style={[styles.handleText, { color: theme.muted }]}>≡</Text>
+      <Icon name="drag" size={20} color={theme.muted} />
     </DragHandle>
   );
 }
@@ -108,8 +112,14 @@ export function ToDoRow({ entry, onPress, listKey }: Props) {
   return (
     <View ref={ref} collapsable={false} style={lifted && styles.lifted}>
       <View style={[styles.under, { backgroundColor: theme.border }]} pointerEvents="none">
-        <Text style={{ color: theme.accent }}>📅 When</Text>
-        <Text style={{ color: theme.accent }}>Select ☑</Text>
+        <View style={styles.swipeAction}>
+          <Icon name="when" size={16} color={theme.accent} />
+          <Text style={{ color: theme.accent }}>When</Text>
+        </View>
+        <View style={styles.swipeAction}>
+          <Text style={{ color: theme.accent }}>Select</Text>
+          <Icon name="select" size={16} color={theme.accent} />
+        </View>
       </View>
       <GestureDetector gesture={swipe} touchAction="pan-y">
         <Animated.View style={{ transform: [{ translateX: offset }] }}>
@@ -173,7 +183,7 @@ export function ToDoRow({ entry, onPress, listKey }: Props) {
                 testID={`todo-menu-${toDo.id}`}
                 accessibilityLabel="More actions"
               >
-                <Text style={{ color: theme.muted, fontSize: 18 }}>⋯</Text>
+                <Icon name="more" size={20} color={theme.muted} />
               </Pressable>
             ) : null}
             {listKey && !selection.active ? <RowHandle toDo={toDo} /> : null}
@@ -249,7 +259,8 @@ const styles = StyleSheet.create({
   },
   menuButton: { paddingHorizontal: 4 },
   handle: { paddingHorizontal: 6, paddingVertical: 8, marginRight: -6 },
-  handleText: { fontSize: 20 },
-  indicators: { flexDirection: "row", gap: 10, marginTop: 3 },
-  indicator: { fontSize: 12 },
+  indicators: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 3 },
+  indicator: { flexDirection: "row", alignItems: "center", gap: 3 },
+  indicatorText: { fontSize: 12 },
+  swipeAction: { flexDirection: "row", alignItems: "center", gap: 6 },
 });

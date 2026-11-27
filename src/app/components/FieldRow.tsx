@@ -1,15 +1,20 @@
-import { Pressable, StyleSheet, Text } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useTheme } from "../theme";
+import { Icon, type IconName } from "./Icon";
 
 interface Props {
   label: string;
   value: string;
+  /** Shown before the value. */
+  icon?: IconName;
+  /** Defaults to the list's colour for a list icon, otherwise the text colour. */
+  iconColor?: string;
   onPress: () => void;
   testID?: string;
 }
 
 /** A labelled value that opens a picker when tapped. */
-export function FieldRow({ label, value, onPress, testID }: Props) {
+export function FieldRow({ label, value, icon, iconColor, onPress, testID }: Props) {
   const theme = useTheme();
   return (
     <Pressable
@@ -19,9 +24,12 @@ export function FieldRow({ label, value, onPress, testID }: Props) {
       accessibilityRole="button"
     >
       <Text style={[styles.label, { color: theme.muted }]}>{label}</Text>
-      <Text style={[styles.value, { color: theme.text }]} numberOfLines={1}>
-        {value}
-      </Text>
+      <View style={styles.valueRow}>
+        {icon ? <Icon name={icon} size={16} color={iconColor} /> : null}
+        <Text style={[styles.value, { color: theme.text }]} numberOfLines={1}>
+          {value}
+        </Text>
+      </View>
     </Pressable>
   );
 }
@@ -36,5 +44,6 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
   },
   label: { fontSize: 15 },
+  valueRow: { flexDirection: "row", alignItems: "center", gap: 6, flexShrink: 1 },
   value: { fontSize: 15, fontWeight: "500", flexShrink: 1 },
 });

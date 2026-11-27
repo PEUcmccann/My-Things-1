@@ -1,4 +1,5 @@
 import { addDays, daysBetween, type LocalDate, type ToDo } from "../core";
+import type { IconName } from "./components/Icon";
 
 const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -41,8 +42,18 @@ export function whenText(
   toDo: Pick<ToDo, "someday" | "startDate"> & { evening?: boolean },
   today: string,
 ): string {
-  if (toDo.someday) return "📦 Someday";
+  if (toDo.someday) return "Someday";
   if (!toDo.startDate) return "No Start date";
-  if (toDo.startDate <= today) return toDo.evening ? "🌙 This Evening" : "☀️ Today";
+  if (toDo.startDate <= today) return toDo.evening ? "This Evening" : "Today";
   return formatDate(toDo.startDate, today);
+}
+
+/** The icon shown beside whenText, if any. */
+export function whenIcon(
+  toDo: Pick<ToDo, "someday" | "startDate"> & { evening?: boolean },
+  today: string,
+): IconName | undefined {
+  if (toDo.someday) return "someday";
+  if (!toDo.startDate || toDo.startDate > today) return undefined;
+  return toDo.evening ? "evening" : "today";
 }

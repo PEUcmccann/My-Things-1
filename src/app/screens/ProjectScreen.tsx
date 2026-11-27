@@ -16,7 +16,7 @@ import { useTagFilter } from "../components/TagFilter";
 import { TagPicker } from "../components/TagPicker";
 import { ToDoList } from "../components/ToDoList";
 import { DatePicker, WhenPicker } from "../components/WhenPicker";
-import { formatDate, whenText } from "../format";
+import { formatDate, whenIcon, whenText } from "../format";
 import { toDoTargetDrop, useDrag, useDropTarget } from "../drag";
 import { useNavigation } from "../navigation";
 import { useMyThings } from "../state";
@@ -107,7 +107,13 @@ export function ProjectScreen({ id }: { id: string }) {
         selectable
         searchable
         actions={
-          <Button small title="•••" onPress={() => setDialog("menu")} testID="project-menu" />
+          <Button
+            small
+            icon="more"
+            accessibilityLabel="Project actions"
+            onPress={() => setDialog("menu")}
+            testID="project-menu"
+          />
         }
         header={
           <View style={styles.progress} testID="project-progress">
@@ -142,6 +148,7 @@ export function ProjectScreen({ id }: { id: string }) {
           <FieldRow
             label="When"
             value={whenText(project, today)}
+            icon={whenIcon(project, today)}
             onPress={() => setDialog("when")}
             testID="project-when"
           />
@@ -160,13 +167,15 @@ export function ProjectScreen({ id }: { id: string }) {
               <Text style={[styles.headingTitle, { color: theme.accent }]}>{heading.title}</Text>
               <Button
                 small
-                title="＋"
+                icon="add"
+                accessibilityLabel="Add To-do under this Heading"
                 onPress={() => setDialog({ heading: heading.id, action: "add" })}
                 testID={`heading-add-${heading.id}`}
               />
               <Button
                 small
-                title="•••"
+                icon="more"
+                accessibilityLabel="Heading actions"
                 onPress={() => setDialog({ heading: heading.id, action: "menu" })}
                 testID={`heading-menu-${heading.id}`}
               />

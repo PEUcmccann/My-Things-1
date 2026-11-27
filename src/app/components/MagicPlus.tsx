@@ -13,6 +13,7 @@ import { useSelection } from "../selection";
 import { useMyThings } from "../state";
 import { useTheme } from "../theme";
 import { Button } from "./Button";
+import { Icon } from "./Icon";
 import { SelectionBar } from "./SelectionBar";
 import { Sheet } from "./Sheet";
 
@@ -80,7 +81,7 @@ export function MagicPlus({ placement }: Props) {
           accessibilityLabel="Add To-do"
           testID="magic-plus"
         >
-          <Text style={[styles.plus, { color: theme.onAccent }]}>+</Text>
+          <Icon name="add" size={30} color={theme.onAccent} />
         </View>
       </GestureDetector>
       <Sheet visible={spot !== null} onClose={close} testID="new-todo-sheet">
@@ -121,7 +122,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     elevation: 5,
   },
-  plus: { fontSize: 34, lineHeight: 38, fontWeight: "300" },
   heading: { fontSize: 18, fontWeight: "600", marginBottom: 12 },
   input: { fontSize: 17, borderWidth: 1, borderRadius: 10, padding: 12 },
   buttons: { flexDirection: "row", justifyContent: "flex-end", gap: 12, marginTop: 16 },

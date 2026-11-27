@@ -28,10 +28,17 @@ export function WhenPicker({ visible, current, onChoose, onClose, allowEvening =
     <Sheet visible={visible} onClose={onClose} testID="when-picker">
       <Text style={[styles.heading, { color: theme.text }]}>When</Text>
       <View style={styles.options}>
-        <Button title="☀️ Today" onPress={() => choose({ kind: "today" })} testID="when-today" />
+        <Button
+          title="Today"
+          icon="today"
+          iconColor={theme.icons.today}
+          onPress={() => choose({ kind: "today" })}
+          testID="when-today"
+        />
         {allowEvening ? (
           <Button
-            title="🌙 This Evening"
+            title="This Evening"
+            icon="evening"
             onPress={() => choose({ kind: "thisEvening" })}
             testID="when-evening"
           />
@@ -42,7 +49,9 @@ export function WhenPicker({ visible, current, onChoose, onClose, allowEvening =
           testID="when-tomorrow"
         />
         <Button
-          title="📦 Someday"
+          title="Someday"
+          icon="someday"
+          iconColor={theme.icons.someday}
           onPress={() => choose({ kind: "someday" })}
           testID="when-someday"
         />

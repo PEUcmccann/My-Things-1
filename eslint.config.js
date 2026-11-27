@@ -11,6 +11,15 @@ const avoidedText = "/(?<!checklist )\\b(task|label|item)s?\\b/i";
 const textMessage =
   "Use the GLOSSARY.md term in app text (To-do, not task or item; Tag, not label).";
 
+// Emoji, and the symbols once used as icons, in app text. Icons come from components/Icon.tsx.
+const emoji = "/[\\p{Extended_Pictographic}\\u2691\\u25A3\\u25D4\\uFF0B]/u";
+const emojiMessage = "Use the Icon component (src/app/components/Icon.tsx), not emoji or symbols.";
+const noEmoji = [
+  { selector: `JSXText[value=${emoji}]`, message: emojiMessage },
+  { selector: `Literal[value=${emoji}]`, message: emojiMessage },
+  { selector: `TemplateElement[value.raw=${emoji}]`, message: emojiMessage },
+];
+
 module.exports = defineConfig([
   expoConfig,
   prettierConfig,
@@ -75,7 +84,12 @@ module.exports = defineConfig([
           selector: `JSXAttribute[name.name!='testID'] > Literal[value=/^\\S+$/][value=${avoidedText}]`,
           message: textMessage,
         },
+        ...noEmoji,
       ],
     },
+  },
+  {
+    files: ["src/app/**/*.ts"],
+    rules: { "no-restricted-syntax": ["error", ...noEmoji] },
   },
 ]);

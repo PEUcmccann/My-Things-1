@@ -1,9 +1,13 @@
 import { Platform, Pressable, ScrollView, StyleSheet, Text } from "react-native";
 import { useTheme } from "../theme";
+import { Icon, type IconName } from "./Icon";
 import { Sheet } from "./Sheet";
 
 export interface MenuOption {
   title: string;
+  icon?: IconName;
+  /** Defaults to the list's colour for a list icon, otherwise the text colour. */
+  iconColor?: string;
   onPress: () => void;
   danger?: boolean;
   testID?: string;
@@ -47,6 +51,7 @@ export function MenuSheet({ visible, title, message, options, onClose, testID }:
             testID={option.testID}
             accessibilityRole="button"
           >
+            {option.icon ? <Icon name={option.icon} size={18} color={option.iconColor} /> : null}
             <Text style={[styles.text, { color: option.danger ? theme.danger : theme.text }]}>
               {option.title}
             </Text>
@@ -64,6 +69,9 @@ const styles = StyleSheet.create({
   heading: { fontSize: 18, fontWeight: "600", marginBottom: 4 },
   message: { fontSize: 14, marginBottom: 8 },
   option: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
     paddingVertical: 14,
     paddingHorizontal: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,

@@ -153,6 +153,14 @@ export interface RepeatRule {
   rrule: string;
   /** DTSTART: the rule's first date, which anchors its intervals. */
   start: LocalDate;
+  /**
+   * Which occurrence of the series the To-do carrying the rule is, counting from 1:
+   * how many the series has created, this one included. "End after N" (COUNT) ends
+   * the series at the Nth. Kept here, not counted from records, so reopening,
+   * deleting or erasing older occurrences doesn't change it. Rules saved before it
+   * existed lack it.
+   */
+  occurrence?: number;
 }
 
 /** How important a To-do is. "none" is the default. */

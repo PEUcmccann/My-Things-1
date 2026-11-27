@@ -29,18 +29,22 @@ function shifted(date: LocalDate | null, days: number): LocalDate | null {
 }
 
 /**
- * Which occurrence of its series a To-do is, counting from 1: the occurrences the
- * series has created so far, finished ones included. A To-do outside a series is 1.
+ * Which occurrence of its series a To-do is, counting from 1: how many occurrences
+ * the series has created, this one included (see `RepeatRule.occurrence`). A To-do
+ * without a rule would start a series, so it is 1.
  */
-function occurrenceNumber(ctx: Context, item: ToDo): number {
-  if (!item.seriesId) return 1;
-  return ctx.store.all("toDos").filter((t) => t.seriesId === item.seriesId).length;
+function occurrenceNumber(ctx: Context, toDo: ToDo): number {
+  const rule = toDo.repeat;
+  if (!rule) return 1;
+  if (rule.occurrence !== undefined) return rule.occurrence;
+  // A rule saved before the count was kept: count the series' records instead.
+  return ctx.store.all("toDos").filter((t) => t.seriesId === toDo.seriesId).length;
 }
 
 /** How many more occurrences a rule allows after the current one; Infinity with no COUNT. */
-export function occurrencesLeft(ctx: Context, item: ToDo, pattern: RepeatPattern): number {
+export function occurrencesLeft(ctx: Context, toDo: ToDo, pattern: RepeatPattern): number {
   if (pattern.count === undefined) return Infinity;
-  return Math.max(0, pattern.count - occurrenceNumber(ctx, item));
+  return Math.max(0, pattern.count - occurrenceNumber(ctx, toDo));
 }
 
 /** The next occurrence's Start date, or null when the series ends. */
@@ -139,7 +143,7 @@ export function createNextOccurrence(ctx: Context, id: string): string | null {
     startDate: date,
     deadline: shifted(current.deadline, days),
     someday: false,
-    repeat: { ...rule },
+    repeat: { ...rule, occurrence: occurrenceNumber(ctx, current) + 1 },
     ...seriesFieldsFor(ctx, current, date),
   });
   for (const step of occurrenceSteps) step(ctx, current, nextId, days);
@@ -178,7 +182,9 @@ export function reopenOccurrence(ctx: Context, id: string): void {
   if (!item.seriesId || item.repeat || item.outcome === "active") return;
   const open = openOccurrence(ctx, item.seriesId);
   if (open && latestFinished(ctx, item.seriesId)?.id === id) {
-    ctx.update("toDos", id, { repeat: open.repeat });
+    // The erased occurrence no longer counts as created.
+    const occurrence = Math.max(1, occurrenceNumber(ctx, open) - 1);
+    ctx.update("toDos", id, { repeat: open.repeat && { ...open.repeat, occurrence } });
     eraseToDoFrom(ctx.store, open.id);
   } else {
     ctx.update("toDos", id, { seriesId: null });
@@ -243,7 +249,13 @@ export function repeatActions(ctx: Context) {
       checkPattern(pattern);
       const start = firstDate(item, pattern, mode, clock.today());
       ctx.update("toDos", id, {
-        repeat: { mode, rrule: formatRrule(pattern, { gap: mode === "afterCompletion" }), start },
+        repeat: {
+          mode,
+          rrule: formatRrule(pattern, { gap: mode === "afterCompletion" }),
+          start,
+          // A changed rule keeps the series' count; a new rule starts it at 1.
+          occurrence: occurrenceNumber(ctx, item),
+        },
         seriesId: item.seriesId ?? ctx.meta().id,
         // A changed rule keeps "this one" changes; a new series starts without them.
         seriesValues: item.repeat ? item.seriesValues : null,

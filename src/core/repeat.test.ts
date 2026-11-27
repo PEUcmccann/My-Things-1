@@ -121,7 +121,7 @@ describe("setting a Repeat rule", () => {
   it("keeps the rule as an RRULE with its mode and start", () => {
     const id = app.createToDo({ title: "Gym", when: { kind: "today" } });
     app.setRepeat(id, { freq: "weekly", interval: 2, byDay: ["TH", "MO"] });
-    expect(app.getToDo(id).repeat).toEqual({
+    expect(app.getToDo(id).repeat).toMatchObject({
       mode: "onSchedule",
       rrule: "FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,TH;WKST=MO",
       start: TODAY,

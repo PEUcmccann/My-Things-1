@@ -167,6 +167,61 @@ describe("a rule that ends after a number of occurrences", () => {
     expect(completeAndNext(third)).toBeUndefined();
   });
 
+  it("counts an older occurrence that was reopened", () => {
+    const first = app.createToDo({ title: "Gym", when: { kind: "today" } });
+    app.setRepeat(first, { freq: "daily", interval: 1, count: 3 });
+    const second = completeAndNext(first)!;
+    clock.set("2026-11-27T09:00:00");
+    const third = completeAndNext(second)!;
+    // Reopening the 1st makes it a normal To-do, but the series still created it.
+    app.reopen(first);
+    clock.set("2026-11-28T09:00:00");
+    expect(completeAndNext(third)).toBeUndefined();
+  });
+
+  it("counts occurrences that were deleted and erased from the Trash", () => {
+    const first = app.createToDo({ title: "Gym", when: { kind: "today" } });
+    app.setRepeat(first, { freq: "daily", interval: 1, count: 3 });
+    const second = completeAndNext(first)!;
+    app.delete(first);
+    app.emptyTrash();
+    expect(app.repeatPreview(second, { freq: "daily", interval: 1, count: 3 })).toEqual([
+      "2026-11-27",
+      "2026-11-28",
+    ]);
+    clock.set("2026-11-27T09:00:00");
+    const third = completeAndNext(second)!;
+    clock.set("2026-11-28T09:00:00");
+    expect(completeAndNext(third)).toBeUndefined();
+  });
+
+  it("Upcoming projects no more than the rule's end, after an older one is reopened", () => {
+    const first = app.createToDo({ title: "Gym", when: { kind: "today" } });
+    app.setRepeat(first, { freq: "daily", interval: 1, count: 4 });
+    const second = completeAndNext(first)!;
+    clock.set("2026-11-27T09:00:00");
+    const third = completeAndNext(second)!;
+    app.reopen(first);
+    const projected = app
+      .upcoming()
+      .flatMap((g) => g.entries)
+      .filter((e) => e.kind === "projected" && e.toDo.id === third)
+      .map((e) => e.date);
+    // The current one is the 3rd of 4.
+    expect(projected).toEqual(["2026-11-29"]);
+  });
+
+  it("undoing the latest completion takes its occurrence back off the count", () => {
+    const first = app.createToDo({ title: "Gym", when: { kind: "today" } });
+    app.setRepeat(first, { freq: "daily", interval: 1, count: 2 });
+    completeAndNext(first);
+    app.reopen(first);
+    expect(app.repeatPreview(first, { freq: "daily", interval: 1, count: 2 })).toEqual([
+      "2026-11-26",
+      "2026-11-27",
+    ]);
+  });
+
   it("applies to a rule after completion too", () => {
     const id = app.createToDo({ title: "Water plants", when: { kind: "today" } });
     app.setRepeat(id, { freq: "daily", interval: 3, count: 2 }, "afterCompletion");

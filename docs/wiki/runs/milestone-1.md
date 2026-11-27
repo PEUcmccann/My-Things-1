@@ -9,3 +9,4 @@ One dated entry per delegated ticket: outcome, commit or PR, friction, and wheth
 - 2026-11-27: merged as PR #20 (merge commit `7d900c9`). GitHub closed #4–#18 from the PR's closing keywords; #2 (the full spec) stays open for later milestones.
 - 2026-11-27: the product decisions the subagent made are on each ticket's comments and summarised in PR #20's body. See [M1 product decisions](../decisions/m1-product-decisions.md).
 - 2026-11-27: friction is in [Cloud session friction](../problems/cloud-session-friction.md). A retro on this session was delegated; a usage limit cut it off at about 02:30 UTC, and it was resumed at 04:18 UTC once the limit reset.
+- 2026-11-27: retro done ([M1 build retro](../retros/2026-11-27-m1-build.md)). Fixes `afb975b`, `b9c3110`, `5982996` and `f3b5e66` went into a follow-up PR.

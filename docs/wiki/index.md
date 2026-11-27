@@ -15,6 +15,7 @@ A historical record kept by the chief-of-staff sessions (`.claude/skills/chief-o
 ## Preferences
 
 - [Unattended authority](preferences/unattended-authority.md): on 2026-11-27 the user let the session decide open questions, open PRs and merge while they slept.
+- [Open offers](preferences/open-offers.md): proposed changes waiting on the user, as of 2026-11-27.
 
 ## Problems
 
@@ -23,3 +24,7 @@ A historical record kept by the chief-of-staff sessions (`.claude/skills/chief-o
 ## Runs
 
 - [Milestone 1 run log](runs/milestone-1.md): what each delegated M1 ticket produced, and the retros on them.
+
+## Retros
+
+- [M1 build retro](retros/2026-11-27-m1-build.md): eight findings on the Milestone 1 session; four fixed in the repo, four offered to the user.

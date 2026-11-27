@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { type fixedClock, type MyThings, type RepeatPattern } from "./index";
+import {
+  createMyThings,
+  memoryStore,
+  type fixedClock,
+  type MyThings,
+  type RepeatPattern,
+} from "./index";
 import { setup } from "./testSetup";
 
 // The fixed clock says Thursday 26 November 2026.
@@ -225,7 +231,7 @@ describe("a rule that ends after a number of occurrences", () => {
   it("applies to a rule after completion too", () => {
     const id = app.createToDo({ title: "Water plants", when: { kind: "today" } });
     app.setRepeat(id, { freq: "daily", interval: 3, count: 2 }, "afterCompletion");
-    expect(app.getToDo(id).repeat?.rrule).toBe("FREQ=DAILY;INTERVAL=3;COUNT=2");
+    expect(app.repeatPatternOf(id)).toEqual({ freq: "daily", interval: 3, count: 2 });
     const second = completeAndNext(id)!;
     expect(app.getToDo(second).startDate).toBe("2026-11-29");
     expect(completeAndNext(second)).toBeUndefined();
@@ -264,31 +270,29 @@ describe("a rule that ends on a date", () => {
   });
 });
 
-describe("the stored RRULE", () => {
+describe("the stored rule", () => {
   it.each([
-    [lastWeekday, "FREQ=MONTHLY;INTERVAL=1;BYDAY=MO,TU,WE,TH,FR;BYSETPOS=-1;WKST=MO"],
-    [
-      { freq: "yearly", interval: 1, byMonth: [3], byDay: ["1MO"] },
-      "FREQ=YEARLY;INTERVAL=1;BYMONTH=3;BYDAY=1MO;WKST=MO",
-    ],
-    [{ freq: "daily", interval: 2, count: 5 }, "FREQ=DAILY;INTERVAL=2;COUNT=5;WKST=MO"],
-    [
-      { freq: "daily", interval: 1, until: "2027-01-31" },
-      "FREQ=DAILY;INTERVAL=1;UNTIL=20270131;WKST=MO",
-    ],
-  ] as [RepeatPattern, string][])("%o is kept as %s and read back", (pattern, rrule) => {
-    const id = app.createToDo({ title: "Chore", when: { kind: "today" } });
-    app.setRepeat(id, pattern);
-    expect(app.getToDo(id).repeat?.rrule).toBe(rrule);
-    expect(app.repeatPatternOf(id)).toEqual(pattern);
-  });
+    [lastWeekday, ["2026-11-30", "2026-12-31"]],
+    [{ freq: "yearly", interval: 1, byMonth: [3], byDay: ["1MO"] }, ["2027-03-01", "2028-03-06"]],
+    [{ freq: "daily", interval: 2, count: 5 }, ["2026-11-26", "2026-11-28"]],
+    [{ freq: "daily", interval: 1, until: "2027-01-31" }, ["2026-11-26", "2026-11-27"]],
+  ] as [RepeatPattern, string[]][])(
+    "%o is kept and read back after a restart",
+    (pattern, dates) => {
+      const store = memoryStore();
+      const before = createMyThings({ clock, store });
+      const id = before.createToDo({ title: "Chore", when: { kind: "today" } });
+      before.setRepeat(id, pattern);
+      const after = createMyThings({ clock, store: memoryStore(store.snapshot()) });
+      expect(after.repeatPatternOf(id)).toEqual(pattern);
+      const kept = after.repeatPatternOf(id)!;
+      expect(after.repeatPreview(id, kept, "onSchedule", { limit: 2 })).toEqual(dates);
+    },
+  );
 
   it("orders weekdays Monday first, plain before ordinals", () => {
     const id = app.createToDo({ title: "Chore", when: { kind: "today" } });
     app.setRepeat(id, { freq: "monthly", interval: 1, byDay: ["-1FR", "2TU", "1TU"] });
-    expect(app.getToDo(id).repeat?.rrule).toBe(
-      "FREQ=MONTHLY;INTERVAL=1;BYDAY=1TU,2TU,-1FR;WKST=MO",
-    );
     expect(app.repeatPatternOf(id)?.byDay).toEqual(["1TU", "2TU", "-1FR"]);
   });
 

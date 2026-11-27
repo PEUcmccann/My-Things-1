@@ -2,9 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import {
   createMyThings,
   fixedClock,
-  formatRrule,
   memoryStore,
-  parseRrule,
   type MyThings,
   type RepeatPattern,
 } from "./index";
@@ -119,14 +117,10 @@ describe("month-end days", () => {
 });
 
 describe("setting a Repeat rule", () => {
-  it("keeps the rule as an RRULE with its mode and start", () => {
+  it("keeps the rule with its mode and start", () => {
     const id = app.createToDo({ title: "Gym", when: { kind: "today" } });
     app.setRepeat(id, { freq: "weekly", interval: 2, byDay: ["TH", "MO"] });
-    expect(app.getToDo(id).repeat).toMatchObject({
-      mode: "onSchedule",
-      rrule: "FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,TH;WKST=MO",
-      start: TODAY,
-    });
+    expect(app.getToDo(id).repeat).toMatchObject({ mode: "onSchedule", start: TODAY });
     expect(app.repeatPatternOf(id)).toEqual({ freq: "weekly", interval: 2, byDay: ["MO", "TH"] });
   });
 
@@ -568,23 +562,31 @@ describe("Projects", () => {
 });
 
 describe("reading rules", () => {
-  it("refuses rule parts outside the subset", () => {
-    for (const rrule of [
-      "FREQ=HOURLY",
-      "FREQ=DAILY;COUNT=3;UNTIL=20270101",
-      "FREQ=WEEKLY;BYDAY=1MO",
-      "FREQ=DAILY;UNTIL=20270101T000000Z",
-      "FREQ=DAILY;BYHOUR=9",
-      "FREQ=WEEKLY;WKST=SU",
-      "FREQ=DAILY;INTERVAL=two",
-      "INTERVAL=2",
-    ]) {
-      expect(() => parseRrule(rrule), rrule).toThrow();
-    }
+  it.each([
+    ["an hourly rule", { freq: "hourly" as never, interval: 1 }],
+    ["an interval that isn't a whole number", { freq: "daily", interval: 1.5 }],
+    ["an interval of 0", { freq: "daily", interval: 0 }],
+    ["an ordinal weekday on a weekly rule", { freq: "weekly", interval: 1, byDay: ["1MO"] }],
+    ["an end date that isn't a date", { freq: "daily", interval: 1, until: "next year" }],
+  ] as [string, RepeatPattern][])("refuses %s", (_, pattern) => {
+    const id = app.createToDo({ title: "Gym", when: { kind: "today" } });
+    expect(() => app.setRepeat(id, pattern)).toThrow();
+    expect(app.repeatPatternOf(id)).toBeNull();
   });
 
-  it("reads what it writes", () => {
-    const rrule = "FREQ=MONTHLY;INTERVAL=3;BYMONTHDAY=-1,15;WKST=MO";
-    expect(formatRrule(parseRrule(rrule))).toBe(rrule);
+  it("reads back what it keeps, after a restart too", () => {
+    const store = memoryStore();
+    const clock = fixedClock(NOW);
+    const before = createMyThings({ clock, store });
+    const id = before.createToDo({ title: "Pay bills", when: { kind: "today" } });
+    const pattern: RepeatPattern = { freq: "monthly", interval: 3, byMonthDay: [-1, 15] };
+    before.setRepeat(id, pattern);
+    const after = createMyThings({ clock, store: memoryStore(store.snapshot()) });
+    expect(after.repeatPatternOf(id)).toEqual(pattern);
+    expect(after.repeatPreview(id, pattern, "onSchedule", { limit: 3 })).toEqual([
+      "2026-11-30",
+      "2027-02-15",
+      "2027-02-28",
+    ]);
   });
 });

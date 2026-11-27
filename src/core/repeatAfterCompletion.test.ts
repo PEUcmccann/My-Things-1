@@ -32,11 +32,7 @@ describe("a Repeat rule after completion", () => {
   it("is kept as FREQ and INTERVAL only, with its mode", () => {
     const id = app.createToDo({ title: "Water plants", when: { kind: "today" } });
     app.setRepeat(id, { freq: "weekly", interval: 2 }, "afterCompletion");
-    expect(app.getToDo(id).repeat).toMatchObject({
-      mode: "afterCompletion",
-      rrule: "FREQ=WEEKLY;INTERVAL=2",
-      start: TODAY,
-    });
+    expect(app.getToDo(id).repeat).toMatchObject({ mode: "afterCompletion", start: TODAY });
     expect(app.repeatPatternOf(id)).toEqual({ freq: "weekly", interval: 2 });
   });
 

@@ -8,6 +8,7 @@ import { AreaScreen } from "./screens/AreaScreen";
 import { ListScreen } from "./screens/ListScreen";
 import { ProjectScreen } from "./screens/ProjectScreen";
 import { LogbookScreen } from "./screens/LogbookScreen";
+import { QuickFindScreen } from "./screens/QuickFindScreen";
 import { SettingsScreen } from "./screens/SettingsScreen";
 import { TagScreen } from "./screens/TagScreen";
 import { TagsScreen } from "./screens/TagsScreen";
@@ -38,6 +39,8 @@ function CurrentScreen() {
       return <AreaScreen key={route.id} id={route.id} />;
     case "project":
       return <ProjectScreen key={route.id} id={route.id} />;
+    case "quickFind":
+      return <QuickFindScreen />;
     case "tags":
       return <TagsScreen />;
     case "tag":

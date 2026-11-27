@@ -41,6 +41,7 @@ export function AreaScreen({ id }: { id: string }) {
         title={area.title}
         testID="screen-area"
         selectable
+        searchable
         header={
           <>
             <TagChips tags={app.tagsOf({ kind: "area", id })} />

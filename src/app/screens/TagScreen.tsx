@@ -26,7 +26,7 @@ export function TagScreen({ id }: { id: string }) {
   const { areas, projects, toDos } = app.tagged(id);
   return (
     <View style={{ flex: 1 }}>
-      <Screen title={`🏷 ${tag.title}`} testID="screen-tag" selectable>
+      <Screen title={`🏷 ${tag.title}`} testID="screen-tag" selectable searchable>
         {areas.length + projects.length + toDos.length === 0 ? (
           <Empty text="Nothing has this Tag" />
         ) : null}

@@ -29,7 +29,8 @@ export type Route =
   | { name: "area"; id: string }
   | { name: "project"; id: string }
   | { name: "tags" }
-  | { name: "tag"; id: string };
+  | { name: "tag"; id: string }
+  | { name: "quickFind" };
 
 interface Navigation {
   route: Route;

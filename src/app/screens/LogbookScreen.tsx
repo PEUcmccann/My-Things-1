@@ -32,6 +32,7 @@ export function LogbookScreen() {
     <Screen
       title="Logbook"
       testID="screen-logbook"
+      searchable
       header={filter.bar}
       actions={
         showMove ? (

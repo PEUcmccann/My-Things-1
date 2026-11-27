@@ -66,7 +66,13 @@ export function ListScreen({ list }: { list: BuiltInList }) {
   const isEmpty = projects.length === 0 && sections.every((s) => s.entries.length === 0);
   return (
     <View style={styles.fill}>
-      <Screen title={listTitles[list]} testID={`screen-${list}`} selectable header={filter.bar}>
+      <Screen
+        title={listTitles[list]}
+        testID={`screen-${list}`}
+        selectable
+        searchable
+        header={filter.bar}
+      >
         {isEmpty ? <Empty text="Nothing here" /> : null}
         {projects.map((p) => (
           <ProjectRow key={p.id} project={p} />

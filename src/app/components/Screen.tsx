@@ -15,10 +15,16 @@ interface Props {
   header?: ReactNode;
   /** Offers a Select button that starts selecting To-dos. */
   selectable?: boolean;
+  /** Offers Quick Find: a search button, and pulling the list down. */
+  searchable?: boolean;
   testID?: string;
 }
 
-export function Screen({ title, children, actions, header, testID, selectable }: Props) {
+/** How far a list must be pulled down past its top to open Quick Find. */
+const pullToFind = 70;
+
+export function Screen(props: Props) {
+  const { title, children, actions, header, testID, selectable, searchable } = props;
   const theme = useTheme();
   const nav = useNavigation();
   const drag = useDrag();
@@ -42,6 +48,14 @@ export function Screen({ title, children, actions, header, testID, selectable }:
             {title}
           </Text>
           <View style={styles.actions}>
+            {searchable ? (
+              <Button
+                small
+                title="🔍"
+                onPress={() => nav.push({ name: "quickFind" })}
+                testID="open-quickfind"
+              />
+            ) : null}
             {selectable ? <SelectButton /> : null}
             {actions}
           </View>
@@ -52,6 +66,12 @@ export function Screen({ title, children, actions, header, testID, selectable }:
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
         scrollEnabled={!drag.dragging}
+        alwaysBounceVertical={searchable}
+        onScrollEndDrag={(e) => {
+          if (searchable && e.nativeEvent.contentOffset.y < -pullToFind) {
+            nav.push({ name: "quickFind" });
+          }
+        }}
       >
         {children}
       </ScrollView>

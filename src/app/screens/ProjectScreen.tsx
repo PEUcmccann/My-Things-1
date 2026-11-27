@@ -111,6 +111,7 @@ export function ProjectScreen({ id }: { id: string }) {
         title={project.title}
         testID="screen-project"
         selectable
+        searchable
         actions={
           <Button small title="•••" onPress={() => setDialog("menu")} testID="project-menu" />
         }

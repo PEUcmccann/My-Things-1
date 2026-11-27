@@ -10,7 +10,7 @@ import {
   View,
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { DragProvider } from "./drag";
 import { FinishProvider } from "./finish";
 import { NavigationProvider, useNavigation, type Route } from "./navigation";
@@ -29,6 +29,7 @@ import { Sidebar } from "./screens/Sidebar";
 import { SelectionProvider } from "./selection";
 import { MyThingsProvider } from "./state";
 import { useTheme } from "./theme";
+import { useKeyboardInset } from "./useKeyboardInset";
 
 /** Screens wider than this show the sidebar beside the content. */
 const WIDE = 768;
@@ -92,26 +93,32 @@ function Layout() {
   const { width } = useWindowDimensions();
   const wide = width >= WIDE;
   const root: Route = wide ? { name: "list", list: "inbox" } : { name: "sidebar" };
+  // On the web the keyboard covers the page instead of shrinking it, so shrink the screens to
+  // the visible area: lists and inputs then scroll into view above it. SafeAreaView already
+  // leaves room for the home indicator, which the keyboard covers too.
+  const keyboard = Math.max(0, useKeyboardInset() - useSafeAreaInsets().bottom);
   return (
     <SafeAreaView style={[styles.root, { backgroundColor: theme.background }]}>
-      <NavigationProvider key={wide ? "wide" : "narrow"} root={root}>
-        <SelectionProvider>
-          <DragProvider>
-            {wide ? (
-              <View style={styles.row}>
-                <View style={[styles.side, { borderColor: theme.border }]}>
-                  <Sidebar wide />
+      <View style={[styles.fill, { paddingBottom: keyboard }]} testID="app-content">
+        <NavigationProvider key={wide ? "wide" : "narrow"} root={root}>
+          <SelectionProvider>
+            <DragProvider>
+              {wide ? (
+                <View style={styles.row}>
+                  <View style={[styles.side, { borderColor: theme.border }]}>
+                    <Sidebar wide />
+                  </View>
+                  <View style={styles.fill}>
+                    <CurrentScreen />
+                  </View>
                 </View>
-                <View style={styles.fill}>
-                  <CurrentScreen />
-                </View>
-              </View>
-            ) : (
-              <CurrentScreen />
-            )}
-          </DragProvider>
-        </SelectionProvider>
-      </NavigationProvider>
+              ) : (
+                <CurrentScreen />
+              )}
+            </DragProvider>
+          </SelectionProvider>
+        </NavigationProvider>
+      </View>
       <StatusBar style={theme.dark ? "light" : "dark"} />
     </SafeAreaView>
   );

@@ -60,6 +60,25 @@ function isInInbox(item: ToDo): boolean {
 export function listQueries(ctx: Context) {
   const { store, clock } = ctx;
 
+  /**
+   * Today: every active To-do whose Start date or Deadline is today or earlier.
+   * To-dos finished today stay visible until they move to the Logbook.
+   */
+  function todayList(): TodayList {
+    const today = clock.today();
+    const list: TodayList = { main: [], thisEvening: [] };
+    const due = store
+      .all("toDos")
+      .filter(
+        (item) => ctx.isOpenInLists(item) && isDue(item, today) && !ctx.isHeldBackByProject(item),
+      )
+      .sort((a, b) => todayKey(a) - todayKey(b) || byPosition(a, b));
+    for (const item of due) {
+      (item.evening ? list.thisEvening : list.main).push(ctx.entry(item));
+    }
+    return list;
+  }
+
   return {
     /**
      * Inbox: To-dos that have not been organised yet. Filing a To-do in an Area or
@@ -170,23 +189,17 @@ export function listQueries(ctx: Context) {
         .sort(byPosition);
     },
 
+    today: todayList,
+
     /**
-     * Today: every active To-do whose Start date or Deadline is today or earlier.
-     * To-dos finished today stay visible until they move to the Logbook.
+     * The total Estimate, in minutes, of Today's active To-dos (This Evening
+     * included). To-dos with no Estimate count as nothing.
      */
-    today(): TodayList {
-      const today = clock.today();
-      const list: TodayList = { main: [], thisEvening: [] };
-      const due = store
-        .all("toDos")
-        .filter(
-          (item) => ctx.isOpenInLists(item) && isDue(item, today) && !ctx.isHeldBackByProject(item),
-        )
-        .sort((a, b) => todayKey(a) - todayKey(b) || byPosition(a, b));
-      for (const item of due) {
-        (item.evening ? list.thisEvening : list.main).push(ctx.entry(item));
-      }
-      return list;
+    todayEstimate(): number {
+      const { main, thisEvening } = todayList();
+      return [...main, ...thisEvening]
+        .filter((e) => e.toDo.outcome === "active")
+        .reduce((total, e) => total + (e.toDo.estimate ?? 0), 0);
     },
   };
 }

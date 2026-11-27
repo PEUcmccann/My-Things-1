@@ -6,3 +6,5 @@
 - The README was rewritten the same day (`96d223c`).
 
 Related: [Cloud environment](../subsystems/cloud-environment.md).
+
+- 2026-11-27: the user made the repository public to enable Pages. The first deploy run, triggered by the PR #33 merge, had failed because Pages wasn't on yet. A manual workflow_dispatch run (45962850651) succeeded. The user then reported the app "Working" on their iPhone. This session couldn't fetch `github.io` itself, because the proxy refused it.

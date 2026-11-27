@@ -11,11 +11,11 @@ A personal task manager app built with React Native and Expo. The design decisio
 ## Commands
 
 ```bash
-npm test            # core tests (Vitest)
+npm test            # Vitest: core tests, plus pure helpers in src/app
 npm run lint        # ESLint
 npm run typecheck   # tsc --noEmit
 npm run format      # Prettier
-npm run test:ui     # Playwright UI checks on the web build at iPhone size
+npm run test:ui     # Playwright UI checks on the web build at iPhone size (UI_PORT=8090 for a free port)
 npm run check:expo  # Expo-pinned packages match the SDK's versions
 npx expo start      # dev server (Expo Go on the phone, or press w for web)
 ```

@@ -58,6 +58,15 @@ export interface Heading extends RecordMeta, Ordered {
   archivedAt: Moment | null;
 }
 
+/**
+ * A start and end time on a To-do's Start date, in whole minutes from 00:00. The end
+ * is after the start and no later than 24:00 (1440), so a slot never crosses midnight.
+ */
+export interface TimeSlot {
+  start: number;
+  end: number;
+}
+
 export interface ToDo extends RecordMeta, Ordered {
   /** Order within Today, which has its own order. Falls back to `position`. */
   todayPosition: number | null;
@@ -74,13 +83,28 @@ export interface ToDo extends RecordMeta, Ordered {
   evening: boolean;
   someday: boolean;
   deadline: LocalDate | null;
+  /** At most one, on the Start date; there is none without a Start date. */
+  timeSlot: TimeSlot | null;
   areaId: string | null;
   projectId: string | null;
   headingId: string | null;
   /** The parent To-do of a Sub-to-do. */
   parentId: string | null;
   deletedAt: Moment | null;
+  priority: Priority;
+  /** Not set when null. */
+  energy: Energy | null;
+  /** Minutes, a whole positive number. Not set when null. */
+  estimate: number | null;
 }
+
+/** How important a To-do is. "none" is the default. */
+export const priorities = ["none", "low", "medium", "high"] as const;
+export type Priority = (typeof priorities)[number];
+
+/** How much focus a To-do needs. */
+export const energies = ["low", "high"] as const;
+export type Energy = (typeof energies)[number];
 
 /** A small step inside a To-do that can only be ticked off. */
 export interface ChecklistItem extends RecordMeta {

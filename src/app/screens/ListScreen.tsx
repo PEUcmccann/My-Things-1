@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
-import type { ListRef, NewToDo, ToDoEntry } from "../../core";
+import { formatEstimate, type ListRef, type NewToDo, type ToDoEntry } from "../../core";
 import { useDrag } from "../drag";
 import { type BuiltInList } from "../navigation";
 import { listTitles } from "../lists";
@@ -63,6 +63,7 @@ export function ListScreen({ list }: { list: BuiltInList }) {
     list === "today" || list === "anytime" || list === "someday" ? app.projectsIn(list) : [],
     filter.selected,
   );
+  const estimate = list === "today" ? app.todayEstimate() : 0;
   const isEmpty = projects.length === 0 && sections.every((s) => s.entries.length === 0);
   return (
     <View style={styles.fill}>
@@ -71,7 +72,16 @@ export function ListScreen({ list }: { list: BuiltInList }) {
         testID={`screen-${list}`}
         selectable
         searchable
-        header={filter.bar}
+        header={
+          <>
+            {estimate > 0 ? (
+              <Text style={[styles.estimate, { color: theme.muted }]} testID="today-estimate">
+                Estimated {formatEstimate(estimate)}
+              </Text>
+            ) : null}
+            {filter.bar}
+          </>
+        }
       >
         {isEmpty ? <Empty text="Nothing here" /> : null}
         {projects.map((p) => (
@@ -96,5 +106,6 @@ export function ListScreen({ list }: { list: BuiltInList }) {
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
+  estimate: { fontSize: 14, marginTop: 2 },
   sectionTitle: { fontSize: 14, fontWeight: "600", marginTop: 16, marginBottom: 6, marginLeft: 8 },
 });

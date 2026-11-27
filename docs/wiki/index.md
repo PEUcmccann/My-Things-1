@@ -11,6 +11,10 @@ A historical record kept by the chief-of-staff sessions (`.claude/skills/chief-o
 
 - [Work tracking](subsystems/work-tracking.md): where specs and tickets lived as of 2026-11-27, and how agents reached them.
 
+## Preferences
+
+- [Unattended authority](preferences/unattended-authority.md): on 2026-11-27 the user let the session decide open questions, open PRs and merge while they slept.
+
 ## Runs
 
 - [Milestone 1 run log](runs/milestone-1.md): what each delegated M1 ticket produced, and the retros on them.

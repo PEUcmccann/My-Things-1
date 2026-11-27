@@ -55,6 +55,7 @@ const recordDefaults: { [C in CollectionName]: Partial<Collections[C]> } = {
     notes: "",
     position: 0,
     todayPosition: null,
+    timeSlot: null,
     priority: "none",
     energy: null,
     estimate: null,

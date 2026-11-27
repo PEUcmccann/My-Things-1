@@ -74,3 +74,25 @@ export function whenText(
   if (toDo.startDate <= today) return toDo.evening ? "🌙 This Evening" : "☀️ Today";
   return formatDate(toDo.startDate, today);
 }
+
+/** "14:05", from minutes after 00:00 (24:00 for the end of the day). */
+export function formatTime(minutes: number): string {
+  const h = String(Math.floor(minutes / 60)).padStart(2, "0");
+  const m = String(minutes % 60).padStart(2, "0");
+  return `${h}:${m}`;
+}
+
+/**
+ * A To-do's Time slot, such as "14:00–14:30". With `withDay`, a slot on another day
+ * than today starts with that day, as in "Yesterday 14:00–14:30".
+ */
+export function timeSlotText(
+  toDo: Pick<ToDo, "startDate" | "timeSlot">,
+  today: LocalDate,
+  withDay = true,
+): string | null {
+  if (!toDo.timeSlot) return null;
+  const times = `${formatTime(toDo.timeSlot.start)}–${formatTime(toDo.timeSlot.end)}`;
+  if (!withDay || !toDo.startDate || toDo.startDate === today) return times;
+  return `${formatDate(toDo.startDate, today)} ${times}`;
+}

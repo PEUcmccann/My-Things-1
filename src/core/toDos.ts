@@ -1,5 +1,5 @@
 import { byPosition, type Context } from "./context";
-import type { LocalDate, ToDo } from "./types";
+import type { LocalDate, TimeSlot, ToDo } from "./types";
 
 /** A choice of "When" for a To-do: what the Start date picker offers. */
 export type When =
@@ -46,11 +46,40 @@ export function whenFields(
   }
 }
 
+/** Minutes in a day: a Time slot can end at 24:00 but not later. */
+export const endOfDay = 24 * 60;
+
+/** Whole minutes from 00:00, the end after the start and no later than 24:00. */
+export function isValidTimeSlot({ start, end }: TimeSlot): boolean {
+  return (
+    Number.isInteger(start) && Number.isInteger(end) && start >= 0 && end > start && end <= endOfDay
+  );
+}
+
+/** How long a Time slot is by default, when the To-do has no Estimate. */
+export const defaultSlotMinutes = 30;
+
+/**
+ * How long a new Time slot for this To-do should be: its Estimate, or 30 minutes.
+ * Estimates arrive with #22; until then every To-do gets the default.
+ */
+function slotLengthFor(_toDo: ToDo): number {
+  return defaultSlotMinutes;
+}
+
 export function toDoActions(ctx: Context) {
   const { store, clock } = ctx;
 
+  /**
+   * Updates a To-do's Start date fields. Its Time slot moves with the Start date (same
+   * times, new day) and is cleared along with it, since a slot needs a Start date.
+   */
+  function updateDated(id: string, changes: Partial<ToDo>) {
+    ctx.update("toDos", id, changes.startDate === null ? { ...changes, timeSlot: null } : changes);
+  }
+
   function setStartDate(id: string, date: LocalDate | null, opts: { evening?: boolean } = {}) {
-    ctx.update("toDos", id, {
+    updateDated(id, {
       startDate: date,
       evening: date !== null && (opts.evening ?? false),
       someday: false,
@@ -58,7 +87,7 @@ export function toDoActions(ctx: Context) {
   }
 
   function setWhen(id: string, when: When): void {
-    ctx.update("toDos", id, whenFields(when, clock.today()));
+    updateDated(id, whenFields(when, clock.today()));
   }
 
   return {
@@ -82,6 +111,7 @@ export function toDoActions(ctx: Context) {
         evening: false,
         someday: false,
         deadline: null,
+        timeSlot: null,
         // A Sub-to-do always sits where its parent sits. A To-do in a Project takes
         // its Area from the Project.
         areaId: parent ? parent.areaId : projectId ? null : (input.areaId ?? null),
@@ -122,6 +152,24 @@ export function toDoActions(ctx: Context) {
       setWhen(id, { kind: "someday" });
     },
 
+    /** Sets or clears the To-do's Time slot, on its Start date. */
+    setTimeSlot(id: string, slot: TimeSlot | null): void {
+      if (slot && !isValidTimeSlot(slot)) {
+        throw new Error("A Time slot must end after it starts, within one day");
+      }
+      // A slot needs a Start date: without one (or in Someday) it goes on today.
+      const dated =
+        slot && !ctx.require("toDos", id).startDate
+          ? whenFields({ kind: "today" }, clock.today())
+          : {};
+      ctx.update("toDos", id, { ...dated, timeSlot: slot && { start: slot.start, end: slot.end } });
+    },
+
+    /** The end to pre-fill once a start time is picked: start plus the slot length, by 24:00. */
+    suggestedSlotEnd(id: string, start: number): number {
+      return Math.min(start + slotLengthFor(ctx.require("toDos", id)), endOfDay);
+    },
+
     setDeadline(id: string, date: LocalDate | null): void {
       ctx.update("toDos", id, { deadline: date });
     },
@@ -142,7 +190,7 @@ export function toDoActions(ctx: Context) {
         headingId: heading?.id ?? null,
       };
       const extra = to.kind === "inbox" ? whenFields({ kind: "none" }, clock.today()) : {};
-      ctx.update("toDos", id, { ...place, ...extra });
+      updateDated(id, { ...place, ...extra });
       for (const child of store.all("toDos")) {
         if (child.parentId === id) ctx.update("toDos", child.id, place);
       }

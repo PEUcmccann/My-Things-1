@@ -13,6 +13,7 @@ A historical record kept by the chief-of-staff sessions (`.claude/skills/chief-o
 
 - [Work tracking](subsystems/work-tracking.md): where specs and tickets lived as of 2026-11-27, and how agents reached them.
 - [Cloud environment](subsystems/cloud-environment.md): the "My-Things-1" environment and its allowed hosts, from 2026-11-27.
+- [Supabase project](subsystems/supabase.md): the M3 sync backend set up on 2026-11-27: its URL, keys policy and GitHub deployment.
 
 ## Preferences
 

@@ -5,6 +5,7 @@ import type { ToDo, ToDoEntry } from "../../core";
 import { DragHandle, useDrag, useDropRow } from "../drag";
 import { useFinishToDo } from "../finish";
 import { useSelection } from "../selection";
+import { useSeriesEdit } from "../seriesScope";
 import { useMyThings } from "../state";
 import { useTheme } from "../theme";
 import { Checkbox } from "./Checkbox";
@@ -83,6 +84,7 @@ export function ToDoRow({ entry, onPress, listKey }: Props) {
   const app = useMyThings();
   const theme = useTheme();
   const finish = useFinishToDo();
+  const editSeries = useSeriesEdit();
   const selection = useSelection();
   const { toDo, parentTitle } = entry;
   const ref = useDropRow(listKey, toDo.id);
@@ -220,7 +222,11 @@ export function ToDoRow({ entry, onPress, listKey }: Props) {
           {
             title: "Delete",
             danger: true,
-            onPress: () => app.delete(toDo.id),
+            // Deleting a Sub-to-do changes what its repeating parent's next one copies.
+            onPress: () => {
+              if (toDo.parentId) editSeries([toDo.parentId], () => app.delete(toDo.id));
+              else app.delete(toDo.id);
+            },
             testID: "row-delete",
           },
         ]}

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { formatEstimate, type MyThings, type SeriesScope, type ToDo } from "../../core";
 import { Button } from "../components/Button";
 import { Checkbox } from "../components/Checkbox";
@@ -11,12 +11,12 @@ import { NotesField } from "../components/NotesField";
 import { EnergyPicker, EstimatePicker, PriorityPicker } from "../components/PlanningPickers";
 import { RepeatPicker } from "../components/RepeatPicker";
 import { Screen } from "../components/Screen";
-import { SeriesScopeChoice } from "../components/SeriesScopeChoice";
 import { TagPicker } from "../components/TagPicker";
 import { ToDoList } from "../components/ToDoList";
 import { TimeSlotPicker } from "../components/TimeSlotPicker";
 import { DatePicker, WhenPicker } from "../components/WhenPicker";
 import { useFinishToDo } from "../finish";
+import { useAskSeriesScope } from "../seriesScope";
 import {
   energyIcons,
   energyNames,
@@ -79,7 +79,7 @@ export function ToDoScreen({ id }: { id: string }) {
   // A repeating To-do asks "this one or all future ones" once per visit, at the
   // first edit that needs it; the answer holds for the rest of the visit.
   const [scope, setScope] = useState<SeriesScope | null>(null);
-  const [asking, setAsking] = useState<{ then: (scope: SeriesScope) => void } | null>(null);
+  const askScope = useAskSeriesScope();
   // Remounts the fields after backing out, so text being edited goes back too.
   const [fieldsKey, setFieldsKey] = useState(0);
 
@@ -101,29 +101,30 @@ export function ToDoScreen({ id }: { id: string }) {
   // A new rule's first date is on or after the Start date, or today if that has passed.
   const repeatFrom = toDo.startDate && toDo.startDate > today ? toDo.startDate : today;
 
+  /** Backing out of the question undoes the edit being made, as text being typed. */
+  const backOut = () => {
+    setTitle(toDo.title);
+    setFieldsKey((k) => k + 1);
+  };
   /** Asks "this one or all future ones" first, when this visit hasn't yet. */
   const ask = (then: (scope: SeriesScope | null) => void) => {
-    if (!app.asksThisOneOrAllFuture(id) || scope) then(scope);
-    else if (!asking) setAsking({ then });
+    if (scope) then(scope);
+    else {
+      askScope(
+        [id],
+        (s) => {
+          if (s) setScope(s);
+          then(s);
+        },
+        backOut,
+      );
+    }
   };
   /** Makes an edit to something the next occurrence copies. */
   const edit = (change: () => void) =>
     ask((s) => (s ? app.editOccurrence(id, s, change) : change()));
   /** Opens a picker for something the next occurrence copies, asking first. */
   const openPicker = (p: Picker) => ask(() => setPicker(p));
-  const answer = (s: SeriesScope) => {
-    const then = asking?.then;
-    setAsking(null);
-    setScope(s);
-    // iOS cannot show another sheet (a picker) while this one is still sliding away.
-    if (Platform.OS === "ios") setTimeout(() => then?.(s), 450);
-    else then?.(s);
-  };
-  const backOut = () => {
-    setAsking(null);
-    setTitle(toDo.title);
-    setFieldsKey((k) => k + 1);
-  };
 
   const saveTitle = () => {
     if (title.trim() && title.trim() !== toDo.title) edit(() => app.editToDo(id, { title }));
@@ -366,7 +367,6 @@ export function ToDoScreen({ id }: { id: string }) {
         onClose={() => setPicker(null)}
         testID="deadline-picker"
       />
-      <SeriesScopeChoice visible={asking !== null} onChoose={answer} onBackOut={backOut} />
     </Screen>
   );
 }

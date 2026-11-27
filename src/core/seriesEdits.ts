@@ -247,6 +247,25 @@ export function seriesSubToDos(ctx: Context, from: ToDo): ToDo[] {
   });
 }
 
+/** Makes `edit` for one To-do: see `editOccurrence`. */
+function editOne(ctx: Context, id: string, scope: SeriesScope, edit: () => void): void {
+  const toDo = ctx.require("toDos", id);
+  if (!toDo.repeat) {
+    edit();
+    return;
+  }
+  const before = copiedFrom(ctx, toDo);
+  edit();
+  const edited = ctx.require("toDos", id);
+  const values = recordEdit(
+    edited.seriesValues ?? noValues(),
+    before,
+    copiedFrom(ctx, edited),
+    scope,
+  );
+  ctx.update("toDos", id, { seriesValues: isEmpty(values) ? null : values });
+}
+
 export function seriesEditActions(ctx: Context) {
   return {
     /**
@@ -263,21 +282,19 @@ export function seriesEditActions(ctx: Context) {
      * just edited.
      */
     editOccurrence(id: string, scope: SeriesScope, edit: () => void): void {
-      const item = ctx.require("toDos", id);
-      if (!item.repeat) {
-        edit();
-        return;
-      }
-      const before = copiedFrom(ctx, item);
-      edit();
-      const edited = ctx.require("toDos", id);
-      const values = recordEdit(
-        edited.seriesValues ?? noValues(),
-        before,
-        copiedFrom(ctx, edited),
-        scope,
+      editOne(ctx, id, scope, edit);
+    },
+
+    /**
+     * Makes one edit that changes several To-dos, such as a bulk action, with the
+     * same choice for each repeating one among them.
+     */
+    editOccurrences(ids: string[], scope: SeriesScope, edit: () => void): void {
+      const each = [...new Set(ids)].reduce(
+        (inner, id) => () => editOne(ctx, id, scope, inner),
+        edit,
       );
-      ctx.update("toDos", id, { seriesValues: isEmpty(values) ? null : values });
+      each();
     },
   };
 }

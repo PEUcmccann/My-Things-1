@@ -348,6 +348,25 @@ describe("which edits ask", () => {
     expect(app.asksThisOneOrAllFuture(id)).toBe(false);
   });
 
+  it("an edit to several To-dos applies one choice to each repeating one", () => {
+    const a = repeatingToDo("Water plants");
+    const b = repeatingToDo("Feed the cat");
+    const plain = app.createToDo({ title: "Buy soil" });
+    app.editOccurrences([a, b, plain], "thisOne", () => app.setPriorityMany([a, b, plain], "high"));
+    expect([a, b, plain].map((id) => app.getToDo(id).priority)).toEqual(["high", "high", "high"]);
+    expect(app.getToDo(completeAndNext(a)).priority).toBe("none");
+    expect(app.getToDo(completeAndNext(b)).priority).toBe("none");
+  });
+
+  it('an edit to several To-dos for "all future ones" carries over to each', () => {
+    const a = repeatingToDo("Water plants");
+    const b = repeatingToDo("Feed the cat");
+    const home = app.createTag("Home");
+    app.editOccurrences([a, b], "allFuture", () => app.addTagsMany([a, b], [home]));
+    expect(app.getToDo(completeAndNext(a)).tagIds).toEqual([home]);
+    expect(app.getToDo(completeAndNext(b)).tagIds).toEqual([home]);
+  });
+
   it("a To-do that doesn't repeat is just edited", () => {
     const id = app.createToDo({ title: "Buy soil" });
     app.editOccurrence(id, "thisOne", () => app.editToDo(id, { title: "Buy compost" }));

@@ -28,6 +28,7 @@ import { TrashScreen } from "./screens/TrashScreen";
 import { UpcomingScreen } from "./screens/UpcomingScreen";
 import { Sidebar } from "./screens/Sidebar";
 import { SelectionProvider } from "./selection";
+import { SeriesScopeProvider } from "./seriesScope";
 import { MyThingsProvider } from "./state";
 import { useTheme } from "./theme";
 import { TodayViewProvider } from "./todayView";
@@ -143,9 +144,11 @@ export default function App() {
       <SafeAreaProvider>
         <MyThingsProvider loading={<Loading />}>
           <FinishProvider>
-            <TodayViewProvider>
-              <Layout />
-            </TodayViewProvider>
+            <SeriesScopeProvider>
+              <TodayViewProvider>
+                <Layout />
+              </TodayViewProvider>
+            </SeriesScopeProvider>
           </FinishProvider>
         </MyThingsProvider>
       </SafeAreaProvider>

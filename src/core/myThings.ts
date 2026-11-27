@@ -13,7 +13,7 @@ import { quickFindQueries } from "./quickFind";
 import { tagActions } from "./tags";
 import { toDoActions, type NewToDo } from "./toDos";
 import { trashActions } from "./trash";
-import type { LocalDate } from "./types";
+import { accentColours, type AccentColour, type LocalDate } from "./types";
 
 export type { ChecklistProgress } from "./checklist";
 export type { ToDoEntry } from "./context";
@@ -63,6 +63,15 @@ export function createMyThings({ clock, store, newId = randomId, owner = localOw
     /** Tomorrow's date, for the "When" picker. */
     tomorrow(): LocalDate {
       return addDays(clock.today(), 1);
+    },
+
+    accentColour(): AccentColour {
+      return store.settings().accentColour;
+    },
+
+    setAccentColour(colour: AccentColour): void {
+      if (!accentColours.includes(colour)) throw new Error(`Unknown accent colour ${colour}`);
+      store.saveSettings({ ...store.settings(), accentColour: colour });
     },
 
     /** Today's date, from the core's clock. */

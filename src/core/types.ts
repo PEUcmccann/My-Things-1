@@ -91,6 +91,11 @@ export interface ChecklistItem extends RecordMeta {
   position: number;
 }
 
+/** The accent colours to choose from. Teal is the default. */
+export const accentColours = ["teal", "blue", "indigo", "orange", "rose", "green"] as const;
+export type AccentColour = (typeof accentColours)[number];
+
 export interface Settings {
   logbookMode: LogbookMode;
+  accentColour: AccentColour;
 }

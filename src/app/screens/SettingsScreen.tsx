@@ -1,11 +1,11 @@
-import { StyleSheet, Text, View } from "react-native";
-import type { LogbookMode } from "../../core";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { accentColours, type LogbookMode } from "../../core";
 import { Button } from "../components/Button";
 import { Choice } from "../components/Choice";
 import { Screen } from "../components/Screen";
 import { useNavigation } from "../navigation";
 import { useMyThings } from "../state";
-import { useTheme } from "../theme";
+import { accents, useTheme } from "../theme";
 
 const logbookOptions: { value: LogbookMode; title: string; detail: string }[] = [
   { value: "immediately", title: "Immediately", detail: "As soon as you finish an item" },
@@ -41,6 +41,29 @@ export function SettingsScreen() {
           />
         </View>
       ) : null}
+      <Text style={[styles.section, { color: theme.muted }]}>Accent colour</Text>
+      <View style={styles.swatches} testID="accent-colours">
+        {accentColours.map((colour) => {
+          const chosen = app.accentColour() === colour;
+          return (
+            <Pressable
+              key={colour}
+              onPress={() => app.setAccentColour(colour)}
+              accessibilityRole="radio"
+              aria-checked={chosen}
+              accessibilityLabel={accents[colour].name}
+              testID={`accent-${colour}`}
+              style={[
+                styles.swatch,
+                { backgroundColor: theme.dark ? accents[colour].dark : accents[colour].light },
+                chosen && { borderColor: theme.text },
+              ]}
+            >
+              {chosen ? <Text style={{ color: theme.onAccent, fontWeight: "800" }}>✓</Text> : null}
+            </Pressable>
+          );
+        })}
+      </View>
       <Text style={[styles.section, { color: theme.muted }]}>Tags</Text>
       <Button
         title="Manage Tags"
@@ -61,4 +84,14 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   after: { marginTop: 12 },
+  swatches: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginLeft: 8 },
+  swatch: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 3,
+    borderColor: "transparent",
+  },
 });

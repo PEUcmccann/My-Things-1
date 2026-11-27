@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
 import { MenuSheet } from "./components/MenuSheet";
+import { haptics } from "./haptics";
 import { useMyThings } from "./state";
 
 type Outcome = "completed" | "cancelled";
@@ -23,6 +24,7 @@ export function FinishProvider({ children }: { children: ReactNode }) {
       }
       if (outcome === "completed") app.complete(id);
       else app.cancel(id);
+      haptics.success();
     },
     [app],
   );
@@ -31,6 +33,7 @@ export function FinishProvider({ children }: { children: ReactNode }) {
     if (!asking) return;
     if (asking.outcome === "completed") app.complete(asking.id, { remaining });
     else app.cancel(asking.id, { remaining });
+    haptics.success();
   };
 
   return (

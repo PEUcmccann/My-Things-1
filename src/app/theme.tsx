@@ -1,4 +1,6 @@
 import { useColorScheme } from "react-native";
+import type { AccentColour } from "../core";
+import { useOptionalMyThings } from "./state";
 
 export interface Theme {
   dark: boolean;
@@ -13,7 +15,18 @@ export interface Theme {
   warning: string;
 }
 
-const accentTeal = { light: "#0F8B8D", dark: "#3CC6C4" };
+/**
+ * Each accent in light and dark. Light versions reach at least 4.5:1 against
+ * white surfaces, dark versions at least 6.8:1 against dark surfaces.
+ */
+export const accents: Record<AccentColour, { name: string; light: string; dark: string }> = {
+  teal: { name: "Teal", light: "#0B7A7C", dark: "#3CC6C4" },
+  blue: { name: "Blue", light: "#1F63C6", dark: "#6AA8FF" },
+  indigo: { name: "Indigo", light: "#5145CD", dark: "#A39BFF" },
+  orange: { name: "Orange", light: "#B4530A", dark: "#F5A253" },
+  rose: { name: "Rose", light: "#C0265A", dark: "#FF7FA6" },
+  green: { name: "Green", light: "#2E7D32", dark: "#6CCB71" },
+};
 
 const light: Omit<Theme, "accent"> = {
   dark: false,
@@ -24,7 +37,7 @@ const light: Omit<Theme, "accent"> = {
   muted: "#69737D",
   onAccent: "#FFFFFF",
   danger: "#C62D3B",
-  warning: "#B86E00",
+  warning: "#9A5B00",
 };
 
 const dark: Omit<Theme, "accent"> = {
@@ -39,9 +52,11 @@ const dark: Omit<Theme, "accent"> = {
   warning: "#F0A848",
 };
 
-/** Colours for the current light/dark setting. */
+/** Colours for the current light/dark setting and the chosen accent colour. */
 export function useTheme(): Theme {
   const scheme = useColorScheme();
+  const app = useOptionalMyThings();
   const isDark = scheme === "dark";
-  return { ...(isDark ? dark : light), accent: isDark ? accentTeal.dark : accentTeal.light };
+  const accent = accents[app?.accentColour() ?? "teal"] ?? accents.teal;
+  return { ...(isDark ? dark : light), accent: isDark ? accent.dark : accent.light };
 }

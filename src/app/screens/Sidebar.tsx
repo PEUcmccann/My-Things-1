@@ -75,7 +75,7 @@ function SidebarItem(props: {
         >
           <View style={styles.icon}>
             {typeof props.icon === "string" ? (
-              <Text style={styles.iconText}>{props.icon}</Text>
+              <Text style={[styles.iconText, { color: theme.text }]}>{props.icon}</Text>
             ) : (
               props.icon
             )}

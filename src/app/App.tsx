@@ -1,5 +1,14 @@
 import { StatusBar } from "expo-status-bar";
-import { ActivityIndicator, StyleSheet, useWindowDimensions, View } from "react-native";
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Animated,
+  Easing,
+  Platform,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { DragProvider } from "./drag";
 import { FinishProvider } from "./finish";
@@ -23,8 +32,35 @@ import { useTheme } from "./theme";
 /** Screens wider than this show the sidebar beside the content. */
 const WIDE = 768;
 
+/** Each new screen fades and slides in. */
+function Transition({ children }: { children: React.ReactNode }) {
+  const [progress] = useState(() => new Animated.Value(0));
+  useEffect(() => {
+    Animated.timing(progress, {
+      toValue: 1,
+      duration: 220,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: Platform.OS !== "web",
+    }).start();
+  }, [progress]);
+  const translateX = progress.interpolate({ inputRange: [0, 1], outputRange: [24, 0] });
+  return (
+    <Animated.View style={[styles.fill, { opacity: progress, transform: [{ translateX }] }]}>
+      {children}
+    </Animated.View>
+  );
+}
+
 function CurrentScreen() {
   const { route } = useNavigation();
+  return (
+    <Transition key={JSON.stringify(route)}>
+      <ScreenFor route={route} />
+    </Transition>
+  );
+}
+
+function ScreenFor({ route }: { route: Route }) {
   switch (route.name) {
     case "sidebar":
       return <Sidebar />;
@@ -56,7 +92,7 @@ function Layout() {
   const wide = width >= WIDE;
   const root: Route = wide ? { name: "list", list: "inbox" } : { name: "sidebar" };
   return (
-    <SafeAreaView style={[styles.fill, { backgroundColor: theme.background }]}>
+    <SafeAreaView style={[styles.root, { backgroundColor: theme.background }]}>
       <NavigationProvider key={wide ? "wide" : "narrow"} root={root}>
         <SelectionProvider>
           <DragProvider>
@@ -103,6 +139,8 @@ export default function App() {
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
+  // Keeps the web page itself from scrolling when a screen slides in.
+  root: { flex: 1, overflow: "hidden" },
   center: { alignItems: "center", justifyContent: "center" },
   row: { flex: 1, flexDirection: "row" },
   side: { width: 280, borderRightWidth: StyleSheet.hairlineWidth },

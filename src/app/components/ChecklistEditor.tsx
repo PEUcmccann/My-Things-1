@@ -92,7 +92,7 @@ export function ChecklistEditor({ toDoId }: { toDoId: string }) {
 const styles = StyleSheet.create({
   box: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 10, paddingHorizontal: 12 },
   item: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 6 },
-  title: { flex: 1, fontSize: 15, paddingVertical: 4 },
+  title: { flex: 1, minWidth: 0, fontSize: 15, paddingVertical: 4 },
   struck: { textDecorationLine: "line-through" },
   small: { paddingHorizontal: 4 },
   plus: { width: 22, textAlign: "center", fontSize: 16 },

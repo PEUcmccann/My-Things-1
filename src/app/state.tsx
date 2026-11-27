@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { LayoutAnimation, Platform } from "react-native";
 import { createMyThings, systemClock, type MyThings } from "../core";
 import { loadDeviceStore } from "./storage";
 
@@ -22,7 +23,12 @@ export function MyThingsProvider({
 
   useEffect(() => {
     let cancelled = false;
-    loadDeviceStore(() => setVersion((v) => v + 1)).then((store) => {
+    loadDeviceStore(() => {
+      // Rows slide into place as lists change (iPhone and Android).
+      if (Platform.OS !== "web")
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setVersion((v) => v + 1);
+    }).then((store) => {
       if (cancelled) return;
       const created = createMyThings({ clock: systemClock, store });
       created.purgeExpiredTrash();
@@ -56,4 +62,9 @@ export function useMyThings(): MyThings {
   const state = useContext(Context);
   if (!state) throw new Error("useMyThings must be used inside MyThingsProvider");
   return state.app;
+}
+
+/** The core, or null while it is still loading. */
+export function useOptionalMyThings(): MyThings | null {
+  return useContext(Context)?.app ?? null;
 }

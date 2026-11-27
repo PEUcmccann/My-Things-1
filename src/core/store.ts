@@ -28,7 +28,7 @@ export interface Snapshot {
   settings: Settings;
 }
 
-export const defaultSettings: Settings = { logbookMode: "endOfDay" };
+export const defaultSettings: Settings = { logbookMode: "endOfDay", accentColour: "teal" };
 
 const collectionNames: CollectionName[] = [
   "areas",

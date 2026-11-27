@@ -60,6 +60,18 @@ _Avoid_: Time block, appointment, event
 The pattern that makes a To-do recur. It is either **on schedule** (fixed dates) or **after completion** (a gap after the previous one is done). Only the next occurrence exists at any time.
 _Avoid_: Recurrence, template
 
+**Series**:
+All the To-dos one Repeat rule has produced, from the To-do it was first set on, finished ones included. Editing a repeating To-do changes either this one or all future ones in its series.
+_Avoid_: Recurrence, chain
+
+**Occurrence**:
+One To-do in a series. The **current occurrence** is the only open one and carries the Repeat rule; finishing it creates the next occurrence. "End after N" counts the occurrences the series has created, the current one included.
+_Avoid_: Instance, copy, repeat
+
+**Projected date**:
+A later date of an on-schedule Repeat rule, shown in Upcoming as a dashed row. It isn't a To-do and isn't stored; it stands for the current occurrence and shows the series as it is, without "this one" changes.
+_Avoid_: Ghost, future instance, virtual To-do
+
 **Reminder**:
 A notification attached to a To-do, triggered at a time or on arriving at or leaving a Place. A To-do can have several.
 _Avoid_: Alert, alarm

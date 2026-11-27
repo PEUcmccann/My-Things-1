@@ -178,10 +178,10 @@ function latestFinished(ctx: Context, seriesId: string): ToDo | undefined {
  * reopened To-do carries the rule again. Any other becomes a normal To-do.
  */
 export function reopenOccurrence(ctx: Context, id: string): void {
-  const item = ctx.require("toDos", id);
-  if (!item.seriesId || item.repeat || item.outcome === "active") return;
-  const open = openOccurrence(ctx, item.seriesId);
-  if (open && latestFinished(ctx, item.seriesId)?.id === id) {
+  const toDo = ctx.require("toDos", id);
+  if (!toDo.seriesId || toDo.repeat || toDo.outcome === "active") return;
+  const open = openOccurrence(ctx, toDo.seriesId);
+  if (open && latestFinished(ctx, toDo.seriesId)?.id === id) {
     // The erased occurrence no longer counts as created.
     const occurrence = Math.max(1, occurrenceNumber(ctx, open) - 1);
     ctx.update("toDos", id, { repeat: open.repeat && { ...open.repeat, occurrence } });
@@ -192,8 +192,8 @@ export function reopenOccurrence(ctx: Context, id: string): void {
 }
 
 /** Whether "When" can clear a To-do's Start date: not while it has a Repeat rule. */
-export function checkCanBeUndated(item: ToDo): void {
-  if (item.repeat) throw new Error("A repeating To-do always has a Start date");
+export function checkCanBeUndated(toDo: ToDo): void {
+  if (toDo.repeat) throw new Error("A repeating To-do always has a Start date");
 }
 
 /**
@@ -317,16 +317,16 @@ export function repeatActions(ctx: Context) {
       { start: chosen, limit = previewLength }: RepeatOptions & { limit?: number } = {},
     ): LocalDate[] {
       if (mode === "afterCompletion") return [];
-      const item = ctx.require("toDos", id);
+      const toDo = ctx.require("toDos", id);
       let start: LocalDate;
       try {
         checkPattern(pattern);
-        start = firstDate(item, pattern, mode, clock.today(), chosen);
+        start = firstDate(toDo, pattern, mode, clock.today(), chosen);
       } catch {
         return [];
       }
       const dates = [start];
-      const length = Math.min(limit, 1 + occurrencesLeft(ctx, item, pattern));
+      const length = Math.min(limit, 1 + occurrencesLeft(ctx, toDo, pattern));
       for (const date of repeatDates(pattern, start, later(start, clock.today()))) {
         if (dates.length >= length) break;
         dates.push(date);
@@ -342,9 +342,9 @@ export function repeatActions(ctx: Context) {
 
     /** The open occurrence of the series this To-do belongs to, if there is one. */
     currentOccurrence(id: string): ToDo | undefined {
-      const item = ctx.require("toDos", id);
-      if (!item.seriesId) return undefined;
-      return openOccurrence(ctx, item.seriesId);
+      const toDo = ctx.require("toDos", id);
+      if (!toDo.seriesId) return undefined;
+      return openOccurrence(ctx, toDo.seriesId);
     },
   };
 }

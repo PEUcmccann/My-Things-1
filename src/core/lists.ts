@@ -81,12 +81,12 @@ function isInInbox(item: ToDo): boolean {
  * at most once (counting the current occurrence), on its first date there, so a
  * daily rule can't flood the list.
  */
-function projectedDates(ctx: Context, item: ToDo, today: LocalDate): LocalDate[] {
-  const rule = item.repeat;
+function projectedDates(ctx: Context, toDo: ToDo, today: LocalDate): LocalDate[] {
+  const rule = toDo.repeat;
   if (!rule || rule.mode !== "onSchedule") return [];
   const pattern = parseRrule(rule.rrule);
-  let left = occurrencesLeft(ctx, item, pattern);
-  const after = item.startDate && item.startDate > today ? item.startDate : today;
+  let left = occurrencesLeft(ctx, toDo, pattern);
+  const after = toDo.startDate && toDo.startDate > today ? toDo.startDate : today;
   const last = addDays(today, upcomingRepeatDays);
   const shown = new Set<string>();
   const groupKey = (date: LocalDate) => {

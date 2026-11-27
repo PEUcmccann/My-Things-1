@@ -106,21 +106,21 @@ export function smartListActions(ctx: Context, deps: Deps) {
   const { store } = ctx;
 
   /** To-dos a Smart List can show: open in lists, not parked in Someday or held back. */
-  function isEligible(item: ToDo): boolean {
-    return ctx.isOpenInLists(item) && !item.someday && !ctx.isHeldBackByProject(item);
+  function isEligible(toDo: ToDo): boolean {
+    return ctx.isOpenInLists(toDo) && !toDo.someday && !ctx.isHeldBackByProject(toDo);
   }
 
   /** Whether a To-do passes every kind of filter (AND). */
-  function matches(item: ToDo, filters: SmartListFilters, today: LocalDate): boolean {
+  function matches(toDo: ToDo, filters: SmartListFilters, today: LocalDate): boolean {
     return (
       // Deleted values are skipped, so a kind left with only those matches nothing.
-      anyOf(filters.tagIds, (t) => !isTagGone(t) && deps.entryHasTags({ toDo: item }, [t])) &&
-      anyOf(filters.containers, (c) => !isContainerGone(c) && isIn(item, c)) &&
-      anyOf(filters.startDate, (r) => inDateRange(item.startDate, r, today)) &&
-      anyOf(filters.deadline, (r) => inDateRange(item.deadline, r, today)) &&
-      anyOf(filters.priority, (p) => item.priority === p) &&
-      anyOf(filters.energy, (e) => item.energy === e) &&
-      anyOf(filters.estimate, (e) => estimateMatches(item.estimate, e))
+      anyOf(filters.tagIds, (t) => !isTagGone(t) && deps.entryHasTags({ toDo }, [t])) &&
+      anyOf(filters.containers, (c) => !isContainerGone(c) && isIn(toDo, c)) &&
+      anyOf(filters.startDate, (r) => inDateRange(toDo.startDate, r, today)) &&
+      anyOf(filters.deadline, (r) => inDateRange(toDo.deadline, r, today)) &&
+      anyOf(filters.priority, (p) => toDo.priority === p) &&
+      anyOf(filters.energy, (e) => toDo.energy === e) &&
+      anyOf(filters.estimate, (e) => estimateMatches(toDo.estimate, e))
     );
   }
 
@@ -134,10 +134,10 @@ export function smartListActions(ctx: Context, deps: Deps) {
   }
 
   /** Whether a To-do is in a Project, or in an Area directly or through its Project. */
-  function isIn(item: ToDo, container: ContainerRef): boolean {
-    if (container.kind === "project") return item.projectId === container.id;
-    if (item.areaId === container.id) return true;
-    return ctx.find("projects", item.projectId)?.areaId === container.id;
+  function isIn(toDo: ToDo, container: ContainerRef): boolean {
+    if (container.kind === "project") return toDo.projectId === container.id;
+    if (toDo.areaId === container.id) return true;
+    return ctx.find("projects", toDo.projectId)?.areaId === container.id;
   }
 
   return {
@@ -185,7 +185,7 @@ export function smartListActions(ctx: Context, deps: Deps) {
       const today = ctx.clock.today();
       return store
         .all("toDos")
-        .filter((item) => isEligible(item) && matches(item, filters, today))
+        .filter((toDo) => isEligible(toDo) && matches(toDo, filters, today))
         .sort(byPosition)
         .map(ctx.entry);
     },

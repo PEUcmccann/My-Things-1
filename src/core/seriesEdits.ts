@@ -37,8 +37,8 @@ interface Copied {
   subToDos: Part[];
 }
 
-function deadlineGap(item: ToDo): number | null {
-  return item.deadline && item.startDate ? daysBetween(item.startDate, item.deadline) : null;
+function deadlineGap(toDo: ToDo): number | null {
+  return toDo.deadline && toDo.startDate ? daysBetween(toDo.startDate, toDo.deadline) : null;
 }
 
 function checklistParts(ctx: Context, toDoId: string): Part[] {
@@ -52,15 +52,15 @@ function subToDosOf(ctx: Context, parentId: string): ToDo[] {
   return ctx.store.all("toDos").filter((t) => t.parentId === parentId && !t.deletedAt);
 }
 
-function copiedFrom(ctx: Context, item: ToDo): Copied {
+function copiedFrom(ctx: Context, toDo: ToDo): Copied {
   const fields = {} as Record<SeriesField, unknown>;
-  for (const f of seriesFields) fields[f] = item[f];
+  for (const f of seriesFields) fields[f] = toDo[f];
   return {
     fields: fields as Pick<ToDo, SeriesField>,
-    deadlineGap: deadlineGap(item),
-    tagIds: [...item.tagIds],
-    checklist: checklistParts(ctx, item.id),
-    subToDos: subToDosOf(ctx, item.id).map((t) => ({
+    deadlineGap: deadlineGap(toDo),
+    tagIds: [...toDo.tagIds],
+    checklist: checklistParts(ctx, toDo.id),
+    subToDos: subToDosOf(ctx, toDo.id).map((t) => ({
       id: t.id,
       title: t.title,
       position: t.position,

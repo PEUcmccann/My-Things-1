@@ -1,0 +1,51 @@
+# Publishes the web app to GitHub Pages at https://peucmccann.github.io/My-Things-1/
+# One-time setup: repo Settings → Pages → Source: "GitHub Actions".
+name: Deploy web app
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time; a newer push waits rather than cancelling one in progress.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Export the web app for the /My-Things-1/ subpath
+        run: npx expo export --platform web
+        env:
+          EXPO_BASE_URL: /${{ github.event.repository.name }}
+      # Expo's output has folders starting with "_", which Jekyll would drop. Deploying from
+      # Actions skips Jekyll already; .nojekyll keeps it that way if the source is ever a branch.
+      - run: touch dist/.nojekyll
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+          include-hidden-files: true
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

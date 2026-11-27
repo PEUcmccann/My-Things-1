@@ -10,8 +10,8 @@ import { SmartListEditor } from "../components/SmartListEditor";
 import { ToDoList } from "../components/ToDoList";
 import { useNavigation } from "../navigation";
 import { useSelection } from "../selection";
-import { smartListIcon } from "../smartListText";
 import { useMyThings } from "../state";
+import { useTheme } from "../theme";
 
 type Dialog = "menu" | "edit" | "rename" | "delete" | null;
 
@@ -29,6 +29,7 @@ export function editOnFirstOpen(id: string): void {
  */
 export function SmartListScreen({ id }: { id: string }) {
   const app = useMyThings();
+  const theme = useTheme();
   const nav = useNavigation();
   const selection = useSelection();
   const [dialog, setDialog] = useState<Dialog>(() => (justCreated.has(id) ? "edit" : null));
@@ -48,12 +49,20 @@ export function SmartListScreen({ id }: { id: string }) {
   return (
     <View style={styles.fill}>
       <Screen
-        title={`${smartListIcon} ${list.title}`}
+        title={list.title}
+        icon="smartList"
+        iconColor={theme.accent}
         testID="screen-smartList"
         selectable
         searchable
         actions={
-          <Button small title="•••" onPress={() => setDialog("menu")} testID="smart-list-menu" />
+          <Button
+            small
+            icon="more"
+            accessibilityLabel="Smart List actions"
+            onPress={() => setDialog("menu")}
+            testID="smart-list-menu"
+          />
         }
       >
         {entries.length === 0 ? <Empty text="Nothing matches" /> : null}

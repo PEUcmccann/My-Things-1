@@ -17,6 +17,7 @@ import {
 import { useMyThings } from "../state";
 import { useTheme } from "../theme";
 import { Button } from "./Button";
+import { Icon, type IconName } from "./Icon";
 import { Sheet } from "./Sheet";
 
 interface Props {
@@ -59,20 +60,21 @@ export function SmartListEditor({ id, onClose }: Props) {
     value: SmartListFilters[K][number],
     title: string,
     testKey: string,
-    opts: { gone?: boolean } = {},
+    opts: { gone?: boolean; icon?: IconName } = {},
   ) => (
     <Chip
       key={`${kind}-${testKey}`}
       title={title}
       on={isOn(kind, value)}
       gone={opts.gone}
+      icon={opts.icon}
       onPress={() => toggle(kind, value)}
       testID={`smart-filter-${kind}-${testKey}`}
     />
   );
 
   const container = (ref: ContainerRef, title: string) =>
-    chip("containers", ref, title, `${ref.kind}-${ref.id}`);
+    chip("containers", ref, title, `${ref.kind}-${ref.id}`, { icon: ref.kind });
   const tree = app.sidebar();
   // Saved Estimate choices that are not among the presets still show, so they can be removed.
   const estimates: EstimateChoice[] = [
@@ -97,7 +99,7 @@ export function SmartListEditor({ id, onClose }: Props) {
         <Group title="Areas and Projects">
           {tree.projects.map((p) => container({ kind: "project", id: p.id }, p.title))}
           {tree.areas.map(({ area, projects }) => [
-            container({ kind: "area", id: area.id }, `▣ ${area.title}`),
+            container({ kind: "area", id: area.id }, area.title),
             ...projects.map((p) => container({ kind: "project", id: p.id }, p.title)),
           ])}
           {gone.containers.map((c) =>
@@ -151,6 +153,7 @@ function Chip(props: {
   title: string;
   on: boolean;
   gone?: boolean;
+  icon?: IconName;
   onPress: () => void;
   testID: string;
 }) {
@@ -161,6 +164,7 @@ function Chip(props: {
       onPress={props.onPress}
       style={[
         styles.chip,
+        props.icon && styles.withIcon,
         { borderColor: on ? theme.accent : theme.border },
         on && { backgroundColor: theme.accent },
         props.gone && { borderStyle: "dashed" },
@@ -169,6 +173,9 @@ function Chip(props: {
       aria-checked={on}
       accessibilityRole="checkbox"
     >
+      {props.icon ? (
+        <Icon name={props.icon} size={14} color={on ? theme.onAccent : theme.muted} />
+      ) : null}
       <Text
         style={[
           { color: on ? theme.onAccent : theme.text, fontSize: 14 },
@@ -188,6 +195,7 @@ const styles = StyleSheet.create({
   group: { marginTop: 12 },
   groupTitle: { fontSize: 13, fontWeight: "600", marginBottom: 6, textTransform: "uppercase" },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  withIcon: { flexDirection: "row", alignItems: "center", gap: 4 },
   chip: { borderWidth: 1, borderRadius: 14, paddingHorizontal: 10, paddingVertical: 5 },
   goneText: { fontStyle: "italic", textDecorationLine: "line-through" },
   done: { alignItems: "flex-end", marginTop: 12 },

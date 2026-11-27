@@ -10,12 +10,12 @@ import {
   useDropTarget,
   type DragItem,
 } from "../drag";
+import { Icon, type IconName } from "../components/Icon";
 import { MenuSheet } from "../components/MenuSheet";
 import { ProgressPie } from "../components/ProgressPie";
 import { PromptSheet } from "../components/PromptSheet";
 import { builtInLists, useNavigation, type BuiltInList, type Route } from "../navigation";
 import { listIcons, listTitles } from "../lists";
-import { smartListIcon } from "../smartListText";
 import { editOnFirstOpen } from "./SmartListScreen";
 import { useMyThings } from "../state";
 import { useTheme } from "../theme";
@@ -32,7 +32,7 @@ const areasListKey = "sidebar-areas";
 /** A sidebar row: opens its list, takes dropped To-dos, and can be dragged to reorder. */
 function SidebarItem(props: {
   testKey: string;
-  icon: React.ReactNode;
+  icon: IconName | React.ReactElement;
   title: string;
   depth: number;
   current: boolean;
@@ -76,11 +76,7 @@ function SidebarItem(props: {
           ]}
         >
           <View style={styles.icon}>
-            {typeof props.icon === "string" ? (
-              <Text style={[styles.iconText, { color: theme.text }]}>{props.icon}</Text>
-            ) : (
-              props.icon
-            )}
+            {typeof props.icon === "string" ? <Icon name={props.icon} size={20} /> : props.icon}
           </View>
           <Text style={[styles.itemText, { color: theme.text }]} numberOfLines={1}>
             {props.title}
@@ -100,7 +96,7 @@ function SidebarHandle({ item }: { item: DragItem }) {
       style={styles.handle}
       testID={`sidebar-drag-${"id" in item ? item.id : ""}`}
     >
-      <Text style={{ color: theme.muted, fontSize: 18 }}>≡</Text>
+      <Icon name="drag" size={18} color={theme.muted} />
     </DragHandle>
   );
 }
@@ -167,7 +163,7 @@ export function Sidebar({ wide }: Props) {
 
   const item = (
     key: string,
-    icon: React.ReactNode,
+    icon: IconName | React.ReactElement,
     title: string,
     route: Route,
     opts: { depth?: number; target?: DropTarget; drag?: DragItem; listKey?: string } = {},
@@ -220,7 +216,12 @@ export function Sidebar({ wide }: Props) {
         {smartLists.length > 0 ? (
           <View style={styles.group} testID="sidebar-smart-lists">
             {smartLists.map((s) =>
-              item(`smartlist-${s.id}`, smartListIcon, s.title, { name: "smartList", id: s.id }),
+              item(
+                `smartlist-${s.id}`,
+                <Icon name="smartList" size={20} color={theme.accent} />,
+                s.title,
+                { name: "smartList", id: s.id },
+              ),
             )}
           </View>
         ) : null}
@@ -238,7 +239,7 @@ export function Sidebar({ wide }: Props) {
             <AreaGroup key={area.id} id={area.id}>
               {item(
                 `area-${area.id}`,
-                "▣",
+                <Icon name="area" size={20} color={theme.muted} />,
                 area.title,
                 { name: "area", id: area.id },
                 {
@@ -253,8 +254,8 @@ export function Sidebar({ wide }: Props) {
           ))}
         </AreaDropList>
         <View style={styles.group}>
-          {item("tags", "🏷", "Tags", { name: "tags" })}
-          {item("settings", "⚙️", "Settings", { name: "settings" })}
+          {item("tags", "tags", "Tags", { name: "tags" })}
+          {item("settings", "settings", "Settings", { name: "settings" })}
         </View>
       </ScrollView>
       <Pressable
@@ -263,20 +264,31 @@ export function Sidebar({ wide }: Props) {
         testID="sidebar-new"
         accessibilityRole="button"
       >
-        <Text style={[styles.newListText, { color: theme.accent }]}>＋ New List</Text>
+        <Icon name="add" size={18} color={theme.accent} />
+        <Text style={[styles.newListText, { color: theme.accent }]}>New List</Text>
       </Pressable>
       <MenuSheet
         visible={dialog === "new"}
         onClose={() => setDialog(null)}
         options={[
           {
-            title: "◔ New Project",
+            title: "New Project",
+            icon: "project",
+            iconColor: theme.muted,
             onPress: () => setDialog("newProject"),
             testID: "new-project",
           },
-          { title: "▣ New Area", onPress: () => setDialog("newArea"), testID: "new-area" },
           {
-            title: `${smartListIcon} New Smart List`,
+            title: "New Area",
+            icon: "area",
+            iconColor: theme.muted,
+            onPress: () => setDialog("newArea"),
+            testID: "new-area",
+          },
+          {
+            title: "New Smart List",
+            icon: "smartList",
+            iconColor: theme.accent,
             onPress: () => setDialog("newSmartList"),
             testID: "new-smart-list",
           },
@@ -330,10 +342,15 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   icon: { width: 30, alignItems: "flex-start" },
-  iconText: { fontSize: 18 },
   itemText: { fontSize: 17, flex: 1 },
   handle: { paddingHorizontal: 6 },
   dropSpace: { minHeight: 40 },
-  newList: { borderTopWidth: StyleSheet.hairlineWidth, padding: 16 },
+  newList: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    padding: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
   newListText: { fontSize: 16, fontWeight: "600" },
 });

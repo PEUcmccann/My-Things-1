@@ -1,8 +1,5 @@
 import { formatEstimate, type DateRange, type EstimateChoice } from "../core";
 
-/** The one icon every Smart List has in the sidebar. */
-export const smartListIcon = "✦";
-
 /** What the Smart List editor calls each relative date range. */
 export const dateRangeNames: Record<DateRange, string> = {
   todayOrEarlier: "Today or earlier",

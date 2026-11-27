@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import {
   GestureDetector,
   useCompetingGestures,
@@ -9,10 +9,12 @@ import {
 import type { NewToDo } from "../../core";
 import { useDrag, useManualDrag, type NewToDoSpot } from "../drag";
 import { haptics } from "../haptics";
+import { followEdit } from "../quickEntry";
 import { useSelection } from "../selection";
 import { useMyThings } from "../state";
 import { useTheme } from "../theme";
 import { Button } from "./Button";
+import { Icon } from "./Icon";
 import { SelectionBar } from "./SelectionBar";
 import { Sheet } from "./Sheet";
 
@@ -36,6 +38,8 @@ export function MagicPlus({ placement }: Props) {
   const selection = useSelection();
   const [spot, setSpot] = useState<NewToDoSpot | null>(null);
   const [title, setTitle] = useState("");
+  // Offsets of shorthand tapped away, kept in the title as plain text.
+  const [ignored, setIgnored] = useState<number[]>([]);
 
   // Tap to add here; once a press moves, it becomes a drag.
   const tap = useTapGesture({
@@ -62,14 +66,20 @@ export function MagicPlus({ placement }: Props) {
   const close = () => {
     setSpot(null);
     setTitle("");
+    setIgnored([]);
+  };
+  const changeTitle = (next: string) => {
+    setIgnored((offsets) => followEdit(offsets, title, next));
+    setTitle(next);
   };
   const add = () => {
-    const trimmed = title.trim();
-    if (!trimmed || !spot) return;
-    app.createToDo({ ...spot.placement, title: trimmed, at: spot.at });
+    if (!spot) return;
+    const id = app.createFromQuickEntry(title, { placement: spot.placement, at: spot.at, ignored });
+    if (!id) return;
     haptics.success();
     close();
   };
+  const preview = spot ? app.previewQuickEntry(title, ignored) : null;
 
   return (
     <>
@@ -80,14 +90,14 @@ export function MagicPlus({ placement }: Props) {
           accessibilityLabel="Add To-do"
           testID="magic-plus"
         >
-          <Text style={[styles.plus, { color: theme.onAccent }]}>+</Text>
+          <Icon name="add" size={30} color={theme.onAccent} />
         </View>
       </GestureDetector>
       <Sheet visible={spot !== null} onClose={close} testID="new-todo-sheet">
         <Text style={[styles.heading, { color: theme.text }]}>New To-do</Text>
         <TextInput
           value={title}
-          onChangeText={setTitle}
+          onChangeText={changeTitle}
           placeholder="What do you need to do?"
           placeholderTextColor={theme.muted}
           autoFocus
@@ -96,6 +106,28 @@ export function MagicPlus({ placement }: Props) {
           style={[styles.input, { color: theme.text, borderColor: theme.border }]}
           testID="new-todo-title"
         />
+        {preview && preview.tokens.length > 0 && (
+          <View style={styles.tokens} testID="quick-entry-tokens">
+            {preview.tokens.map((t) => (
+              <Pressable
+                key={t.start}
+                onPress={() => setIgnored((offsets) => [...offsets, t.start])}
+                style={[styles.token, { backgroundColor: theme.accent }]}
+                accessibilityRole="button"
+                accessibilityLabel={`Keep ${t.text} in the title`}
+                testID={`quick-entry-token-${t.start}`}
+              >
+                <Text style={[styles.tokenText, { color: theme.onAccent }]}>
+                  {t.text}
+                  {t.newTag ? " (new)" : ""} ×
+                </Text>
+              </Pressable>
+            ))}
+            <Text style={[styles.cleaned, { color: theme.muted }]} testID="quick-entry-title">
+              {preview.title || "Add a title"}
+            </Text>
+          </View>
+        )}
         <View style={styles.buttons}>
           <Button title="Cancel" onPress={close} />
           <Button title="Add" kind="primary" onPress={add} testID="new-todo-add" />
@@ -121,8 +153,11 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     elevation: 5,
   },
-  plus: { fontSize: 34, lineHeight: 38, fontWeight: "300" },
   heading: { fontSize: 18, fontWeight: "600", marginBottom: 12 },
   input: { fontSize: 17, borderWidth: 1, borderRadius: 10, padding: 12 },
+  tokens: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6, marginTop: 10 },
+  token: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
+  tokenText: { fontSize: 14, fontWeight: "600" },
+  cleaned: { fontSize: 14, flexBasis: "100%", marginTop: 2 },
   buttons: { flexDirection: "row", justifyContent: "flex-end", gap: 12, marginTop: 16 },
 });

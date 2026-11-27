@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { formatEstimate, isValidEstimate, type Energy, type Priority } from "../../core";
-import { energyNames, priorityMarks, priorityNames } from "../format";
+import { energyIcons, energyNames, priorityMarks, priorityNames } from "../format";
+import { useTheme } from "../theme";
 import { MenuSheet } from "./MenuSheet";
 import { PromptSheet } from "./PromptSheet";
 
@@ -29,6 +30,7 @@ export function PriorityPicker({ visible, onChoose, onClose }: Props<Priority>) 
 }
 
 export function EnergyPicker({ visible, onChoose, onClose }: Props<Energy | null>) {
+  const theme = useTheme();
   return (
     <MenuSheet
       visible={visible}
@@ -36,7 +38,13 @@ export function EnergyPicker({ visible, onChoose, onClose }: Props<Energy | null
       onClose={onClose}
       testID="energy-picker"
       options={[
-        { title: energyNames.high, onPress: () => onChoose("high"), testID: "energy-high" },
+        {
+          title: energyNames.high,
+          icon: energyIcons.high,
+          iconColor: theme.muted,
+          onPress: () => onChoose("high"),
+          testID: "energy-high",
+        },
         { title: energyNames.low, onPress: () => onChoose("low"), testID: "energy-low" },
         { title: "None", onPress: () => onChoose(null), testID: "energy-none" },
       ]}

@@ -20,7 +20,7 @@ npm run check:expo  # Expo-pinned packages match the SDK's versions
 npx expo start      # dev server (Expo Go on the phone, or press w for web)
 ```
 
-The pre-commit hook runs lint-staged (ESLint + Prettier), the Expo version check, the typecheck and the tests. It rewrites staged files with Prettier, so re-read a file after committing before editing it, and prefer the Edit tool (it fails loudly when text doesn't match). CI (`.github/workflows/ci.yml`) also checks formatting across all files and the web build.
+The pre-commit hook runs lint-staged (ESLint + Prettier), the Expo version check, the typecheck and the tests. It rewrites staged files with Prettier, so re-read a file after committing before editing it. Open a file with Read before changing it with Edit, and run one git command per Bash call; write commit messages to a file and commit with `git commit -F <file>`, including after a merge with conflicts, so the attribution lines aren't lost. CI (`.github/workflows/ci.yml`) also checks formatting across all files and the web build.
 
 ## Expo notes
 
@@ -41,3 +41,7 @@ The five default labels: `needs-triage`, `needs-info`, `ready-for-agent`, `ready
 ### Domain docs
 
 Single-context: `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
+### Implementer brief
+
+The coordinator fills in `docs/agents/implementer-brief.md` for each ticket it hands to an implementer agent.

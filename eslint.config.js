@@ -20,6 +20,18 @@ const noEmoji = [
   { selector: `TemplateElement[value.raw=${emoji}]`, message: emojiMessage },
 ];
 
+// The core rules, shared with the stricter block for core tests (a later block replaces a rule's options).
+const coreNoUiImports = {
+  regex: "^(react|react-native|expo)(-.*)?(/.*)?$|^@expo/|^expo-",
+  message:
+    "The core module must not depend on UI or Expo code. Put platform code behind an adapter.",
+};
+const coreGlossaryTerms = {
+  selector: `Identifier[name=/${avoidedTerms}/i]`,
+  message:
+    "Use the GLOSSARY.md term (e.g. To-do, not task; Tag, not label; Deadline, not due date).",
+};
+
 module.exports = defineConfig([
   expoConfig,
   prettierConfig,
@@ -30,24 +42,34 @@ module.exports = defineConfig([
     // The core holds every rule of the app and must run without a phone.
     files: ["src/core/**/*.ts"],
     rules: {
+      "no-restricted-imports": ["error", { patterns: [coreNoUiImports] }],
+      "no-restricted-syntax": ["error", coreGlossaryTerms],
+    },
+  },
+  {
+    // Core tests go through actions and queries only (CLAUDE.md), never internal records.
+    files: ["src/core/**/*.test.ts"],
+    rules: {
       "no-restricted-imports": [
         "error",
         {
           patterns: [
+            coreNoUiImports,
             {
-              regex: "^(react|react-native|expo)(-.*)?(/.*)?$|^@expo/|^expo-",
+              regex: "^\\.(?!/(index|testSetup)$)",
               message:
-                "The core module must not depend on UI or Expo code. Put platform code behind an adapter.",
+                "Core tests import only ./index (actions, queries, types) and ./testSetup, not internal modules.",
             },
           ],
         },
       ],
       "no-restricted-syntax": [
         "error",
+        coreGlossaryTerms,
         {
-          selector: `Identifier[name=/${avoidedTerms}/i]`,
+          selector: "MemberExpression[property.name='rrule']",
           message:
-            "Use the GLOSSARY.md term (e.g. To-do, not task; Tag, not label; Deadline, not due date).",
+            "Check Repeat rules through queries (repeatPreview, summaries, next dates), not the stored RRULE.",
         },
       ],
     },

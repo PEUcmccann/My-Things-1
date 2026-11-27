@@ -11,7 +11,7 @@ import {
   type Store,
   type SyncCollection,
 } from "./store";
-import type { Edit, Settings } from "./types";
+import type { Edit, Moment, Settings } from "./types";
 
 /** The one record of the `settings` collection. */
 export const settingsRecordId = "settings";
@@ -32,6 +32,18 @@ export interface SyncActions {
   applyEdits(edits: Edit[]): number;
   /** This device's id, made once and kept with the records. */
   deviceId(): string;
+  /**
+   * The account's receive time of the last edit fetched and applied here, or null when
+   * nothing has been fetched since the device was set up or erased.
+   */
+  lastReceivedAt(): Moment | null;
+  setLastReceivedAt(at: Moment): void;
+  /**
+   * Queues every field of every record and the settings to send, as each was last
+   * edited, so an account gets all of this device's data on its first sync. Fields that
+   * already wait to be sent stay as they are, and sending an edit again is harmless.
+   */
+  queueAllRecords(): void;
 }
 
 /** A random v4 UUID, for when the app passes no generator. */
@@ -250,7 +262,55 @@ export function syncedStore(
       return taken;
     },
     deviceId,
+    lastReceivedAt: () => book.lastReceivedAt ?? null,
+    setLastReceivedAt(at) {
+      if (book.lastReceivedAt === at) return;
+      book.lastReceivedAt = at;
+      inner.syncBookChanged();
+    },
+    queueAllRecords() {
+      for (const name of collectionNames) {
+        for (const live of inner.all(name)) {
+          const fields = live as unknown as Fields;
+          for (const f of Object.keys(fields)) if (f !== "id") queue(name, live.id, f, fields[f]);
+          if (stampsOf(name, live.id)[removedField]) queue(name, live.id, removedField, false);
+        }
+        for (const id of Object.keys(removedOf(name))) queue(name, id, removedField, true);
+      }
+      const settings = inner.settings() as unknown as Fields;
+      for (const f of Object.keys(settings)) queue("settings", settingsRecordId, f, settings[f]);
+      inner.syncBookChanged();
+    },
   };
+
+  /**
+   * Queues a field's value to send as it was last edited. A field with no edit of its
+   * own here (saved before sync) is sent as edited on this device at its record's
+   * `updatedAt`, or at the start of time for the settings, so any real edit wins.
+   */
+  function queue(collection: SyncCollection, recordId: string, field: string, value: unknown) {
+    const key = unsentKey({ collection, recordId, field });
+    if (book.unsent[key]) return;
+    const stamps = stampsOf(collection, recordId);
+    let stamp = stamps[field];
+    if (!stamp?.editId || !stamp.deviceId) {
+      const updatedAt =
+        collection === "settings"
+          ? undefined
+          : (inner.get(collection, recordId)?.updatedAt ?? undefined);
+      const at = stamp?.at ?? updatedAt ?? new Date(0).toISOString();
+      stamp = stamps[field] = { at, deviceId: deviceId(), editId: newEditId() };
+    }
+    book.unsent[key] = {
+      id: stamp.editId,
+      collection,
+      recordId,
+      field,
+      value: copy(value),
+      editedAt: stamp.at,
+      deviceId: stamp.deviceId,
+    };
+  }
 
   /**
    * Replaces every record and the settings (a restore). Every field is recorded as an

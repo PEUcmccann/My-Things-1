@@ -11,7 +11,8 @@ import {
 } from "../authAdapter";
 import { Button } from "../components/Button";
 import { MenuSheet } from "../components/MenuSheet";
-import { useAccount } from "../state";
+import { useAccount, useSync } from "../state";
+import { syncStatusText } from "../syncer";
 import { useTheme } from "../theme";
 
 /** Seconds left before another code can be sent, ticking down once a second. */
@@ -28,7 +29,24 @@ function useSecondsLeft(sentAt: number | null): number {
   return Math.max(0, Math.ceil(resendSeconds - elapsed));
 }
 
-/** Settings → Account: sign in with an email and a 6-digit code, or sign out. */
+/**
+ * The time, moving on every 15 seconds while `ticking`, for "Synced N minutes ago". A
+ * sync that finished after the last tick reads as "just now".
+ */
+function useNow(ticking: boolean): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!ticking) return;
+    const timer = setInterval(() => setNow(Date.now()), 15_000);
+    return () => clearInterval(timer);
+  }, [ticking]);
+  return now;
+}
+
+const notSyncedText =
+  "Your changes couldn't be synced, so you're still signed in. Try again later.";
+
+/** Settings → Account: sign in with an email and a 6-digit code, see sync, or sign out. */
 export function AccountSection() {
   const theme = useTheme();
   const auth = useAccount();
@@ -44,6 +62,9 @@ export function AccountSection() {
   const [pendingErase, setPendingErase] = useState<Account | null>(null);
   const [eraseAsked, setEraseAsked] = useState(false);
   const secondsLeft = useSecondsLeft(sentAt);
+  const sync = useSync();
+  const [unsentAtSignOut, setUnsentAtSignOut] = useState(0);
+  const now = useNow(auth.account !== null);
 
   async function run(action: () => Promise<void>) {
     setBusy(true);
@@ -114,11 +135,32 @@ export function AccountSection() {
         <Text style={[styles.detail, { color: theme.muted }]} testID="account-status">
           Signed in
         </Text>
+        <Text
+          style={[
+            styles.detail,
+            { color: sync.status.kind === "failed" ? theme.danger : theme.muted },
+          ]}
+          testID="sync-status"
+          role="status"
+        >
+          {syncStatusText(sync.status, now)}
+        </Text>
+        {errorText}
         <View style={styles.buttons}>
+          <Button
+            title="Sync now"
+            onPress={() => void sync.syncNow()}
+            disabled={busy || sync.status.kind === "syncing"}
+            testID="sync-now"
+          />
           <Button
             title="Sign out"
             kind="danger"
-            onPress={() => setAskSignOut(true)}
+            onPress={() => {
+              setUnsentAtSignOut(sync.unsentCount());
+              setAskSignOut(true);
+            }}
+            disabled={busy}
             testID="account-sign-out"
           />
         </View>
@@ -217,17 +259,44 @@ export function AccountSection() {
       <MenuSheet
         visible={askSignOut}
         title="Sign out?"
-        message="This removes your data from this device. It stays in your account."
+        message={
+          unsentAtSignOut > 0
+            ? `${unsentAtSignOut} ${unsentAtSignOut === 1 ? "change hasn't" : "changes haven't"} synced yet. Signing out removes ${unsentAtSignOut === 1 ? "it" : "them"} from this device.`
+            : "This removes your data from this device. It stays in your account."
+        }
         onClose={() => setAskSignOut(false)}
         testID="sign-out-sheet"
-        options={[
-          {
-            title: "Sign out",
-            danger: true,
-            onPress: () => run(() => auth.signOut()),
-            testID: "sign-out-confirm",
-          },
-        ]}
+        options={
+          unsentAtSignOut > 0
+            ? [
+                ...(sync.status.kind === "offline"
+                  ? []
+                  : [
+                      {
+                        title: "Sync and sign out",
+                        onPress: () =>
+                          run(async () => {
+                            if (!(await auth.syncAndSignOut())) setError(notSyncedText);
+                          }),
+                        testID: "sign-out-sync",
+                      },
+                    ]),
+                {
+                  title: "Sign out anyway",
+                  danger: true,
+                  onPress: () => run(() => auth.signOut()),
+                  testID: "sign-out-confirm",
+                },
+              ]
+            : [
+                {
+                  title: "Sign out",
+                  danger: true,
+                  onPress: () => run(() => auth.signOut()),
+                  testID: "sign-out-confirm",
+                },
+              ]
+        }
       />
       <MenuSheet
         visible={eraseAsked}

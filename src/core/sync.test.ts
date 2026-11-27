@@ -7,7 +7,7 @@ import {
   type MyThings,
   type SnapshotV1,
 } from "./index";
-import { device, exchange, send, TODAY } from "./testSetup";
+import { device, exchange, NOW, send, TODAY } from "./testSetup";
 
 const uuidV4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
@@ -429,5 +429,94 @@ describe("saving sync bookkeeping", () => {
     expect(b.app.applyEdits([titled("Before", "2026-11-21T08:00:00.000Z", 1)])).toBe(0);
     expect(b.app.applyEdits([titled("After", "2026-11-21T10:00:00.000Z", 2)])).toBe(1);
     expect(b.app.getToDo("old").title).toBe("After");
+  });
+});
+
+describe("the account's last received time", () => {
+  it("starts empty, is kept across a reload, and is forgotten when the device is erased", () => {
+    const a = device(1);
+    expect(a.app.lastReceivedAt()).toBeNull();
+    a.app.setLastReceivedAt("2026-11-26T10:00:00.123Z");
+    const again = device(1, { snapshot: a.store.snapshot() });
+    expect(again.app.lastReceivedAt()).toBe("2026-11-26T10:00:00.123Z");
+    again.app.eraseDevice();
+    expect(again.app.lastReceivedAt()).toBeNull();
+  });
+});
+
+describe("queueing everything for an account", () => {
+  it("queues every field of records that have nothing to send, keeping their edit times", () => {
+    const a = device(1);
+    const id = a.app.createToDo({ title: "Buy milk" });
+    a.app.markEditsSent(a.app.unsentEdits().map((e) => e.id));
+    a.app.queueAllRecords();
+    const edits = a.app.unsentEdits();
+    expect(edits.find((e) => e.field === "title")).toMatchObject({
+      recordId: id,
+      value: "Buy milk",
+      editedAt: new Date(NOW).toISOString(),
+      deviceId: a.app.deviceId(),
+    });
+    expect(edits.some((e) => e.collection === "settings")).toBe(true);
+    // Another device gets the whole To-do.
+    const b = device(2);
+    send(a.app, b.app);
+    expect(b.app.getToDo(id)).toEqual(a.app.getToDo(id));
+  });
+
+  it("leaves edits waiting to be sent as they are", () => {
+    const a = device(1);
+    a.app.createToDo({ title: "Buy milk" });
+    const before = a.app.unsentEdits();
+    a.app.queueAllRecords();
+    expect(a.app.unsentEdits().filter((e) => e.collection !== "settings")).toEqual(before);
+  });
+
+  it("sends version 1 records whole, and its never-edited settings lose to the account's", () => {
+    const v1: SnapshotV1 = {
+      version: 1,
+      records: {
+        areas: [
+          {
+            id: "home",
+            owner: "me",
+            createdAt: "2026-11-20T09:00:00.000Z",
+            updatedAt: "2026-11-21T09:00:00.000Z",
+            title: "Home",
+            tagIds: [],
+            position: 0,
+          },
+        ],
+      },
+      settings: { logbookMode: "endOfDay", accentColour: "green" },
+    };
+    const a = device(1, { snapshot: JSON.parse(JSON.stringify(v1)) });
+    a.app.queueAllRecords();
+    const title = a.app.unsentEdits().find((e) => e.recordId === "home" && e.field === "title");
+    expect(title).toMatchObject({
+      editedAt: "2026-11-21T09:00:00.000Z",
+      deviceId: a.app.deviceId(),
+    });
+    const b = device(2);
+    b.app.setAccentColour("blue");
+    exchange(a.app, b.app);
+    expect(a.app.accentColour()).toBe("blue");
+    expect(b.app.sidebar().areas.map((s) => s.area.title)).toEqual(["Home"]);
+    // Its own queued edits coming back change nothing.
+    expect(a.app.applyEdits([title!])).toBe(0);
+  });
+
+  it("queues records removed for good as removed", () => {
+    const a = device(1);
+    const area = a.app.createArea("Home");
+    a.app.deleteArea(area);
+    a.app.markEditsSent(a.app.unsentEdits().map((e) => e.id));
+    a.app.queueAllRecords();
+    expect(
+      a.app
+        .unsentEdits()
+        .filter((e) => e.recordId === area)
+        .map((e) => [e.field, e.value]),
+    ).toEqual([["_removed", true]]);
   });
 });

@@ -61,6 +61,11 @@ export interface SyncBook {
   removed: { [collection: string]: { [recordId: string]: { [field: string]: unknown } } };
   /** Keyed by collection, record id and field; oldest first. */
   unsent: { [key: string]: Edit };
+  /**
+   * The account's receive time of the last edit fetched and applied, the point the next
+   * fetch starts from. Missing in snapshots saved before Milestone 3's sync.
+   */
+  lastReceivedAt?: Moment | null;
 }
 
 /** Everything in a store, as plain data that can be saved and loaded again. */
@@ -124,7 +129,7 @@ export interface MemoryStore extends Store {
 }
 
 export function emptySyncBook(): SyncBook {
-  return { deviceId: null, stamps: {}, removed: {}, unsent: {} };
+  return { deviceId: null, stamps: {}, removed: {}, unsent: {}, lastReceivedAt: null };
 }
 
 /**

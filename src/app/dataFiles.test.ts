@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { exportDateText, exportFileName, restoreProblemText } from "./dataFiles";
+import { csvFileName, exportDateText, exportFileName, restoreProblemText } from "./dataFiles";
 
 describe("the JSON export's file", () => {
   it("is named after today's date", () => {
@@ -16,5 +16,11 @@ describe("the JSON export's file", () => {
     expect(restoreProblemText("newerVersion")).toBe(
       "This export is from a newer version of MyThings",
     );
+  });
+});
+
+describe("the CSV export's file", () => {
+  it("is named after today's date", () => {
+    expect(csvFileName("2026-11-27")).toBe("mythings-todos-2026-11-27.csv");
   });
 });

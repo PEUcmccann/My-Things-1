@@ -6,6 +6,11 @@ export function exportFileName(today: LocalDate): string {
   return `mythings-${today}.json`;
 }
 
+/** The CSV of To-dos' file name, e.g. "mythings-todos-2026-11-27.csv". */
+export function csvFileName(today: LocalDate): string {
+  return `mythings-todos-${today}.csv`;
+}
+
 /** When an export was made, as "27 November 2026" in local time. */
 export function exportDateText(exportedAt: Moment): string {
   const { y, m, d } = dateParts(toLocalDate(new Date(exportedAt)));

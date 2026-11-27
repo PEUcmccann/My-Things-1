@@ -54,3 +54,18 @@ test("a file that isn't an export is refused", async ({ page }) => {
   });
   await expect(page.getByTestId("data-status")).toHaveText("This isn't a MyThings export");
 });
+
+test("To-dos export as a CSV file", async ({ page }) => {
+  await page.goto("/");
+  await openList(page, "inbox");
+  await addToDo(page, "Shows in the spreadsheet");
+
+  await openList(page, "settings");
+  const download = page.waitForEvent("download");
+  await page.getByTestId("export-csv").click();
+  const file = await download;
+  expect(file.suggestedFilename()).toBe(`mythings-todos-${localDate()}.csv`);
+  const text = await readFile(await file.path(), "utf8");
+  expect(text.startsWith("﻿Title,Notes,Status,Start date,")).toBe(true);
+  expect(text).toContain("\r\nShows in the spreadsheet,");
+});

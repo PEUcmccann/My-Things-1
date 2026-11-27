@@ -5,7 +5,7 @@ import { Button } from "../components/Button";
 import { Choice } from "../components/Choice";
 import { MenuSheet } from "../components/MenuSheet";
 import { Screen } from "../components/Screen";
-import { exportDateText, exportFileName, restoreProblemText } from "../dataFiles";
+import { csvFileName, exportDateText, exportFileName, restoreProblemText } from "../dataFiles";
 import { pickTextFile, saveFile } from "../fileSaving";
 import { useNavigation } from "../navigation";
 import { useMyThings } from "../state";
@@ -84,8 +84,9 @@ export function SettingsScreen() {
 }
 
 const jsonType = "application/json";
+const csvType = "text/csv";
 
-/** Export all data as one JSON file, and restore such a file. */
+/** Export all data as one JSON file and restore such a file, or export To-dos as CSV. */
 function DataSection() {
   const app = useMyThings();
   const theme = useTheme();
@@ -100,6 +101,16 @@ function DataSection() {
       await saveFile(exportFileName(app.currentDate()), JSON.stringify(file, null, 2), jsonType);
     } catch (error) {
       console.warn("Could not export", error);
+      setStatus({ text: "Could not export", error: true });
+    }
+  }
+
+  async function exportCsv() {
+    setStatus(null);
+    try {
+      await saveFile(csvFileName(app.currentDate()), app.toDosCsv(), csvType);
+    } catch (error) {
+      console.warn("Could not export the CSV", error);
       setStatus({ text: "Could not export", error: true });
     }
   }
@@ -140,6 +151,7 @@ function DataSection() {
       <Text style={[styles.section, { color: theme.muted }]}>Data</Text>
       <View style={styles.buttons}>
         <Button title="Export all data" onPress={exportAll} testID="export-data" />
+        <Button title="Export To-dos as CSV" onPress={exportCsv} testID="export-csv" />
         <Button title="Restore from file" onPress={pick} testID="restore-data" />
       </View>
       {status ? (

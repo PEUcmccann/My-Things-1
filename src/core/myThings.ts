@@ -4,6 +4,7 @@ import { checklistActions } from "./checklist";
 import { containerActions } from "./containers";
 import { createContext } from "./context";
 import { dayTimelineQueries } from "./dayTimeline";
+import { csvQueries } from "./csvExport";
 import { exportActions } from "./exportRestore";
 import { addDays, deadlineFlag, type DeadlineFlag } from "./dates";
 import { headingActions } from "./headings";
@@ -90,6 +91,7 @@ export function createMyThings({
     ...listQueries(ctx),
     ...trashActions(ctx),
     ...exportActions(ctx, replaceEverything),
+    ...csvQueries(ctx),
     ...sync,
 
     /** Whether to flag a Deadline as close or passed, as of today. */

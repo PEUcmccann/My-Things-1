@@ -4,6 +4,12 @@ import * as DocumentPicker from "expo-document-picker";
 import { File, Paths } from "expo-file-system";
 import * as Sharing from "expo-sharing";
 
+/** iOS type identifiers for the share sheet. */
+const utis: Record<string, string> = {
+  "application/json": "public.json",
+  "text/csv": "public.comma-separated-values-text",
+};
+
 /**
  * Offers a text file to the user: written to the cache directory, then the share
  * sheet, so it can be saved to Files or sent. Resolves once the sheet is closed.
@@ -14,7 +20,7 @@ export async function saveFile(name: string, text: string, mimeType: string): Pr
   await file.write(text);
   await Sharing.shareAsync(file.uri, {
     mimeType,
-    UTI: mimeType === "application/json" ? "public.json" : undefined,
+    UTI: utis[mimeType],
     dialogTitle: name,
   });
 }

@@ -27,7 +27,7 @@ export type { AreaContents, NewProject, Progress, SidebarArea, SidebarTree } fro
 export type { ProjectList, TodayList, UpcomingEntry, UpcomingGroup, UpcomingReason } from "./lists";
 export type { FinishOptions, LogbookDay, LogbookEntry, Remaining } from "./logbook";
 export type { Destination, NewToDo, When } from "./toDos";
-export type { Frequency, RepeatPattern, WeekdayCode } from "./rrule";
+export type { ByDay, Frequency, RepeatPattern, WeekdayCode } from "./rrule";
 export type { TrashEntry } from "./trash";
 export type { DropTarget, ListRef } from "./ordering";
 export type {

@@ -176,7 +176,8 @@ describe("setting a Repeat rule", () => {
   it.each([
     ["an interval of 0", { freq: "daily", interval: 0 }],
     ["a fractional interval", { freq: "daily", interval: 1.5 }],
-    ["weekdays on a monthly rule", { freq: "monthly", interval: 1, byDay: ["MO"] }],
+    ["weekdays on a daily rule", { freq: "daily", interval: 1, byDay: ["MO"] }],
+    ["an nth weekday on a weekly rule", { freq: "weekly", interval: 1, byDay: ["2MO"] }],
     ["a day of the month on a weekly rule", { freq: "weekly", interval: 1, byMonthDay: [3] }],
     ["day 32", { freq: "monthly", interval: 1, byMonthDay: [32] }],
     ["an unknown frequency", { freq: "hourly", interval: 1 }],
@@ -496,8 +497,10 @@ describe("reading rules", () => {
   it("refuses rule parts outside the subset", () => {
     for (const rrule of [
       "FREQ=HOURLY",
-      "FREQ=DAILY;COUNT=3",
-      "FREQ=MONTHLY;BYDAY=1MO",
+      "FREQ=DAILY;COUNT=3;UNTIL=20270101",
+      "FREQ=WEEKLY;BYDAY=1MO",
+      "FREQ=DAILY;UNTIL=20270101T000000Z",
+      "FREQ=DAILY;BYHOUR=9",
       "FREQ=WEEKLY;WKST=SU",
       "FREQ=DAILY;INTERVAL=two",
       "INTERVAL=2",

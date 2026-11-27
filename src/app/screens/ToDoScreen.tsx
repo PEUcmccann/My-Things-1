@@ -304,6 +304,8 @@ export function ToDoScreen({ id }: { id: string }) {
         current={repeat}
         currentMode={toDo.repeat?.mode ?? "onSchedule"}
         from={repeatFrom}
+        today={today}
+        preview={(pattern, mode) => app.repeatPreview(id, pattern, mode)}
         onChoose={(pattern, mode) => app.setRepeat(id, pattern, mode)}
         onClose={() => setPicker(null)}
       />

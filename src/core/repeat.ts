@@ -4,8 +4,10 @@ import {
   afterGap,
   checkPattern,
   formatRrule,
+  isGap,
   nextRepeatDate,
   parseRrule,
+  repeatDates,
   type RepeatPattern,
 } from "./rrule";
 import { eraseToDoFrom } from "./trash";
@@ -25,17 +27,35 @@ function shifted(date: LocalDate | null, days: number): LocalDate | null {
   return date && addDays(date, days);
 }
 
+/**
+ * Which occurrence of its series a To-do is, counting from 1: the occurrences the
+ * series has created so far, finished ones included. A To-do outside a series is 1.
+ */
+function occurrenceNumber(ctx: Context, item: ToDo): number {
+  if (!item.seriesId) return 1;
+  return ctx.store.all("toDos").filter((t) => t.seriesId === item.seriesId).length;
+}
+
+/** How many more occurrences a rule allows after the current one; Infinity with no COUNT. */
+function occurrencesLeft(ctx: Context, item: ToDo, pattern: RepeatPattern): number {
+  if (pattern.count === undefined) return Infinity;
+  return Math.max(0, pattern.count - occurrenceNumber(ctx, item));
+}
+
 /** The next occurrence's Start date, or null when the series ends. */
-function nextOccurrenceDate(rule: RepeatRule, current: ToDo, today: LocalDate): LocalDate | null {
+function nextOccurrenceDate(ctx: Context, rule: RepeatRule, current: ToDo): LocalDate | null {
+  const today = ctx.clock.today();
+  const pattern = parseRrule(rule.rrule);
+  if (occurrencesLeft(ctx, current, pattern) === 0) return null;
   switch (rule.mode) {
     case "onSchedule": {
       // Completing late skips missed dates; completing early never lands on the same date.
       const after = later(current.startDate ?? today, today);
-      return nextRepeatDate(parseRrule(rule.rrule), rule.start, after);
+      return nextRepeatDate(pattern, rule.start, after);
     }
     case "afterCompletion":
       // The gap counts from the day this one was finished, early, on time or late.
-      return afterGap(parseRrule(rule.rrule), today);
+      return afterGap(pattern, today);
   }
 }
 
@@ -105,7 +125,7 @@ export function createNextOccurrence(ctx: Context, id: string): string | null {
   const rule = current.repeat;
   if (!rule) return null;
   const today = ctx.clock.today();
-  const date = nextOccurrenceDate(rule, current, today);
+  const date = nextOccurrenceDate(ctx, rule, current);
   ctx.update("toDos", id, { repeat: null });
   if (!date) return null;
   const days = daysBetween(current.startDate ?? today, date);
@@ -163,11 +183,6 @@ export function checkCanBeUndated(item: ToDo): void {
   if (item.repeat) throw new Error("A repeating To-do always has a Start date");
 }
 
-/** Whether a pattern is a plain gap: FREQ and INTERVAL, with no rule parts that pick days. */
-function isGap(p: RepeatPattern): boolean {
-  return !p.byDay?.length && !p.byMonthDay?.length;
-}
-
 /** The Start date a To-do gets when `pattern` is set on it in `mode`: the rule's start. */
 function firstDate(
   item: ToDo,
@@ -178,15 +193,25 @@ function firstDate(
   if (mode === "afterCompletion" && !isGap(pattern)) {
     throw new Error("A Repeat rule after completion is a gap: it can't choose days");
   }
-  // Switching modes: nothing about the current occurrence moves.
-  if (item.repeat && item.repeat.mode !== mode && item.startDate) return item.startDate;
-  if (mode === "afterCompletion") return item.startDate ?? today;
-  const from = later(item.startDate ?? today, today);
-  // The first date matches the rule's days; the interval counts from there.
-  const start = nextRepeatDate({ ...pattern, interval: 1 }, from, addDays(from, -1));
-  if (!start) throw new Error("This Repeat rule has no dates");
+  let start: LocalDate | null;
+  if (item.repeat && item.repeat.mode !== mode && item.startDate) {
+    // Switching modes: nothing about the current occurrence moves.
+    start = item.startDate;
+  } else if (mode === "afterCompletion") {
+    start = item.startDate ?? today;
+  } else {
+    const from = later(item.startDate ?? today, today);
+    // The first date matches the rule's days; the interval counts from there.
+    start = nextRepeatDate({ ...pattern, interval: 1 }, from, addDays(from, -1));
+  }
+  if (!start || (pattern.until && start > pattern.until)) {
+    throw new Error("This Repeat rule has no dates");
+  }
   return start;
 }
+
+/** How many dates the repeat picker's preview shows. */
+export const previewLength = 5;
 
 export function repeatActions(ctx: Context) {
   const { clock } = ctx;
@@ -217,6 +242,37 @@ export function repeatActions(ctx: Context) {
         someday: false,
         evening: start === item.startDate && item.evening,
       });
+    },
+
+    /**
+     * The Start dates the series would have if `pattern` were set on this To-do in
+     * `mode`, from the To-do's own: up to `limit`, fewer if the rule ends sooner,
+     * completing each occurrence on its Start date (or today, if that has passed).
+     * Empty for a rule after completion, whose dates aren't known until each one is
+     * done, and for a rule with no dates.
+     */
+    repeatPreview(
+      id: string,
+      pattern: RepeatPattern,
+      mode: RepeatMode = "onSchedule",
+      limit = previewLength,
+    ): LocalDate[] {
+      if (mode === "afterCompletion") return [];
+      const item = ctx.require("toDos", id);
+      let start: LocalDate;
+      try {
+        checkPattern(pattern);
+        start = firstDate(item, pattern, mode, clock.today());
+      } catch {
+        return [];
+      }
+      const dates = [start];
+      const length = Math.min(limit, 1 + occurrencesLeft(ctx, item, pattern));
+      for (const date of repeatDates(pattern, start, later(start, clock.today()))) {
+        if (dates.length >= length) break;
+        dates.push(date);
+      }
+      return dates.slice(0, length);
     },
 
     /** A To-do's Repeat rule as its parts, or null if it doesn't repeat. */

@@ -2,19 +2,24 @@ import { StyleSheet, Text, View } from "react-native";
 import { formatEstimate, type ListRef, type NewToDo, type ToDoEntry } from "../../core";
 import { useDrag } from "../drag";
 import { type BuiltInList } from "../navigation";
-import { listTitles } from "../lists";
+import { listIcons, listTitles } from "../lists";
 import { useMyThings } from "../state";
 import { useTheme } from "../theme";
+import { useTodayView, type TodayView } from "../todayView";
+import { DayTimeline } from "../components/DayTimeline";
 import { Empty } from "../components/Empty";
+import { Icon, type IconName } from "../components/Icon";
 import { MagicPlus } from "../components/MagicPlus";
 import { Screen } from "../components/Screen";
 import { ProjectRow } from "../components/ProjectRow";
+import { Segmented } from "../components/Segmented";
 import { useTagFilter } from "../components/TagFilter";
 import { ToDoList } from "../components/ToDoList";
 
 interface Section {
   key: string;
   title?: string;
+  icon?: IconName;
   entries: ToDoEntry[];
   list: ListRef;
 }
@@ -30,7 +35,8 @@ function useSections(list: BuiltInList): Section[] {
         { key: "main", entries: main, list: { kind: "today", part: "main" } },
         {
           key: "evening",
-          title: "🌙 This Evening",
+          title: "This Evening",
+          icon: "evening",
           entries: thisEvening,
           list: { kind: "today", part: "thisEvening" },
         },
@@ -50,11 +56,18 @@ const placements: Partial<Record<BuiltInList, Omit<NewToDo, "title">>> = {
   someday: { when: { kind: "someday" } },
 };
 
+const todayViews: { value: TodayView; title: string }[] = [
+  { value: "list", title: "List" },
+  { value: "timeline", title: "Timeline" },
+];
+
 export function ListScreen({ list }: { list: BuiltInList }) {
   const theme = useTheme();
   const drag = useDrag();
   const app = useMyThings();
   const filter = useTagFilter();
+  const today = useTodayView();
+  const timeline = list === "today" && today.view === "timeline";
   const sections = useSections(list).map((s) => ({
     ...s,
     entries: app.filterByTags(s.entries, filter.selected),
@@ -69,9 +82,11 @@ export function ListScreen({ list }: { list: BuiltInList }) {
     <View style={styles.fill}>
       <Screen
         title={listTitles[list]}
+        icon={listIcons[list]}
         testID={`screen-${list}`}
-        selectable
+        selectable={!timeline}
         searchable
+        scrolls={!timeline}
         header={
           <>
             {estimate > 0 ? (
@@ -79,20 +94,32 @@ export function ListScreen({ list }: { list: BuiltInList }) {
                 Estimated {formatEstimate(estimate)}
               </Text>
             ) : null}
-            {filter.bar}
+            {list === "today" ? (
+              <Segmented
+                options={todayViews}
+                value={today.view}
+                onChange={today.setView}
+                testID="today-view"
+              />
+            ) : null}
+            {timeline ? null : filter.bar}
           </>
         }
       >
-        {isEmpty ? <Empty text="Nothing here" /> : null}
-        {projects.map((p) => (
+        {timeline ? <DayTimeline /> : null}
+        {!timeline && isEmpty ? <Empty text="Nothing here" /> : null}
+        {(timeline ? [] : projects).map((p) => (
           <ProjectRow key={p.id} project={p} />
         ))}
         {sections.map((section) =>
           // An empty part stays as somewhere to drop while dragging.
-          section.entries.length === 0 && !drag.dragging ? null : (
+          timeline || (section.entries.length === 0 && !drag.dragging) ? null : (
             <View key={section.key} testID={`section-${section.key}`}>
               {section.title ? (
-                <Text style={[styles.sectionTitle, { color: theme.muted }]}>{section.title}</Text>
+                <View style={styles.sectionHeader}>
+                  {section.icon ? <Icon name={section.icon} size={14} color={theme.muted} /> : null}
+                  <Text style={[styles.sectionTitle, { color: theme.muted }]}>{section.title}</Text>
+                </View>
               ) : null}
               <ToDoList entries={section.entries} list={section.list} />
             </View>
@@ -107,5 +134,13 @@ export function ListScreen({ list }: { list: BuiltInList }) {
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   estimate: { fontSize: 14, marginTop: 2 },
-  sectionTitle: { fontSize: 14, fontWeight: "600", marginTop: 16, marginBottom: 6, marginLeft: 8 },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 16,
+    marginBottom: 6,
+    marginLeft: 8,
+  },
+  sectionTitle: { fontSize: 14, fontWeight: "600" },
 });

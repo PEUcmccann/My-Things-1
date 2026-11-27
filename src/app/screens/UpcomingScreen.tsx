@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from "react-native";
 import { addDays, daysBetween, startOfWeek, type UpcomingGroup } from "../../core";
 import { Empty } from "../components/Empty";
+import { Icon } from "../components/Icon";
 import { MagicPlus } from "../components/MagicPlus";
 import { Screen } from "../components/Screen";
 import { ProjectRow } from "../components/ProjectRow";
@@ -41,7 +42,14 @@ export function UpcomingScreen() {
   const today = app.currentDate();
   return (
     <View style={styles.fill}>
-      <Screen title="Upcoming" testID="screen-upcoming" selectable searchable header={filter.bar}>
+      <Screen
+        title="Upcoming"
+        icon="upcoming"
+        testID="screen-upcoming"
+        selectable
+        searchable
+        header={filter.bar}
+      >
         {groups.length === 0 ? <Empty text="Nothing scheduled" /> : null}
         {groups.map((group) => (
           <View key={`${group.kind}-${group.start}`} testID={`upcoming-${group.start}`}>
@@ -49,9 +57,12 @@ export function UpcomingScreen() {
             {group.entries.map((e) => (
               <View key={`${e.kind === "toDo" ? e.toDo.id : e.project.id}-${e.reason}`}>
                 {e.reason === "deadline" ? (
-                  <Text style={[styles.reason, { color: theme.warning }]}>
-                    ⚑ Deadline {group.kind === "day" ? "" : formatDate(e.date, today)}
-                  </Text>
+                  <View style={styles.reasonRow}>
+                    <Icon name="deadline" size={12} color={theme.warning} />
+                    <Text style={[styles.reason, styles.reasonText, { color: theme.warning }]}>
+                      Deadline {group.kind === "day" ? "" : formatDate(e.date, today)}
+                    </Text>
+                  </View>
                 ) : group.kind !== "day" ? (
                   <Text style={[styles.reason, { color: theme.muted }]}>
                     {formatDate(e.date, today)}
@@ -76,4 +87,6 @@ const styles = StyleSheet.create({
   fill: { flex: 1 },
   heading: { fontSize: 17, fontWeight: "700", marginTop: 18, marginBottom: 6, marginLeft: 8 },
   reason: { fontSize: 12, marginLeft: 12, marginBottom: 2 },
+  reasonRow: { flexDirection: "row", alignItems: "center", gap: 4, marginLeft: 12 },
+  reasonText: { marginLeft: 0 },
 });

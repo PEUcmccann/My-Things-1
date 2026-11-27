@@ -13,7 +13,49 @@ export interface Theme {
   onAccent: string;
   danger: string;
   warning: string;
+  /** The colour of each list's icon in the sidebar and list headers. */
+  icons: IconColours;
 }
+
+export interface IconColours {
+  inbox: string;
+  today: string;
+  upcoming: string;
+  anytime: string;
+  someday: string;
+  logbook: string;
+  trash: string;
+  tags: string;
+  settings: string;
+}
+
+/**
+ * List icon colours. Dark mode uses them as chosen; light mode uses darker
+ * versions that reach 3:1 against white and the selected-row grey.
+ */
+const darkIcons: IconColours = {
+  inbox: "#4A90E2",
+  today: "#F2C230",
+  upcoming: "#E5566B",
+  anytime: "#3CC4BE",
+  someday: "#C8A56A",
+  logbook: "#5DBB63",
+  trash: "#8D979A",
+  tags: "#A78BFA",
+  settings: "#8D979A",
+};
+
+const lightIcons: IconColours = {
+  inbox: "#3483DE",
+  today: "#A27D0A",
+  upcoming: "#E34B61",
+  anytime: "#2B908B",
+  someday: "#A07B3B",
+  logbook: "#3E9343",
+  trash: "#798488",
+  tags: "#8B66F8",
+  settings: "#798488",
+};
 
 /**
  * Each accent in light and dark. Light versions reach at least 4.5:1 against
@@ -38,6 +80,7 @@ const light: Omit<Theme, "accent"> = {
   onAccent: "#FFFFFF",
   danger: "#C62D3B",
   warning: "#9A5B00",
+  icons: lightIcons,
 };
 
 const dark: Omit<Theme, "accent"> = {
@@ -50,6 +93,7 @@ const dark: Omit<Theme, "accent"> = {
   onAccent: "#0B1214",
   danger: "#FF6B76",
   warning: "#F0A848",
+  icons: darkIcons,
 };
 
 /** Colours for the current light/dark setting and the chosen accent colour. */

@@ -3,11 +3,16 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useDrag } from "../drag";
 import { useSelection } from "../selection";
 import { Button } from "./Button";
+import { Icon, type IconName } from "./Icon";
 import { useNavigation } from "../navigation";
 import { useTheme } from "../theme";
 
 interface Props {
   title: string;
+  /** Shown before the title, in the list's colour. */
+  icon?: IconName;
+  /** Defaults to the list's colour for a list icon, otherwise the text colour. */
+  iconColor?: string;
   children: ReactNode;
   /** Buttons shown at the right of the header. */
   actions?: ReactNode;
@@ -17,6 +22,8 @@ interface Props {
   selectable?: boolean;
   /** Offers Quick Find: a search button, and pulling the list down. */
   searchable?: boolean;
+  /** False when the content scrolls itself, as the day timeline does. */
+  scrolls?: boolean;
   testID?: string;
 }
 
@@ -24,7 +31,9 @@ interface Props {
 const pullToFind = 70;
 
 export function Screen(props: Props) {
-  const { title, children, actions, header, testID, selectable, searchable } = props;
+  const { title, icon, iconColor, children, actions, header, testID, selectable, searchable } =
+    props;
+  const scrolls = props.scrolls ?? true;
   const theme = useTheme();
   const nav = useNavigation();
   const drag = useDrag();
@@ -44,6 +53,11 @@ export function Screen(props: Props) {
           </Pressable>
         ) : null}
         <View style={styles.titleRow}>
+          {icon ? (
+            <View style={styles.icon}>
+              <Icon name={icon} size={26} color={iconColor} />
+            </View>
+          ) : null}
           <Text style={[styles.title, { color: theme.text }]} accessibilityRole="header">
             {title}
           </Text>
@@ -51,7 +65,8 @@ export function Screen(props: Props) {
             {searchable ? (
               <Button
                 small
-                title="🔍"
+                icon="quickFind"
+                accessibilityLabel="Quick Find"
                 onPress={() => nav.push({ name: "quickFind" })}
                 testID="open-quickfind"
               />
@@ -62,19 +77,23 @@ export function Screen(props: Props) {
         </View>
         {header}
       </View>
-      <ScrollView
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
-        scrollEnabled={!drag.dragging}
-        alwaysBounceVertical={searchable}
-        onScrollEndDrag={(e) => {
-          if (searchable && e.nativeEvent.contentOffset.y < -pullToFind) {
-            nav.push({ name: "quickFind" });
-          }
-        }}
-      >
-        {children}
-      </ScrollView>
+      {!scrolls ? (
+        <View style={styles.fixed}>{children}</View>
+      ) : (
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          scrollEnabled={!drag.dragging}
+          alwaysBounceVertical={searchable}
+          onScrollEndDrag={(e) => {
+            if (searchable && e.nativeEvent.contentOffset.y < -pullToFind) {
+              nav.push({ name: "quickFind" });
+            }
+          }}
+        >
+          {children}
+        </ScrollView>
+      )}
     </View>
   );
 }
@@ -97,7 +116,9 @@ const styles = StyleSheet.create({
   back: { alignSelf: "flex-start", paddingVertical: 4 },
   backText: { fontSize: 17 },
   titleRow: { flexDirection: "row", alignItems: "center", marginTop: 4 },
+  icon: { marginRight: 8 },
   title: { fontSize: 28, fontWeight: "700", flex: 1 },
   actions: { flexDirection: "row", gap: 8, alignItems: "center" },
   content: { paddingHorizontal: 12, paddingBottom: 120 },
+  fixed: { flex: 1 },
 });

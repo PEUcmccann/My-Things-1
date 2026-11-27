@@ -29,6 +29,7 @@ import { Sidebar } from "./screens/Sidebar";
 import { SelectionProvider } from "./selection";
 import { MyThingsProvider } from "./state";
 import { useTheme } from "./theme";
+import { TodayViewProvider } from "./todayView";
 import { useKeyboardInset } from "./useKeyboardInset";
 
 /** Screens wider than this show the sidebar beside the content. */
@@ -139,7 +140,9 @@ export default function App() {
       <SafeAreaProvider>
         <MyThingsProvider loading={<Loading />}>
           <FinishProvider>
-            <Layout />
+            <TodayViewProvider>
+              <Layout />
+            </TodayViewProvider>
           </FinishProvider>
         </MyThingsProvider>
       </SafeAreaProvider>

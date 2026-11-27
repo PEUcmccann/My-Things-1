@@ -6,6 +6,7 @@ import {
   type Priority,
   type ToDo,
 } from "../core";
+import type { IconName } from "./components/Icon";
 
 /** Names for each Priority, as the pickers show them. */
 export const priorityNames: Record<Priority, string> = {
@@ -24,8 +25,14 @@ export const priorityMarks: Record<Exclude<Priority, "none">, string> = {
 
 /** What a row and the detail show for a set Energy. */
 export const energyNames: Record<Energy, string> = {
-  high: "⚡ High energy",
+  high: "High energy",
   low: "Low energy",
+};
+
+/** The icon shown before a set Energy's name, if any. */
+export const energyIcons: Record<Energy, IconName | undefined> = {
+  high: "energy",
+  low: undefined,
 };
 
 const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -69,10 +76,20 @@ export function whenText(
   toDo: Pick<ToDo, "someday" | "startDate"> & { evening?: boolean },
   today: string,
 ): string {
-  if (toDo.someday) return "📦 Someday";
+  if (toDo.someday) return "Someday";
   if (!toDo.startDate) return "No Start date";
-  if (toDo.startDate <= today) return toDo.evening ? "🌙 This Evening" : "☀️ Today";
+  if (toDo.startDate <= today) return toDo.evening ? "This Evening" : "Today";
   return formatDate(toDo.startDate, today);
+}
+
+/** The icon shown beside whenText, if any. */
+export function whenIcon(
+  toDo: Pick<ToDo, "someday" | "startDate"> & { evening?: boolean },
+  today: string,
+): IconName | undefined {
+  if (toDo.someday) return "someday";
+  if (!toDo.startDate || toDo.startDate > today) return undefined;
+  return toDo.evening ? "evening" : "today";
 }
 
 /** "14:05", from minutes after 00:00 (24:00 for the end of the day). */

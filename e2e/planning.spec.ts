@@ -59,7 +59,7 @@ test("a multi-selection can set Energy for every selected To-do", async ({ page 
   await expect(page.getByTestId("selection-bar")).toBeHidden();
 
   for (const title of ["Write essay", "Plan trip"]) {
-    await expect(row(page, title).getByTestId("badge-energy")).toHaveText("⚡ High energy");
+    await expect(row(page, title).getByTestId("badge-energy")).toHaveText("High energy");
   }
   await expect(row(page, "Water plants").getByTestId("badge-energy")).toHaveCount(0);
 });

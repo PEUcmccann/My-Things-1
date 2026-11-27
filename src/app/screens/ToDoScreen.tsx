@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Button } from "../components/Button";
+import { Checkbox } from "../components/Checkbox";
 import { DatePicker, WhenPicker } from "../components/WhenPicker";
 import { Screen } from "../components/Screen";
 import { formatDate } from "../format";
@@ -45,15 +47,22 @@ export function ToDoScreen({ id }: { id: string }) {
 
   return (
     <Screen title="To-do" testID="screen-todo">
-      <TextInput
-        value={title}
-        onChangeText={setTitle}
-        onBlur={saveTitle}
-        onSubmitEditing={saveTitle}
-        style={[styles.title, { color: theme.text, borderColor: theme.border }]}
-        testID="todo-title"
-        accessibilityLabel="Title"
-      />
+      <View style={styles.titleRow}>
+        <Checkbox
+          outcome={toDo.outcome}
+          onPress={() => (toDo.outcome === "active" ? app.complete(id) : app.reopen(id))}
+          testID="todo-detail-check"
+        />
+        <TextInput
+          value={title}
+          onChangeText={setTitle}
+          onBlur={saveTitle}
+          onSubmitEditing={saveTitle}
+          style={[styles.title, { color: theme.text, borderColor: theme.border }]}
+          testID="todo-title"
+          accessibilityLabel="Title"
+        />
+      </View>
       <View style={styles.fields}>
         {row("When", whenText(toDo, today), () => setPicker("when"), "todo-when")}
         {row(
@@ -61,6 +70,20 @@ export function ToDoScreen({ id }: { id: string }) {
           toDo.deadline ? formatDate(toDo.deadline, today) : "None",
           () => setPicker("deadline"),
           "todo-deadline",
+        )}
+      </View>
+      <View style={styles.actions}>
+        {toDo.outcome === "active" ? (
+          <>
+            <Button title="Complete" onPress={() => app.complete(id)} testID="todo-complete" />
+            <Button title="Cancel To-do" onPress={() => app.cancel(id)} testID="todo-cancel" />
+          </>
+        ) : (
+          <Button
+            title={toDo.outcome === "completed" ? "Reopen (Completed)" : "Reopen (Cancelled)"}
+            onPress={() => app.reopen(id)}
+            testID="todo-reopen"
+          />
         )}
       </View>
       <WhenPicker
@@ -82,7 +105,10 @@ export function ToDoScreen({ id }: { id: string }) {
 }
 
 const styles = StyleSheet.create({
+  titleRow: { flexDirection: "row", alignItems: "center", gap: 4, marginLeft: 8 },
+  actions: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 24 },
   title: {
+    flex: 1,
     fontSize: 20,
     fontWeight: "600",
     borderBottomWidth: StyleSheet.hairlineWidth,

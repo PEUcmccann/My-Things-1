@@ -3,6 +3,7 @@ import { ActivityIndicator, StyleSheet, useWindowDimensions, View } from "react-
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { NavigationProvider, useNavigation, type Route } from "./navigation";
 import { ListScreen } from "./screens/ListScreen";
+import { LogbookScreen } from "./screens/LogbookScreen";
 import { SettingsScreen } from "./screens/SettingsScreen";
 import { ToDoScreen } from "./screens/ToDoScreen";
 import { Sidebar } from "./screens/Sidebar";
@@ -18,6 +19,7 @@ function CurrentScreen() {
     case "sidebar":
       return <Sidebar />;
     case "list":
+      if (route.list === "logbook") return <LogbookScreen />;
       return <ListScreen key={route.list} list={route.list} />;
     case "settings":
       return <SettingsScreen />;

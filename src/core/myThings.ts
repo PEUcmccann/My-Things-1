@@ -3,6 +3,9 @@ import { addDays, deadlineFlag, type DeadlineFlag } from "./dates";
 import type { Store } from "./store";
 import type { LocalDate, LogbookMode, Project, ToDo } from "./types";
 
+/** The lifecycle fields shared by To-dos and Projects. */
+type Finishable = Pick<ToDo, "outcome" | "finishedAt" | "loggedAt">;
+
 export interface Options {
   clock: Clock;
   store: Store;
@@ -43,6 +46,13 @@ export interface ToDoEntry {
 export interface TodayList {
   main: ToDoEntry[];
   thisEvening: ToDoEntry[];
+}
+
+export type LogbookEntry = { kind: "toDo" } & ToDoEntry;
+
+export interface LogbookDay {
+  date: LocalDate;
+  entries: LogbookEntry[];
 }
 
 function randomId(): string {
@@ -97,11 +107,17 @@ export function createMyThings({ clock, store, newId = randomId, owner = localOw
     updateToDo(id, { outcome, finishedAt: now, loggedAt: logNow ? now : null });
   }
 
-  /** Whether a finished To-do has reached the Logbook, given the Logbook mode. */
-  function isInLogbook(item: ToDo): boolean {
+  /**
+   * Whether a finished item has reached the Logbook. "immediately" logs it as it is
+   * finished, "endOfDay" once the day it was finished is over, and "manually" only
+   * when the user moves finished items there.
+   */
+  function isInLogbook(item: Finishable): boolean {
     if (item.outcome === "active") return false;
     if (item.loggedAt) return true;
-    if (store.settings().logbookMode !== "endOfDay" || !item.finishedAt) return false;
+    const mode = store.settings().logbookMode;
+    if (mode === "immediately") return true;
+    if (mode === "manually" || !item.finishedAt) return false;
     return toLocalDate(new Date(item.finishedAt)) < clock.today();
   }
 
@@ -215,7 +231,55 @@ export function createMyThings({ clock, store, newId = randomId, owner = localOw
     },
 
     setLogbookMode(mode: LogbookMode): void {
+      // Whatever has reached the Logbook under the old mode stays there.
+      const now = clock.now().toISOString();
+      for (const item of store.all("toDos")) {
+        if (!item.loggedAt && isInLogbook(item)) updateToDo(item.id, { loggedAt: now });
+      }
       store.saveSettings({ ...store.settings(), logbookMode: mode });
+    },
+
+    logbookMode(): LogbookMode {
+      return store.settings().logbookMode;
+    },
+
+    /** Moves every finished To-do to the Logbook now, as in the "manually" mode. */
+    moveFinishedToLogbook(): void {
+      const now = clock.now().toISOString();
+      for (const item of store.all("toDos")) {
+        if (item.outcome !== "active" && !item.loggedAt) updateToDo(item.id, { loggedAt: now });
+      }
+    },
+
+    /** Makes a Completed or Cancelled To-do active again, in its original place. */
+    reopen(id: string): void {
+      updateToDo(id, { outcome: "active", finishedAt: null, loggedAt: null });
+    },
+
+    /** Whether there are finished To-dos still waiting to move to the Logbook. */
+    hasFinishedOutsideLogbook(): boolean {
+      return store
+        .all("toDos")
+        .some((item) => !item.deletedAt && item.outcome !== "active" && !isInLogbook(item));
+    },
+
+    /** The Logbook: finished To-dos grouped by the day they were finished, newest first. */
+    logbook(): LogbookDay[] {
+      const finished = store
+        .all("toDos")
+        .filter((item) => !item.deletedAt && isInLogbook(item))
+        .sort((a, b) => (b.finishedAt ?? "").localeCompare(a.finishedAt ?? ""));
+      const days: LogbookDay[] = [];
+      for (const item of finished) {
+        const date = toLocalDate(new Date(item.finishedAt ?? item.updatedAt));
+        let day = days[days.length - 1];
+        if (!day || day.date !== date) {
+          day = { date, entries: [] };
+          days.push(day);
+        }
+        day.entries.push({ kind: "toDo", ...entry(item) });
+      }
+      return days;
     },
 
     getToDo(id: string): ToDo {

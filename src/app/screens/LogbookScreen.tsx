@@ -1,0 +1,52 @@
+import { StyleSheet, Text, View } from "react-native";
+import { Button } from "../components/Button";
+import { Empty } from "../components/Empty";
+import { Screen } from "../components/Screen";
+import { ToDoRow } from "../components/ToDoRow";
+import { formatDate } from "../format";
+import { useNavigation } from "../navigation";
+import { useMyThings } from "../state";
+import { useTheme } from "../theme";
+
+export function LogbookScreen() {
+  const app = useMyThings();
+  const theme = useTheme();
+  const nav = useNavigation();
+  const days = app.logbook();
+  const today = app.currentDate();
+  const showMove = app.logbookMode() !== "immediately" && app.hasFinishedOutsideLogbook();
+  return (
+    <Screen
+      title="Logbook"
+      testID="screen-logbook"
+      actions={
+        showMove ? (
+          <Button
+            small
+            title="Log finished"
+            onPress={() => app.moveFinishedToLogbook()}
+            testID="log-finished"
+          />
+        ) : null
+      }
+    >
+      {days.length === 0 ? <Empty text="Completed and Cancelled items appear here" /> : null}
+      {days.map((day) => (
+        <View key={day.date} testID={`logbook-day-${day.date}`}>
+          <Text style={[styles.day, { color: theme.muted }]}>{formatDate(day.date, today)}</Text>
+          {day.entries.map((e) => (
+            <ToDoRow
+              key={e.toDo.id}
+              entry={e}
+              onPress={() => nav.push({ name: "toDo", id: e.toDo.id })}
+            />
+          ))}
+        </View>
+      ))}
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create({
+  day: { fontSize: 14, fontWeight: "600", marginTop: 16, marginBottom: 6, marginLeft: 8 },
+});

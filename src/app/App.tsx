@@ -2,7 +2,9 @@ import { StatusBar } from "expo-status-bar";
 import { ActivityIndicator, StyleSheet, useWindowDimensions, View } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { NavigationProvider, useNavigation, type Route } from "./navigation";
+import { AreaScreen } from "./screens/AreaScreen";
 import { ListScreen } from "./screens/ListScreen";
+import { ProjectScreen } from "./screens/ProjectScreen";
 import { LogbookScreen } from "./screens/LogbookScreen";
 import { SettingsScreen } from "./screens/SettingsScreen";
 import { ToDoScreen } from "./screens/ToDoScreen";
@@ -23,6 +25,10 @@ function CurrentScreen() {
       return <ListScreen key={route.list} list={route.list} />;
     case "settings":
       return <SettingsScreen />;
+    case "area":
+      return <AreaScreen key={route.id} id={route.id} />;
+    case "project":
+      return <ProjectScreen key={route.id} id={route.id} />;
     case "toDo":
       return <ToDoScreen key={route.id} id={route.id} />;
   }

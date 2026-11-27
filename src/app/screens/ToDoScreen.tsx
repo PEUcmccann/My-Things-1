@@ -2,12 +2,13 @@ import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Button } from "../components/Button";
 import { Checkbox } from "../components/Checkbox";
+import { MovePicker } from "../components/MovePicker";
 import { DatePicker, WhenPicker } from "../components/WhenPicker";
 import { Screen } from "../components/Screen";
 import { formatDate } from "../format";
 import { useMyThings } from "../state";
 import { useTheme } from "../theme";
-import type { ToDo } from "../../core";
+import type { MyThings, ToDo } from "../../core";
 
 function whenText(toDo: ToDo, today: string): string {
   if (toDo.someday) return "📦 Someday";
@@ -16,12 +17,19 @@ function whenText(toDo: ToDo, today: string): string {
   return formatDate(toDo.startDate, today);
 }
 
+/** Where the To-do is filed, for the Move row. */
+function placeText(app: MyThings, toDo: ToDo): string {
+  if (toDo.projectId) return `◔ ${app.findProject(toDo.projectId)?.title ?? "Project"}`;
+  if (toDo.areaId) return `▣ ${app.findArea(toDo.areaId)?.title ?? "Area"}`;
+  return toDo.startDate || toDo.someday ? "No Area or Project" : "📥 Inbox";
+}
+
 export function ToDoScreen({ id }: { id: string }) {
   const app = useMyThings();
   const theme = useTheme();
   const toDo = app.findToDo(id);
   const [title, setTitle] = useState(toDo?.title ?? "");
-  const [picker, setPicker] = useState<"when" | "deadline" | null>(null);
+  const [picker, setPicker] = useState<"when" | "deadline" | "move" | null>(null);
 
   if (!toDo) {
     return (
@@ -71,6 +79,9 @@ export function ToDoScreen({ id }: { id: string }) {
           () => setPicker("deadline"),
           "todo-deadline",
         )}
+        {toDo.parentId
+          ? null
+          : row("Move", placeText(app, toDo), () => setPicker("move"), "todo-move")}
       </View>
       <View style={styles.actions}>
         {toDo.outcome === "active" ? (
@@ -86,6 +97,11 @@ export function ToDoScreen({ id }: { id: string }) {
           />
         )}
       </View>
+      <MovePicker
+        visible={picker === "move"}
+        onChoose={(to) => app.moveToDo(id, to)}
+        onClose={() => setPicker(null)}
+      />
       <WhenPicker
         visible={picker === "when"}
         current={toDo.startDate}

@@ -25,7 +25,9 @@ export type Route =
   | { name: "sidebar" }
   | { name: "list"; list: BuiltInList }
   | { name: "settings" }
-  | { name: "toDo"; id: string };
+  | { name: "toDo"; id: string }
+  | { name: "area"; id: string }
+  | { name: "project"; id: string };
 
 interface Navigation {
   route: Route;

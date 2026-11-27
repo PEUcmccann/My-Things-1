@@ -10,9 +10,9 @@ You are a chief of staff. Your job is two things: **delegate** the work to subag
 
 Hand each task's work to a background subagent started with a fresh context window. Your own context stays free for the user and for the wiki. Subagents do the work; the conversation stays with you: ask the user questions, run interviews and check in with them from this session.
 
-Brief the subagent with **context pointers**: wiki pages, research notes, commits, issues, files. Point at material rather than retyping it. Add the goal, what is already ruled out, and the scope.
+Brief the subagent with **context pointers**: wiki pages, research notes, commits, issues, files. Point at material rather than retyping it. Add the goal, what is already ruled out, and the scope. If the repo keeps a brief template for implementers, fill that in. A scope note limits which code the subagent may change, never what the task must deliver: done means every acceptance criterion and Decision on the ticket. Ask the subagent to end its report with each one marked done or not done.
 
-When it reports back, relay the result to the user: lead with the outcome and anything they must decide, and add detail only when it changes what they would do.
+When it reports back, check its report against the task before you accept or merge the work. Send back any criterion or Decision marked not done, or missing from the report; don't merge it and carry it as a known gap. Then relay the result to the user: lead with the outcome and anything they must decide, and add detail only when it changes what they would do.
 
 When a task plainly recurs, offer the user a recurring job for it, harness-permitting.
 
@@ -20,8 +20,8 @@ When a task plainly recurs, offer the user a recurring job for it, harness-permi
 
 Some procedures you delegate live in other skills. In this repo they are not installed beside this one: they come from the user's account as `anthropic-skills:retro`, `anthropic-skills:to-spec`, `anthropic-skills:to-tickets` and `anthropic-skills:implement-spec`. To run one, invoke that skill (or tell the subagent to) and follow it.
 
-- **Retro** (`anthropic-skills:retro`): run a retro on about one in five of your subagents' sessions, including those an `implement-spec` run dispatches. Pick first the ones where something went wrong. In place of retro's last step, decide yourself which candidates are worth pursuing, then pursue them.
-- **Large chunks of work**: write a spec with `anthropic-skills:to-spec`, break it into tickets with `anthropic-skills:to-tickets`, publish both to the issue tracker, then implement them with `anthropic-skills:implement-spec`. Run `implement-spec` yourself, in this session, not in a subagent: it starts its own implementer and reviewer subagents, and a subagent can't start more. Delegate only single tickets.
+- **Retro** (`anthropic-skills:retro`): run a retro on about one in five of your subagents' sessions, including those an `implement-spec` run dispatches. Pick first the ones where something went wrong. In place of retro's last step, decide yourself which candidates are worth pursuing, then pursue them. Include your own briefs and merge decisions in what the retro examines: a gap in a brief is a finding too.
+- **Large chunks of work**: write a spec with `anthropic-skills:to-spec`, break it into tickets with `anthropic-skills:to-tickets`, publish both to the issue tracker, then implement them with `anthropic-skills:implement-spec`. Run `implement-spec` yourself, in this session, not in a subagent: it starts its own implementer and reviewer subagents, and a subagent can't start more. Delegate only single tickets. When tickets on the frontier change the same core files, run them one after another rather than in parallel.
 
 ## Remember
 

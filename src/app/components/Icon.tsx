@@ -10,6 +10,7 @@ import { CubeIcon } from "phosphor-react-native/src/icons/Cube";
 import { DotsSixVerticalIcon } from "phosphor-react-native/src/icons/DotsSixVertical";
 import { DotsThreeIcon } from "phosphor-react-native/src/icons/DotsThree";
 import { FlagIcon } from "phosphor-react-native/src/icons/Flag";
+import { FunnelSimpleIcon } from "phosphor-react-native/src/icons/FunnelSimple";
 import { GearSixIcon } from "phosphor-react-native/src/icons/GearSix";
 import { LightningIcon } from "phosphor-react-native/src/icons/Lightning";
 import { ListChecksIcon } from "phosphor-react-native/src/icons/ListChecks";
@@ -44,6 +45,8 @@ const icons = {
   deadline: FlagIcon,
   project: ChartPieSliceIcon,
   area: CubeIcon,
+  /** Every Smart List has this one icon. */
+  smartList: FunnelSimpleIcon,
   when: CalendarBlankIcon,
   select: CheckCircleIcon,
   energy: LightningIcon,

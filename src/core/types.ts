@@ -106,6 +106,54 @@ export type Priority = (typeof priorities)[number];
 export const energies = ["low", "high"] as const;
 export type Energy = (typeof energies)[number];
 
+/**
+ * A range of days a Smart List's Start date or Deadline filter picks, worked out from
+ * today so a saved list stays useful as the days pass. "thisWeek" runs Monday to
+ * Sunday; "next7Days" is today and the 6 days after.
+ */
+export const dateRanges = [
+  "todayOrEarlier",
+  "today",
+  "tomorrow",
+  "thisWeek",
+  "next7Days",
+  "thisMonth",
+  "hasDate",
+  "noDate",
+] as const;
+export type DateRange = (typeof dateRanges)[number];
+
+/** A choice in a Smart List's Estimate filter. */
+export type EstimateChoice =
+  { kind: "upTo"; minutes: number } | { kind: "moreThan"; minutes: number } | { kind: "notSet" };
+
+/** An Area or Project a Smart List picks: one kind of filter, so they combine with OR. */
+export interface ContainerRef {
+  kind: "area" | "project";
+  id: string;
+}
+
+/**
+ * What a Smart List matches. Each kind left empty matches everything; values of one
+ * kind combine with OR, and the kinds combine with AND.
+ */
+export interface SmartListFilters {
+  tagIds: string[];
+  containers: ContainerRef[];
+  startDate: DateRange[];
+  deadline: DateRange[];
+  priority: Priority[];
+  /** null picks To-dos with no Energy set. */
+  energy: (Energy | null)[];
+  estimate: EstimateChoice[];
+}
+
+/** A saved, named combination of filters, shown in the sidebar. */
+export interface SmartList extends RecordMeta {
+  title: string;
+  filters: SmartListFilters;
+}
+
 /** A small step inside a To-do that can only be ticked off. */
 export interface ChecklistItem extends RecordMeta {
   toDoId: string;

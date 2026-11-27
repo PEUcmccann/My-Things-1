@@ -13,6 +13,7 @@ import { planningActions } from "./planning";
 import type { Store } from "./store";
 import { quickEntryActions } from "./quickEntry";
 import { quickFindQueries } from "./quickFind";
+import { smartListActions } from "./smartLists";
 import { tagActions } from "./tags";
 import { toDoActions, type NewToDo } from "./toDos";
 import { trashActions } from "./trash";
@@ -104,6 +105,7 @@ export function createMyThings({ clock, store, newId = randomId, owner = localOw
     ...dayTimelineQueries(ctx, base),
     ...ordering,
     ...bulkActions(ctx, base),
+    ...smartListActions(ctx, base),
     ...quickEntryActions({ ...base, createToDo }),
     createToDo,
   };

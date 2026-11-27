@@ -37,7 +37,7 @@ function occurrenceNumber(ctx: Context, item: ToDo): number {
 }
 
 /** How many more occurrences a rule allows after the current one; Infinity with no COUNT. */
-function occurrencesLeft(ctx: Context, item: ToDo, pattern: RepeatPattern): number {
+export function occurrencesLeft(ctx: Context, item: ToDo, pattern: RepeatPattern): number {
   if (pattern.count === undefined) return Infinity;
   return Math.max(0, pattern.count - occurrenceNumber(ctx, item));
 }

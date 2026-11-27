@@ -20,6 +20,7 @@ import { ProjectScreen } from "./screens/ProjectScreen";
 import { LogbookScreen } from "./screens/LogbookScreen";
 import { QuickFindScreen } from "./screens/QuickFindScreen";
 import { SettingsScreen } from "./screens/SettingsScreen";
+import { SmartListScreen } from "./screens/SmartListScreen";
 import { TagScreen } from "./screens/TagScreen";
 import { TagsScreen } from "./screens/TagsScreen";
 import { ToDoScreen } from "./screens/ToDoScreen";
@@ -27,6 +28,7 @@ import { TrashScreen } from "./screens/TrashScreen";
 import { UpcomingScreen } from "./screens/UpcomingScreen";
 import { Sidebar } from "./screens/Sidebar";
 import { SelectionProvider } from "./selection";
+import { SeriesScopeProvider } from "./seriesScope";
 import { MyThingsProvider } from "./state";
 import { useTheme } from "./theme";
 import { TodayViewProvider } from "./todayView";
@@ -84,6 +86,8 @@ function ScreenFor({ route }: { route: Route }) {
       return <TagsScreen />;
     case "tag":
       return <TagScreen key={route.id} id={route.id} />;
+    case "smartList":
+      return <SmartListScreen key={route.id} id={route.id} />;
     case "toDo":
       return <ToDoScreen key={route.id} id={route.id} />;
   }
@@ -140,9 +144,11 @@ export default function App() {
       <SafeAreaProvider>
         <MyThingsProvider loading={<Loading />}>
           <FinishProvider>
-            <TodayViewProvider>
-              <Layout />
-            </TodayViewProvider>
+            <SeriesScopeProvider>
+              <TodayViewProvider>
+                <Layout />
+              </TodayViewProvider>
+            </SeriesScopeProvider>
           </FinishProvider>
         </MyThingsProvider>
       </SafeAreaProvider>

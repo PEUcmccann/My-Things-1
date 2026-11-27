@@ -1,12 +1,23 @@
 import { byPosition, todayKey, type Context, type ToDoEntry } from "./context";
 import { addDays, daysBetween, startOfMonth, startOfWeek } from "./dates";
-import type { LocalDate, Project, ToDo } from "./types";
+import { occurrencesLeft } from "./repeat";
+import { parseRrule, repeatDates } from "./rrule";
+import { seriesFieldsFor } from "./seriesEdits";
+import type { LocalDate, Project, Tag, ToDo } from "./types";
 
 /** Why an item shows on a day in Upcoming. */
 export type UpcomingReason = "start" | "deadline";
 
+/**
+ * An entry in Upcoming. A "projected" entry is a later date of a repeating To-do's
+ * rule: it isn't a To-do and isn't stored, and stands for the current occurrence.
+ * Its `toDo` is the current occurrence as the series is, without "this one"
+ * changes (the id is the current occurrence's), and `tags` are the series' Tags.
+ */
 export type UpcomingEntry = { date: LocalDate; reason: UpcomingReason } & (
-  ({ kind: "toDo" } & ToDoEntry) | { kind: "project"; project: Project }
+  | ({ kind: "toDo" } & ToDoEntry)
+  | ({ kind: "projected"; tags: Tag[] } & ToDoEntry)
+  | { kind: "project"; project: Project }
 );
 
 /** The Projects shown at the top of Today, Anytime or Someday. */
@@ -27,6 +38,8 @@ export interface UpcomingGroup {
 export const upcomingDays = 7;
 /** Days after which Upcoming groups by month instead of by week. */
 export const upcomingWeeksUntil = 28;
+/** How many days ahead Upcoming projects the dates of Repeat rules. */
+export const upcomingRepeatDays = 365;
 
 function groupFor(date: LocalDate, today: LocalDate): Pick<UpcomingGroup, "kind" | "start"> {
   const ahead = daysBetween(today, date);
@@ -55,6 +68,43 @@ function isDue(item: Pick<ToDo, "startDate" | "deadline">, today: LocalDate): bo
 /** Not yet organised: no Area, Project, Start date or Someday. */
 function isInInbox(item: ToDo): boolean {
   return !item.areaId && !item.projectId && !item.startDate && !item.someday;
+}
+
+/**
+ * The later dates of a repeating To-do's rule, as completing each occurrence in turn
+ * would produce them: after the later of its Start date and today, up to a year
+ * ahead, and no further than the rule's end (COUNT, counted over the series'
+ * occurrences, or UNTIL). After-completion rules have none, since their dates
+ * depend on when each occurrence is done.
+ *
+ * Every date shows in the day-by-day part; in a week or month group the rule shows
+ * at most once (counting the current occurrence), on its first date there, so a
+ * daily rule can't flood the list.
+ */
+function projectedDates(ctx: Context, toDo: ToDo, today: LocalDate): LocalDate[] {
+  const rule = toDo.repeat;
+  if (!rule || rule.mode !== "onSchedule") return [];
+  const pattern = parseRrule(rule.rrule);
+  let left = occurrencesLeft(ctx, toDo, pattern);
+  const after = toDo.startDate && toDo.startDate > today ? toDo.startDate : today;
+  const last = addDays(today, upcomingRepeatDays);
+  const shown = new Set<string>();
+  const groupKey = (date: LocalDate) => {
+    const { kind, start } = groupFor(date, today);
+    return kind === "day" ? null : `${kind} ${start}`;
+  };
+  const current = after === today ? null : groupKey(after);
+  if (current) shown.add(current);
+  const dates: LocalDate[] = [];
+  for (const date of repeatDates(pattern, rule.start, after)) {
+    if (date > last || left === 0) break;
+    left--;
+    const key = groupKey(date);
+    if (key && shown.has(key)) continue;
+    if (key) shown.add(key);
+    dates.push(date);
+  }
+  return dates;
 }
 
 export function listQueries(ctx: Context) {
@@ -109,17 +159,26 @@ export function listQueries(ctx: Context) {
       for (const item of store.all("toDos")) {
         if (item.outcome !== "active" || !ctx.isOpenInLists(item)) continue;
         add(item, (date, reason) => ({ kind: "toDo", date, reason, ...ctx.entry(item) }));
+        for (const date of projectedDates(ctx, item, today)) {
+          // A later occurrence is created from the series, without "this one" changes.
+          const later = { ...item, ...seriesFieldsFor(ctx, item, date) };
+          const tags = later.tagIds
+            .map((t) => ctx.find("tags", t))
+            .filter((t): t is Tag => Boolean(t));
+          entries.push({ kind: "projected", date, reason: "start", tags, ...ctx.entry(later) });
+        }
       }
       for (const project of store.all("projects")) {
         if (project.outcome !== "active" || !ctx.isProjectOpenInLists(project)) continue;
         add(project, (date, reason) => ({ kind: "project", date, reason, project }));
       }
-      const record = (e: UpcomingEntry) => (e.kind === "toDo" ? e.toDo : e.project);
-      // Projects come before To-dos on the same day.
+      const record = (e: UpcomingEntry) => (e.kind === "project" ? e.project : e.toDo);
+      // On the same day: Projects, then To-dos, then projected entries.
+      const rank = { project: 0, toDo: 1, projected: 2 };
       entries.sort(
         (a, b) =>
           a.date.localeCompare(b.date) ||
-          Number(a.kind === "toDo") - Number(b.kind === "toDo") ||
+          rank[a.kind] - rank[b.kind] ||
           byPosition(record(a), record(b)),
       );
       const groups: UpcomingGroup[] = [];

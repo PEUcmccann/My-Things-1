@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import type { Remaining } from "../../core";
+import type { Remaining, SeriesScope } from "../../core";
 import { haptics } from "../haptics";
 import { useSelection } from "../selection";
+import { useAskSeriesScope } from "../seriesScope";
 import { useMyThings } from "../state";
 import { useTheme } from "../theme";
 import { Button } from "./Button";
@@ -30,10 +31,29 @@ export function SelectionBar() {
   const selection = useSelection();
   const [dialog, setDialog] = useState<Dialog>(null);
   const [tagIds, setTagIds] = useState<string[]>([]);
+  const askScope = useAskSeriesScope();
+  // The answer to "this one or all future ones" for the action being made.
+  const [scope, setScope] = useState<SeriesScope | null>(null);
   const ids = selection.ids.filter((id) => app.findToDo(id));
   const none = ids.length === 0;
   const close = () => setDialog(null);
   const done = () => selection.clear();
+
+  /**
+   * Opens the picker for an action on fields the next occurrence copies. When the
+   * selection has a repeating To-do, it asks once first, for the whole action.
+   */
+  const openSeriesEdit = (d: Dialog) =>
+    askScope(ids, (s) => {
+      setScope(s);
+      setDialog(d);
+    });
+  /** Makes the action, with the answer for each repeating To-do in the selection. */
+  const editSeries = (change: () => void) => {
+    if (scope) app.editOccurrences(ids, scope, change);
+    else change();
+    done();
+  };
 
   const finish = (what: "complete" | "cancel", remaining?: Remaining) => {
     if (what === "complete") app.completeMany(ids, { remaining });
@@ -75,7 +95,7 @@ export function SelectionBar() {
           small
           title="Deadline"
           disabled={none}
-          onPress={() => setDialog("deadline")}
+          onPress={() => openSeriesEdit("deadline")}
           testID="bulk-deadline"
         />
         <Button
@@ -84,7 +104,7 @@ export function SelectionBar() {
           disabled={none}
           onPress={() => {
             setTagIds([]);
-            setDialog("tags");
+            openSeriesEdit("tags");
           }}
           testID="bulk-tags"
         />
@@ -92,21 +112,21 @@ export function SelectionBar() {
           small
           title="Priority"
           disabled={none}
-          onPress={() => setDialog("priority")}
+          onPress={() => openSeriesEdit("priority")}
           testID="bulk-priority"
         />
         <Button
           small
           title="Energy"
           disabled={none}
-          onPress={() => setDialog("energy")}
+          onPress={() => openSeriesEdit("energy")}
           testID="bulk-energy"
         />
         <Button
           small
           title="Estimate"
           disabled={none}
-          onPress={() => setDialog("estimate")}
+          onPress={() => openSeriesEdit("estimate")}
           testID="bulk-estimate"
         />
         <Button
@@ -146,6 +166,7 @@ export function SelectionBar() {
       <WhenPicker
         visible={dialog === "when"}
         current={null}
+        allowUndated={!ids.some((id) => app.findToDo(id)?.repeat)}
         onChoose={(when) => {
           app.setWhenMany(ids, when);
           done();
@@ -156,10 +177,7 @@ export function SelectionBar() {
         visible={dialog === "deadline"}
         title="Deadline"
         current={null}
-        onChoose={(date) => {
-          app.setDeadlineMany(ids, date);
-          done();
-        }}
+        onChoose={(date) => editSeries(() => app.setDeadlineMany(ids, date))}
         onClose={close}
       />
       <TagPicker
@@ -170,35 +188,23 @@ export function SelectionBar() {
           setTagIds((t) => (on ? [...t, tagId] : t.filter((x) => x !== tagId)))
         }
         onClose={() => {
-          if (tagIds.length) {
-            app.addTagsMany(ids, tagIds);
-            done();
-          }
+          if (tagIds.length) editSeries(() => app.addTagsMany(ids, tagIds));
           close();
         }}
       />
       <PriorityPicker
         visible={dialog === "priority"}
-        onChoose={(priority) => {
-          app.setPriorityMany(ids, priority);
-          done();
-        }}
+        onChoose={(priority) => editSeries(() => app.setPriorityMany(ids, priority))}
         onClose={close}
       />
       <EnergyPicker
         visible={dialog === "energy"}
-        onChoose={(energy) => {
-          app.setEnergyMany(ids, energy);
-          done();
-        }}
+        onChoose={(energy) => editSeries(() => app.setEnergyMany(ids, energy))}
         onClose={close}
       />
       <EstimatePicker
         visible={dialog === "estimate"}
-        onChoose={(minutes) => {
-          app.setEstimateMany(ids, minutes);
-          done();
-        }}
+        onChoose={(minutes) => editSeries(() => app.setEstimateMany(ids, minutes))}
         onClose={close}
       />
       <RemainingChoice

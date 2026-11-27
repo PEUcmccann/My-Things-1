@@ -385,10 +385,17 @@ function placementForTarget(target: DropTarget): Omit<NewToDo, "title"> {
   }
 }
 
+/** Repeating To-dos always have a Start date, so they can't be dropped on Someday. */
+function repeats(app: MyThings, id: string): boolean {
+  return Boolean(app.findToDo(id)?.repeat);
+}
+
 /** Drop handling for a list of To-dos: reorder, file, or create a new To-do at the spot. */
 export function toDoListDrop(app: MyThings, drag: DragApi, list: ListRef): Omit<DropList, "ref"> {
   return {
-    accepts: (item) => item.kind === "toDo" || item.kind === "new",
+    accepts: (item) =>
+      item.kind === "new" ||
+      (item.kind === "toDo" && !(list.kind === "someday" && repeats(app, item.id))),
     onDrop: (item, beforeId) => {
       if (item.kind === "toDo") app.placeToDo(list, item.id, beforeId);
       else if (item.kind === "new") {
@@ -407,7 +414,10 @@ export function toDoTargetDrop(
   const filesIt = target.kind !== "today" && target.kind !== "someday";
   return {
     accepts: (item) =>
-      item.kind === "new" || (item.kind === "toDo" && !(filesIt && item.isSubToDo)),
+      item.kind === "new" ||
+      (item.kind === "toDo" &&
+        !(filesIt && item.isSubToDo) &&
+        !(target.kind === "someday" && repeats(app, item.id))),
     onDrop: (item) => {
       if (item.kind === "toDo") app.dropToDo(item.id, target);
       else if (item.kind === "new") drag.openNewToDo({ placement: placementForTarget(target) });

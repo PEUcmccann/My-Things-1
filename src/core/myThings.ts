@@ -10,9 +10,12 @@ import { listQueries } from "./lists";
 import { logbookActions } from "./logbook";
 import { orderingActions, type ListRef } from "./ordering";
 import { planningActions } from "./planning";
+import { repeatActions } from "./repeat";
+import { seriesEditActions } from "./seriesEdits";
 import type { Store } from "./store";
 import { quickEntryActions } from "./quickEntry";
 import { quickFindQueries } from "./quickFind";
+import { smartListActions } from "./smartLists";
 import { tagActions } from "./tags";
 import { toDoActions, type NewToDo } from "./toDos";
 import { trashActions } from "./trash";
@@ -25,6 +28,8 @@ export type { AreaContents, NewProject, Progress, SidebarArea, SidebarTree } fro
 export type { ProjectList, TodayList, UpcomingEntry, UpcomingGroup, UpcomingReason } from "./lists";
 export type { FinishOptions, LogbookDay, LogbookEntry, Remaining } from "./logbook";
 export type { Destination, NewToDo, When } from "./toDos";
+export type { ByDay, Frequency, RepeatPattern, WeekdayCode } from "./rrule";
+export type { SeriesScope } from "./seriesEdits";
 export type { TrashEntry } from "./trash";
 export type { DropTarget, ListRef } from "./ordering";
 export type {
@@ -61,6 +66,8 @@ export function createMyThings({ clock, store, newId = randomId, owner = localOw
     ...checklistActions(ctx),
     ...tagActions(ctx),
     ...planningActions(ctx),
+    ...repeatActions(ctx),
+    ...seriesEditActions(ctx),
     ...quickFindQueries(ctx),
     ...logbookActions(ctx),
     ...listQueries(ctx),
@@ -104,6 +111,7 @@ export function createMyThings({ clock, store, newId = randomId, owner = localOw
     ...dayTimelineQueries(ctx, base),
     ...ordering,
     ...bulkActions(ctx, base),
+    ...smartListActions(ctx, base),
     ...quickEntryActions({ ...base, createToDo }),
     createToDo,
   };

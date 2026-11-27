@@ -1,8 +1,9 @@
 import type { ListRef } from "./ordering";
 import type { Taggable, TagNode } from "./tags";
 import { isValidEstimate } from "./planning";
-import { endOfDay, isValidTimeSlot, type NewToDo } from "./toDos";
-import type { Priority, TimeSlot } from "./types";
+import { dateWords } from "./quickEntryDates";
+import { endOfDay, isValidTimeSlot, type NewToDo, type When } from "./toDos";
+import type { LocalDate, Priority, TimeSlot } from "./types";
 
 /** A word of quick entry text: a run of non-space characters and where it sits. */
 export interface Word {
@@ -17,7 +18,9 @@ export type QuickEntryValue =
   | { kind: "priority"; priority: Exclude<Priority, "none"> }
   | { kind: "estimate"; minutes: number }
   /** Minutes from 00:00. With no end, the slot lasts the Estimate, or 30 minutes. */
-  | { kind: "timeSlot"; start: number; end: number | null };
+  | { kind: "timeSlot"; start: number; end: number | null }
+  /** A date phrase: a Start date (worked out from today), This Evening or Someday. */
+  | { kind: "when"; when: Exclude<When, { kind: "none" }> };
 
 export type QuickEntryKind = QuickEntryValue["kind"];
 
@@ -32,11 +35,12 @@ export interface QuickEntryToken {
 /**
  * Recognises shorthand starting at `words[index]`. It can take one word or several (as a
  * date phrase like "next friday" would), and returns how many words it took and what they
- * set, or null if the words there are plain text.
+ * set, or null if the words there are plain text. `today` is for date phrases.
  */
 export type Recogniser = (
   words: Word[],
   index: number,
+  today: LocalDate,
 ) => { words: number; value: QuickEntryValue } | null;
 
 /** Matches one word against a pattern; `read` turns the match into a value, or null. */
@@ -97,13 +101,14 @@ const timeSlot = wordRecogniser(/^@(\d{1,2}):(\d{2})(?:-(\d{1,2}):(\d{2}))?$/, (
  * Every kind of shorthand, tried in order at each word. Add a Recogniser here for a new
  * kind, with a case for it in createFromQuickEntry.
  */
-export const recognisers: Recogniser[] = [tag, priority, estimate, timeSlot];
+export const recognisers: Recogniser[] = [tag, priority, estimate, timeSlot, dateWords];
 
 /** Kinds where only the last token counts; earlier ones stay in the title as text. */
 const lastWins: ReadonlySet<QuickEntryKind> = new Set<QuickEntryKind>([
   "priority",
   "estimate",
   "timeSlot",
+  "when",
 ]);
 
 function wordsOf(text: string): Word[] {
@@ -124,15 +129,25 @@ export interface ParsedQuickEntry {
  * Reads shorthand out of quick entry text. A token is whole words: it starts the text or
  * follows a space, and ends at a space or the end. Tokens starting at an offset in
  * `ignored` are kept as plain text, which is how a tapped-away highlight stays in the title.
+ * Date phrases are worked out from `today`.
  */
-export function parseQuickEntry(text: string, ignored: readonly number[] = []): ParsedQuickEntry {
+export function parseQuickEntry(
+  text: string,
+  today: LocalDate,
+  ignored: readonly number[] = [],
+): ParsedQuickEntry {
   const words = wordsOf(text);
   const found: QuickEntryToken[] = [];
   for (let i = 0; i < words.length; i++) {
-    if (ignored.includes(words[i].start)) continue;
+    const keep = ignored.includes(words[i].start);
     for (const recognise of recognisers) {
-      const match = recognise(words, i);
+      const match = recognise(words, i, today);
       if (!match) continue;
+      // A token kept as text keeps all its words, so "next fri" doesn't become "fri".
+      if (keep) {
+        i += match.words - 1;
+        break;
+      }
       const last = words[i + match.words - 1];
       found.push({
         text: text.slice(words[i].start, last.end),
@@ -144,10 +159,13 @@ export function parseQuickEntry(text: string, ignored: readonly number[] = []): 
       break;
     }
   }
-  const tokens = found.filter(
+  const winners = found.filter(
     (t, i) =>
       !lastWins.has(t.value.kind) || !found.slice(i + 1).some((u) => u.value.kind === t.value.kind),
   );
+  // A Time slot needs a Start date, so with Someday a time token stays as text.
+  const someday = winners.some((t) => t.value.kind === "when" && t.value.when.kind === "someday");
+  const tokens = someday ? winners.filter((t) => t.value.kind !== "timeSlot") : winners;
   let title = "";
   let from = 0;
   for (const t of tokens) {
@@ -221,6 +239,8 @@ export interface QuickEntryOptions {
 /** The actions quick entry builds on. */
 interface Base {
   createToDo(input: NewToDo & { at?: QuickEntryOptions["at"] }): string;
+  currentDate(): LocalDate;
+  setWhen(id: string, when: When): void;
   tagTree(): TagNode[];
   createTag(title: string, parentId?: string | null): string;
   addTag(target: Taggable, tagId: string): void;
@@ -243,7 +263,7 @@ export function quickEntryActions(base: Base) {
   return {
     /** What quick entry text would create: the cleaned title and the shorthand found. */
     previewQuickEntry(text: string, ignored: readonly number[] = []): QuickEntryPreview {
-      const { title, tokens } = parseQuickEntry(text, ignored);
+      const { title, tokens } = parseQuickEntry(text, base.currentDate(), ignored);
       const tree = base.tagTree();
       return {
         title,
@@ -258,10 +278,11 @@ export function quickEntryActions(base: Base) {
      * To-do's id, or null when nothing is left for a title.
      */
     createFromQuickEntry(text: string, options: QuickEntryOptions = {}): string | null {
-      const { title, tokens } = parseQuickEntry(text, options.ignored);
+      const { title, tokens } = parseQuickEntry(text, base.currentDate(), options.ignored);
       if (!title) return null;
       const id = base.createToDo({ ...options.placement, title, at: options.at });
-      // The Time slot goes last, so a slot with no end can use the Estimate.
+      // The Time slot goes last, so a slot with no end can use the Estimate and goes on
+      // the Start date a date phrase set.
       const ordered = [...tokens].sort(
         (a, b) => Number(a.value.kind === "timeSlot") - Number(b.value.kind === "timeSlot"),
       );
@@ -275,6 +296,9 @@ export function quickEntryActions(base: Base) {
             break;
           case "estimate":
             base.setEstimate(id, value.minutes);
+            break;
+          case "when":
+            base.setWhen(id, value.when);
             break;
           case "timeSlot":
             base.setTimeSlot(id, {

@@ -1,7 +1,24 @@
 import type { LocalDate } from "./types";
 
-function parse(date: LocalDate): Date {
+/** A date's year, month (1 to 12) and day. */
+export function ymd(date: LocalDate): [number, number, number] {
   const [y, m, d] = date.split("-").map(Number);
+  return [y, m, d];
+}
+
+/** The date for a year, month (1 to 12) and day, which must be real. */
+export function localDate(y: number, m: number, d: number): LocalDate {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${y}-${pad(m)}-${pad(d)}`;
+}
+
+/** How many days a month (1 to 12) has. */
+export function daysInMonth(y: number, m: number): number {
+  return new Date(Date.UTC(y, m, 0)).getUTCDate();
+}
+
+function parse(date: LocalDate): Date {
+  const [y, m, d] = ymd(date);
   return new Date(Date.UTC(y, m - 1, d));
 }
 
@@ -14,6 +31,23 @@ export function addDays(date: LocalDate, days: number): LocalDate {
   const next = parse(date);
   next.setUTCDate(next.getUTCDate() + days);
   return format(next);
+}
+
+/**
+ * The same day `months` months after `date`, or that month's last day if the day doesn't
+ * exist there (31 January plus one month is 28 or 29 February).
+ */
+export function addMonths(date: LocalDate, months: number): LocalDate {
+  const [y, m, d] = ymd(date);
+  const target = new Date(Date.UTC(y, m - 1 + months, 1));
+  const lastDay = daysInMonth(target.getUTCFullYear(), target.getUTCMonth() + 1);
+  return format(new Date(Date.UTC(y, m - 1 + months, Math.min(d, lastDay))));
+}
+
+/** Whether year, month (1 to 12) and day make a real date. */
+export function isRealDate(y: number, m: number, d: number): boolean {
+  const date = new Date(Date.UTC(y, m - 1, d));
+  return date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d;
 }
 
 /** Whole days from `from` to `to`. */

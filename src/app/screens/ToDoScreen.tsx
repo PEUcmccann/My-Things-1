@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-import { formatEstimate, type MyThings, type ToDo } from "../../core";
+import { formatEstimate, type MyThings, type SeriesScope, type ToDo } from "../../core";
 import { Button } from "../components/Button";
 import { Checkbox } from "../components/Checkbox";
 import { ChecklistEditor } from "../components/ChecklistEditor";
@@ -9,18 +9,21 @@ import type { IconName } from "../components/Icon";
 import { MovePicker } from "../components/MovePicker";
 import { NotesField } from "../components/NotesField";
 import { EnergyPicker, EstimatePicker, PriorityPicker } from "../components/PlanningPickers";
+import { RepeatPicker } from "../components/RepeatPicker";
 import { Screen } from "../components/Screen";
 import { TagPicker } from "../components/TagPicker";
 import { ToDoList } from "../components/ToDoList";
 import { TimeSlotPicker } from "../components/TimeSlotPicker";
 import { DatePicker, WhenPicker } from "../components/WhenPicker";
 import { useFinishToDo } from "../finish";
+import { useAskSeriesScope } from "../seriesScope";
 import {
   energyIcons,
   energyNames,
   formatDate,
   priorityMarks,
   priorityNames,
+  repeatText,
   timeSlotText,
   whenIcon,
   whenText,
@@ -43,7 +46,16 @@ function place(app: MyThings, toDo: ToDo): { text: string; icon?: IconName } {
 }
 
 type Picker =
-  "when" | "timeSlot" | "deadline" | "move" | "tags" | "priority" | "energy" | "estimate" | null;
+  | "when"
+  | "repeat"
+  | "timeSlot"
+  | "deadline"
+  | "move"
+  | "tags"
+  | "priority"
+  | "energy"
+  | "estimate"
+  | null;
 
 function priorityText(toDo: ToDo): string {
   if (toDo.priority === "none") return "None";
@@ -64,6 +76,12 @@ export function ToDoScreen({ id }: { id: string }) {
   const [title, setTitle] = useState(toDo?.title ?? "");
   const [newChild, setNewChild] = useState("");
   const [picker, setPicker] = useState<Picker>(null);
+  // A repeating To-do asks "this one or all future ones" once per visit, at the
+  // first edit that needs it; the answer holds for the rest of the visit.
+  const [scope, setScope] = useState<SeriesScope | null>(null);
+  const askScope = useAskSeriesScope();
+  // Remounts the fields after backing out, so text being edited goes back too.
+  const [fieldsKey, setFieldsKey] = useState(0);
 
   if (!toDo) {
     return (
@@ -79,10 +97,41 @@ export function ToDoScreen({ id }: { id: string }) {
   const children = toDo.parentId
     ? []
     : app.subToDos(id).map((t) => ({ toDo: t, parentTitle: null }));
-  const saveTitle = () => app.editToDo(id, { title });
+  const repeat = app.repeatPatternOf(id);
+  // A new rule's first date is on or after the Start date, or today if that has passed.
+  const repeatFrom = toDo.startDate && toDo.startDate > today ? toDo.startDate : today;
+
+  /** Backing out of the question undoes the edit being made, as text being typed. */
+  const backOut = () => {
+    setTitle(toDo.title);
+    setFieldsKey((k) => k + 1);
+  };
+  /** Asks "this one or all future ones" first, when this visit hasn't yet. */
+  const ask = (then: (scope: SeriesScope | null) => void) => {
+    if (scope) then(scope);
+    else {
+      askScope(
+        [id],
+        (s) => {
+          if (s) setScope(s);
+          then(s);
+        },
+        backOut,
+      );
+    }
+  };
+  /** Makes an edit to something the next occurrence copies. */
+  const edit = (change: () => void) =>
+    ask((s) => (s ? app.editOccurrence(id, s, change) : change()));
+  /** Opens a picker for something the next occurrence copies, asking first. */
+  const openPicker = (p: Picker) => ask(() => setPicker(p));
+
+  const saveTitle = () => {
+    if (title.trim() && title.trim() !== toDo.title) edit(() => app.editToDo(id, { title }));
+  };
   const addChild = () => {
     if (!newChild.trim()) return;
-    app.createToDo({ title: newChild.trim(), parentId: id });
+    edit(() => app.createToDo({ title: newChild.trim(), parentId: id }));
     setNewChild("");
   };
 
@@ -113,9 +162,12 @@ export function ToDoScreen({ id }: { id: string }) {
           accessibilityLabel="Title"
         />
       </View>
-      <View style={styles.fields}>
-        <NotesField value={toDo.notes} onSave={(notes) => app.editToDo(id, { notes })} />
-        <ChecklistEditor toDoId={id} />
+      <View style={styles.fields} key={fieldsKey}>
+        <NotesField
+          value={toDo.notes}
+          onSave={(notes) => edit(() => app.editToDo(id, { notes }))}
+        />
+        <ChecklistEditor toDoId={id} edit={edit} />
         <FieldRow
           label="When"
           value={whenText(toDo, today)}
@@ -123,16 +175,29 @@ export function ToDoScreen({ id }: { id: string }) {
           onPress={() => setPicker("when")}
           testID="todo-when"
         />
+        {parent ? null : (
+          <FieldRow
+            label="Repeat"
+            icon={repeat ? "repeat" : undefined}
+            value={
+              repeat && toDo.repeat
+                ? repeatText(repeat, toDo.repeat.start, toDo.repeat.mode)
+                : "None"
+            }
+            onPress={() => setPicker("repeat")}
+            testID="todo-repeat"
+          />
+        )}
         <FieldRow
           label="Time slot"
           value={timeSlotText(toDo, today) ?? "None"}
-          onPress={() => setPicker("timeSlot")}
+          onPress={() => openPicker("timeSlot")}
           testID="todo-time-slot"
         />
         <FieldRow
           label="Deadline"
           value={toDo.deadline ? formatDate(toDo.deadline, today) : "None"}
-          onPress={() => setPicker("deadline")}
+          onPress={() => openPicker("deadline")}
           testID="todo-deadline"
         />
         <FieldRow
@@ -143,13 +208,13 @@ export function ToDoScreen({ id }: { id: string }) {
               .map((t) => t.title)
               .join(", ") || "None"
           }
-          onPress={() => setPicker("tags")}
+          onPress={() => openPicker("tags")}
           testID="todo-tags"
         />
         <FieldRow
           label="Priority"
           value={priorityText(toDo)}
-          onPress={() => setPicker("priority")}
+          onPress={() => openPicker("priority")}
           testID="todo-priority"
         />
         <FieldRow
@@ -157,13 +222,13 @@ export function ToDoScreen({ id }: { id: string }) {
           value={toDo.energy ? energyNames[toDo.energy] : "None"}
           icon={toDo.energy ? energyIcons[toDo.energy] : undefined}
           iconColor={theme.muted}
-          onPress={() => setPicker("energy")}
+          onPress={() => openPicker("energy")}
           testID="todo-energy"
         />
         <FieldRow
           label="Estimate"
           value={toDo.estimate ? formatEstimate(toDo.estimate) : "None"}
-          onPress={() => setPicker("estimate")}
+          onPress={() => openPicker("estimate")}
           testID="todo-estimate"
         />
         {parent ? null : (
@@ -241,23 +306,27 @@ export function ToDoScreen({ id }: { id: string }) {
         visible={picker === "tags"}
         selected={toDo.tagIds}
         onToggle={(tagId, on) =>
-          on ? app.addTag({ kind: "toDo", id }, tagId) : app.removeTag({ kind: "toDo", id }, tagId)
+          edit(() =>
+            on
+              ? app.addTag({ kind: "toDo", id }, tagId)
+              : app.removeTag({ kind: "toDo", id }, tagId),
+          )
         }
         onClose={() => setPicker(null)}
       />
       <PriorityPicker
         visible={picker === "priority"}
-        onChoose={(priority) => app.setPriority(id, priority)}
+        onChoose={(priority) => edit(() => app.setPriority(id, priority))}
         onClose={() => setPicker(null)}
       />
       <EnergyPicker
         visible={picker === "energy"}
-        onChoose={(energy) => app.setEnergy(id, energy)}
+        onChoose={(energy) => edit(() => app.setEnergy(id, energy))}
         onClose={() => setPicker(null)}
       />
       <EstimatePicker
         visible={picker === "estimate"}
-        onChoose={(minutes) => app.setEstimate(id, minutes)}
+        onChoose={(minutes) => edit(() => app.setEstimate(id, minutes))}
         onClose={() => setPicker(null)}
       />
       <MovePicker
@@ -268,7 +337,18 @@ export function ToDoScreen({ id }: { id: string }) {
       <WhenPicker
         visible={picker === "when"}
         current={toDo.startDate}
+        allowUndated={!toDo.repeat}
         onChoose={(when) => app.setWhen(id, when)}
+        onClose={() => setPicker(null)}
+      />
+      <RepeatPicker
+        visible={picker === "repeat"}
+        current={repeat}
+        currentMode={toDo.repeat?.mode ?? "onSchedule"}
+        from={repeatFrom}
+        today={today}
+        preview={(pattern, mode, start) => app.repeatPreview(id, pattern, mode, { start })}
+        onChoose={(pattern, mode, start) => app.setRepeat(id, pattern, mode, { start })}
         onClose={() => setPicker(null)}
       />
       <TimeSlotPicker
@@ -276,14 +356,14 @@ export function ToDoScreen({ id }: { id: string }) {
         current={toDo.timeSlot}
         suggestEnd={(start) => app.suggestedSlotEnd(id, start)}
         defaultStart={nextHour()}
-        onChoose={(slot) => app.setTimeSlot(id, slot)}
+        onChoose={(slot) => edit(() => app.setTimeSlot(id, slot))}
         onClose={() => setPicker(null)}
       />
       <DatePicker
         visible={picker === "deadline"}
         title="Deadline"
         current={toDo.deadline}
-        onChoose={(date) => app.setDeadline(id, date)}
+        onChoose={(date) => edit(() => app.setDeadline(id, date))}
         onClose={() => setPicker(null)}
         testID="deadline-picker"
       />

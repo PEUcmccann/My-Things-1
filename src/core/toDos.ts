@@ -1,4 +1,5 @@
 import { byPosition, type Context } from "./context";
+import { checkCanBeUndated } from "./repeat";
 import type { LocalDate, TimeSlot, ToDo } from "./types";
 
 /** A choice of "When" for a To-do: what the Start date picker offers. */
@@ -72,6 +73,7 @@ export function toDoActions(ctx: Context) {
    * times, new day) and is cleared along with it, since a slot needs a Start date.
    */
   function updateDated(id: string, changes: Partial<ToDo>) {
+    if (changes.startDate === null) checkCanBeUndated(ctx.require("toDos", id));
     ctx.update("toDos", id, changes.startDate === null ? { ...changes, timeSlot: null } : changes);
   }
 
@@ -119,6 +121,9 @@ export function toDoActions(ctx: Context) {
         priority: "none",
         energy: null,
         estimate: null,
+        repeat: null,
+        seriesId: null,
+        seriesValues: null,
       });
       if (input.when) setWhen(meta.id, input.when);
       return meta.id;
@@ -186,7 +191,9 @@ export function toDoActions(ctx: Context) {
           to.kind === "project" ? ctx.require("projects", to.id).id : (heading?.projectId ?? null),
         headingId: heading?.id ?? null,
       };
-      const extra = to.kind === "inbox" ? whenFields({ kind: "none" }, clock.today()) : {};
+      // A repeating To-do keeps its Start date: it always has one.
+      const extra =
+        to.kind === "inbox" && !item.repeat ? whenFields({ kind: "none" }, clock.today()) : {};
       updateDated(id, { ...place, ...extra });
       for (const child of store.all("toDos")) {
         if (child.parentId === id) ctx.update("toDos", child.id, place);

@@ -4,11 +4,13 @@ import { Empty } from "../components/Empty";
 import { Icon } from "../components/Icon";
 import { MagicPlus } from "../components/MagicPlus";
 import { Screen } from "../components/Screen";
+import { ProjectedRow } from "../components/ProjectedRow";
 import { ProjectRow } from "../components/ProjectRow";
 import { useTagFilter } from "../components/TagFilter";
 import { ToDoRow } from "../components/ToDoRow";
 import { formatDate, formatMonth, formatRange } from "../format";
 import { useNavigation } from "../navigation";
+import { useSelection } from "../selection";
 import { useMyThings } from "../state";
 import { useTheme } from "../theme";
 
@@ -32,6 +34,7 @@ export function UpcomingScreen() {
   const theme = useTheme();
   const nav = useNavigation();
   const filter = useTagFilter();
+  const selection = useSelection();
   const groups = app
     .upcoming()
     .map((g) => ({
@@ -55,7 +58,9 @@ export function UpcomingScreen() {
           <View key={`${group.kind}-${group.start}`} testID={`upcoming-${group.start}`}>
             <Text style={[styles.heading, { color: theme.text }]}>{groupTitle(group, today)}</Text>
             {group.entries.map((e) => (
-              <View key={`${e.kind === "toDo" ? e.toDo.id : e.project.id}-${e.reason}`}>
+              <View
+                key={`${e.kind}-${e.kind === "project" ? e.project.id : e.toDo.id}-${e.reason}-${e.date}`}
+              >
                 {e.reason === "deadline" ? (
                   <View style={styles.reasonRow}>
                     <Icon name="deadline" size={12} color={theme.warning} />
@@ -70,6 +75,15 @@ export function UpcomingScreen() {
                 ) : null}
                 {e.kind === "toDo" ? (
                   <ToDoRow entry={e} onPress={() => nav.push({ name: "toDo", id: e.toDo.id })} />
+                ) : e.kind === "projected" ? (
+                  <ProjectedRow
+                    toDo={e.toDo}
+                    tags={e.tags}
+                    date={e.date}
+                    onPress={() => {
+                      if (!selection.active) nav.push({ name: "toDo", id: e.toDo.id });
+                    }}
+                  />
                 ) : (
                   <ProjectRow project={e.project} />
                 )}

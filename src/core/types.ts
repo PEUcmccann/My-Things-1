@@ -96,6 +96,71 @@ export interface ToDo extends RecordMeta, Ordered {
   energy: Energy | null;
   /** Minutes, a whole positive number. Not set when null. */
   estimate: number | null;
+  /** Set on the current occurrence of a repeating To-do only. */
+  repeat: RepeatRule | null;
+  /** Shared by every occurrence of one Repeat rule, finished ones included. */
+  seriesId: string | null;
+  /**
+   * On the current occurrence: the series' own values where this occurrence was
+   * changed for "this one" only, so the next occurrence is created from the series
+   * as it was. Null when nothing was changed that way.
+   */
+  seriesValues: SeriesValues | null;
+}
+
+/** The fields of a To-do that the next occurrence copies as they are. */
+export type SeriesField = "title" | "notes" | "priority" | "energy" | "estimate" | "timeSlot";
+
+/**
+ * The series' own values, where the current occurrence differs from them. Each kind
+ * holds only what was changed for "this one"; everything else comes from the current
+ * occurrence.
+ */
+export interface SeriesValues {
+  fields: Partial<Pick<ToDo, SeriesField>>;
+  /** The Deadline as days after the Start date, null for none. */
+  deadlineGap?: number | null;
+  /** Tags by id: "added" to this occurrence only, or "removed" from it only. */
+  tags: Record<string, "added" | "removed">;
+  /** Checklist items by id. */
+  checklist: Record<string, SeriesPart>;
+  /** Sub-to-dos by id. */
+  subToDos: Record<string, SeriesPart>;
+}
+
+/**
+ * How a Checklist item or Sub-to-do of the current occurrence differs from the
+ * series: added to this occurrence only, removed from it only (with what it was), or
+ * renamed for it only (with the series' title).
+ */
+export type SeriesPart =
+  | { kind: "added" }
+  | { kind: "removed"; title: string; position: number; toDo?: ToDo }
+  | { kind: "renamed"; title: string };
+
+/**
+ * How a Repeat rule works out its next date. "onSchedule" follows fixed dates;
+ * "afterCompletion" leaves a gap (FREQ and INTERVAL) after the day the previous
+ * occurrence was finished.
+ */
+export const repeatModes = ["onSchedule", "afterCompletion"] as const;
+export type RepeatMode = (typeof repeatModes)[number];
+
+/** A To-do's Repeat rule, kept in iCalendar form. */
+export interface RepeatRule {
+  mode: RepeatMode;
+  /** The RRULE value, e.g. "FREQ=WEEKLY;INTERVAL=1;BYDAY=MO,TH;WKST=MO". */
+  rrule: string;
+  /** DTSTART: the rule's first date, which anchors its intervals. */
+  start: LocalDate;
+  /**
+   * Which occurrence of the series the To-do carrying the rule is, counting from 1:
+   * how many the series has created, this one included. "End after N" (COUNT) ends
+   * the series at the Nth. Kept here, not counted from records, so reopening,
+   * deleting or erasing older occurrences doesn't change it. Rules saved before it
+   * existed lack it.
+   */
+  occurrence?: number;
 }
 
 /** How important a To-do is. "none" is the default. */
@@ -105,6 +170,54 @@ export type Priority = (typeof priorities)[number];
 /** How much focus a To-do needs. */
 export const energies = ["low", "high"] as const;
 export type Energy = (typeof energies)[number];
+
+/**
+ * A range of days a Smart List's Start date or Deadline filter picks, worked out from
+ * today so a saved list stays useful as the days pass. "thisWeek" runs Monday to
+ * Sunday; "next7Days" is today and the 6 days after.
+ */
+export const dateRanges = [
+  "todayOrEarlier",
+  "today",
+  "tomorrow",
+  "thisWeek",
+  "next7Days",
+  "thisMonth",
+  "hasDate",
+  "noDate",
+] as const;
+export type DateRange = (typeof dateRanges)[number];
+
+/** A choice in a Smart List's Estimate filter. */
+export type EstimateChoice =
+  { kind: "upTo"; minutes: number } | { kind: "moreThan"; minutes: number } | { kind: "notSet" };
+
+/** An Area or Project a Smart List picks: one kind of filter, so they combine with OR. */
+export interface ContainerRef {
+  kind: "area" | "project";
+  id: string;
+}
+
+/**
+ * What a Smart List matches. Each kind left empty matches everything; values of one
+ * kind combine with OR, and the kinds combine with AND.
+ */
+export interface SmartListFilters {
+  tagIds: string[];
+  containers: ContainerRef[];
+  startDate: DateRange[];
+  deadline: DateRange[];
+  priority: Priority[];
+  /** null picks To-dos with no Energy set. */
+  energy: (Energy | null)[];
+  estimate: EstimateChoice[];
+}
+
+/** A saved, named combination of filters, shown in the sidebar. */
+export interface SmartList extends RecordMeta {
+  title: string;
+  filters: SmartListFilters;
+}
 
 /** A small step inside a To-do that can only be ticked off. */
 export interface ChecklistItem extends RecordMeta {

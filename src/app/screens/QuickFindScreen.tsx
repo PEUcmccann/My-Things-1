@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 import { Empty } from "../components/Empty";
+import { Icon, type IconName } from "../components/Icon";
 import { ProjectRow } from "../components/ProjectRow";
 import { Screen } from "../components/Screen";
 import { ToDoRow } from "../components/ToDoRow";
@@ -30,14 +31,17 @@ export function QuickFindScreen() {
         {children}
       </View>
     );
-  const simpleRow = (key: string, text: string, route: Route, detail?: string) => (
+  const simpleRow = (key: string, text: string, route: Route, detail?: string, icon?: IconName) => (
     <Pressable
       key={key}
       onPress={() => nav.push(route)}
       style={[styles.row, { backgroundColor: theme.surface, borderColor: theme.border }]}
       testID={`result-${key}`}
     >
-      <Text style={{ color: theme.text, fontSize: 16 }}>{text}</Text>
+      <View style={styles.rowTitle}>
+        {icon ? <Icon name={icon} size={16} color={theme.muted} /> : null}
+        <Text style={{ color: theme.text, fontSize: 16 }}>{text}</Text>
+      </View>
       {detail ? <Text style={{ color: theme.muted, fontSize: 12 }}>{detail}</Text> : null}
     </Pressable>
   );
@@ -45,6 +49,8 @@ export function QuickFindScreen() {
   return (
     <Screen
       title="Quick Find"
+      icon="quickFind"
+      iconColor={theme.muted}
       testID="screen-quickfind"
       header={
         <View>
@@ -75,7 +81,7 @@ export function QuickFindScreen() {
       {section(
         "Areas",
         results.areas.map((a) =>
-          simpleRow(`area-${a.id}`, `▣ ${a.title}`, { name: "area", id: a.id }),
+          simpleRow(`area-${a.id}`, a.title, { name: "area", id: a.id }, undefined, "area"),
         ),
         results.areas.length,
       )}
@@ -99,7 +105,7 @@ export function QuickFindScreen() {
       {section(
         "Tags",
         results.tags.map((t) =>
-          simpleRow(`tag-${t.id}`, `🏷 ${t.title}`, { name: "tag", id: t.id }),
+          simpleRow(`tag-${t.id}`, t.title, { name: "tag", id: t.id }, undefined, "tag"),
         ),
         results.tags.length,
       )}
@@ -139,5 +145,6 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     marginBottom: 6,
   },
+  rowTitle: { flexDirection: "row", alignItems: "center", gap: 8 },
   excerpt: { fontSize: 12, marginLeft: 46, marginTop: -2, marginBottom: 8 },
 });

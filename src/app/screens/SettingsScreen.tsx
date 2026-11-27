@@ -27,7 +27,7 @@ export function SettingsScreen() {
   const nav = useNavigation();
   const mode = app.logbookMode();
   return (
-    <Screen title="Settings" testID="screen-settings">
+    <Screen title="Settings" icon="settings" testID="screen-settings">
       <Text style={[styles.section, { color: theme.muted }]}>Move to the Logbook</Text>
       <Choice
         options={logbookOptions}

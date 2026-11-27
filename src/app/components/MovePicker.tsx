@@ -1,5 +1,6 @@
 import type { Destination } from "../../core";
 import { useMyThings } from "../state";
+import { useTheme } from "../theme";
 import { MenuSheet, type MenuOption } from "./MenuSheet";
 
 interface Props {
@@ -11,11 +12,14 @@ interface Props {
 /** Chooses where to file To-dos: the Inbox, an Area or a Project. */
 export function MovePicker({ visible, onChoose, onClose }: Props) {
   const app = useMyThings();
+  const theme = useTheme();
   if (!visible) return null;
   const tree = app.sidebar();
   const projectOptions = (id: string, title: string, depth: number): MenuOption[] => [
     {
-      title: `◔ ${title}`,
+      title,
+      icon: "project",
+      iconColor: theme.muted,
       depth,
       onPress: () => onChoose({ kind: "project", id }),
       testID: `move-project-${id}`,
@@ -28,11 +32,18 @@ export function MovePicker({ visible, onChoose, onClose }: Props) {
     })),
   ];
   const options: MenuOption[] = [
-    { title: "📥 Inbox", onPress: () => onChoose({ kind: "inbox" }), testID: "move-inbox" },
+    {
+      title: "Inbox",
+      icon: "inbox",
+      onPress: () => onChoose({ kind: "inbox" }),
+      testID: "move-inbox",
+    },
     ...tree.projects.flatMap((p) => projectOptions(p.id, p.title, 0)),
-    ...tree.areas.flatMap(({ area, projects }) => [
+    ...tree.areas.flatMap(({ area, projects }): MenuOption[] => [
       {
-        title: `▣ ${area.title}`,
+        title: area.title,
+        icon: "area",
+        iconColor: theme.muted,
         onPress: () => onChoose({ kind: "area", id: area.id }),
         testID: `move-area-${area.id}`,
       },

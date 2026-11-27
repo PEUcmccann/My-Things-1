@@ -21,6 +21,7 @@ import {
 } from "react-native";
 import { GestureDetector, usePanGesture } from "react-native-gesture-handler";
 import type { DropTarget, ListRef, MyThings, NewToDo } from "../core";
+import { Icon, type IconName } from "./components/Icon";
 import { haptics } from "./haptics";
 import { useMyThings } from "./state";
 import { useTheme } from "./theme";
@@ -231,8 +232,9 @@ export function DragProvider({ children }: { children: ReactNode }) {
               ]}
               testID="drag-ghost"
             >
-              <Text style={{ color: theme.text }} numberOfLines={1}>
-                {dragging.kind === "new" ? "＋ New To-do" : dragging.title}
+              {dragging.kind === "new" ? <Icon name="add" size={16} color={theme.accent} /> : null}
+              <Text style={{ color: theme.text, flexShrink: 1 }} numberOfLines={1}>
+                {dragging.kind === "new" ? "New To-do" : dragging.title}
               </Text>
             </Animated.View>
           </>
@@ -426,10 +428,12 @@ export function toDoTargetDrop(
 function DropChip({
   keyName,
   title,
+  icon,
   target,
 }: {
   keyName: string;
   title: string;
+  icon: IconName;
   target: DropTarget;
 }) {
   const app = useMyThings();
@@ -447,6 +451,13 @@ function DropChip({
       ]}
       testID={`drop-${keyName}`}
     >
+      <Icon
+        name={icon}
+        size={14}
+        color={
+          hovered ? theme.onAccent : icon === "area" || icon === "project" ? theme.muted : undefined
+        }
+      />
       <Text style={{ color: hovered ? theme.onAccent : theme.text, fontSize: 13 }}>{title}</Text>
     </View>
   );
@@ -469,14 +480,15 @@ function DropBar() {
     >
       <Text style={[styles.barTitle, { color: theme.muted }]}>Drop on a list, or in place</Text>
       <View style={styles.chips}>
-        <DropChip keyName="inbox" title="📥 Inbox" target={{ kind: "inbox" }} />
-        <DropChip keyName="today" title="☀️ Today" target={{ kind: "today" }} />
-        <DropChip keyName="someday" title="📦 Someday" target={{ kind: "someday" }} />
+        <DropChip keyName="inbox" title="Inbox" icon="inbox" target={{ kind: "inbox" }} />
+        <DropChip keyName="today" title="Today" icon="today" target={{ kind: "today" }} />
+        <DropChip keyName="someday" title="Someday" icon="someday" target={{ kind: "someday" }} />
         {tree.areas.map(({ area }) => (
           <DropChip
             key={area.id}
             keyName={`area-${area.id}`}
-            title={`▣ ${area.title}`}
+            title={area.title}
+            icon="area"
             target={{ kind: "area", id: area.id }}
           />
         ))}
@@ -484,7 +496,8 @@ function DropBar() {
           <DropChip
             key={p.id}
             keyName={`project-${p.id}`}
-            title={`◔ ${p.title}`}
+            title={p.title}
+            icon="project"
             target={{ kind: "project", id: p.id }}
           />
         ))}
@@ -499,6 +512,9 @@ const styles = StyleSheet.create({
     left: -40,
     top: -22,
     maxWidth: 240,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 10,
@@ -521,5 +537,13 @@ const styles = StyleSheet.create({
   },
   barTitle: { fontSize: 12, marginBottom: 6 },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  chip: { borderWidth: 1, borderRadius: 14, paddingHorizontal: 10, paddingVertical: 6 },
+  chip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
 });

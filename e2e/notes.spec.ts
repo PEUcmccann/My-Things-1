@@ -19,6 +19,6 @@ test("notes show formatted, and the Checklist count shows on the row", async ({ 
   await page.getByTestId("checklist-tick-0").click();
 
   await page.getByTestId("back").click();
-  await expect(row(page, "Pack for the trip").getByTestId("row-checklist")).toHaveText("☑ 1/2");
+  await expect(row(page, "Pack for the trip").getByTestId("row-checklist")).toHaveText("1/2");
   await expect(row(page, "Pack for the trip").getByTestId("row-notes")).toBeVisible();
 });

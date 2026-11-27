@@ -11,6 +11,7 @@ import { orderingActions, type ListRef } from "./ordering";
 import { planningActions } from "./planning";
 import { repeatActions } from "./repeat";
 import type { Store } from "./store";
+import { quickEntryActions } from "./quickEntry";
 import { quickFindQueries } from "./quickFind";
 import { tagActions } from "./tags";
 import { toDoActions, type NewToDo } from "./toDos";
@@ -26,6 +27,12 @@ export type { Destination, NewToDo, When } from "./toDos";
 export type { Frequency, RepeatPattern, WeekdayCode } from "./rrule";
 export type { TrashEntry } from "./trash";
 export type { DropTarget, ListRef } from "./ordering";
+export type {
+  QuickEntryOptions,
+  QuickEntryPreview,
+  QuickEntryPreviewToken,
+  QuickEntryValue,
+} from "./quickEntry";
 export type { MatchField, QuickFindOptions, QuickFindResults, ToDoMatch } from "./quickFind";
 export type { Taggable, TaggedItems, TagNode } from "./tags";
 export type { HeadingSection, ProjectContents } from "./headings";
@@ -85,17 +92,20 @@ export function createMyThings({ clock, store, newId = randomId, owner = localOw
     },
   };
   const ordering = orderingActions(ctx, base);
+
+  /** Creates a To-do, optionally at a spot in a list (before a To-do, or at the end). */
+  function createToDo(input: NewToDo & { at?: { list: ListRef; beforeId: string | null } }) {
+    const id = base.createToDo(input);
+    if (input.at) ordering.placeToDo(input.at.list, id, input.at.beforeId);
+    return id;
+  }
+
   return {
     ...base,
     ...ordering,
     ...bulkActions(ctx, base),
-
-    /** Creates a To-do, optionally at a spot in a list (before a To-do, or at the end). */
-    createToDo(input: NewToDo & { at?: { list: ListRef; beforeId: string | null } }): string {
-      const id = base.createToDo(input);
-      if (input.at) ordering.placeToDo(input.at.list, id, input.at.beforeId);
-      return id;
-    },
+    ...quickEntryActions({ ...base, createToDo }),
+    createToDo,
   };
 }
 

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Button } from "../components/Button";
 import { Empty } from "../components/Empty";
+import { Icon } from "../components/Icon";
 import { MenuSheet } from "../components/MenuSheet";
 import { PromptSheet } from "../components/PromptSheet";
 import { Screen } from "../components/Screen";
@@ -42,11 +43,13 @@ export function TagsScreen() {
   return (
     <Screen
       title="Tags"
+      icon="tags"
       testID="screen-tags"
       actions={
         <Button
           small
-          title="＋ New Tag"
+          icon="add"
+          title="New Tag"
           onPress={() => setDialog({ kind: "new" })}
           testID="new-tag"
         />
@@ -66,11 +69,13 @@ export function TagsScreen() {
             onPress={() => nav.push({ name: "tag", id: tag.id })}
             testID={`tag-row-${tag.id}`}
           >
-            <Text style={{ color: theme.text, fontSize: 16 }}>🏷 {tag.title}</Text>
+            <Icon name="tag" size={16} color={theme.muted} />
+            <Text style={{ color: theme.text, fontSize: 16 }}>{tag.title}</Text>
           </Pressable>
           <Button
             small
-            title="•••"
+            icon="more"
+            accessibilityLabel="Tag actions"
             onPress={() => setDialog({ kind: "menu", id: tag.id })}
             testID={`tag-menu-${tag.id}`}
           />
@@ -159,5 +164,5 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     marginBottom: 6,
   },
-  title: { flex: 1, paddingVertical: 8 },
+  title: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 8 },
 });

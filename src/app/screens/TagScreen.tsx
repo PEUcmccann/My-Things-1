@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SelectionBar } from "../components/SelectionBar";
 import { useSelection } from "../selection";
 import { Empty } from "../components/Empty";
+import { Icon } from "../components/Icon";
 import { ProjectRow } from "../components/ProjectRow";
 import { Screen } from "../components/Screen";
 import { ToDoList } from "../components/ToDoList";
@@ -26,7 +27,14 @@ export function TagScreen({ id }: { id: string }) {
   const { areas, projects, toDos } = app.tagged(id);
   return (
     <View style={{ flex: 1 }}>
-      <Screen title={`🏷 ${tag.title}`} testID="screen-tag" selectable searchable>
+      <Screen
+        title={tag.title}
+        icon="tag"
+        iconColor={theme.icons.tags}
+        testID="screen-tag"
+        selectable
+        searchable
+      >
         {areas.length + projects.length + toDos.length === 0 ? (
           <Empty text="Nothing has this Tag" />
         ) : null}
@@ -36,7 +44,8 @@ export function TagScreen({ id }: { id: string }) {
             onPress={() => nav.push({ name: "area", id: a.id })}
             style={[styles.area, { backgroundColor: theme.surface, borderColor: theme.border }]}
           >
-            <Text style={{ color: theme.text, fontSize: 16, fontWeight: "600" }}>▣ {a.title}</Text>
+            <Icon name="area" size={16} color={theme.muted} />
+            <Text style={{ color: theme.text, fontSize: 16, fontWeight: "600" }}>{a.title}</Text>
           </Pressable>
         ))}
         {projects.map((p) => (
@@ -50,5 +59,13 @@ export function TagScreen({ id }: { id: string }) {
 }
 
 const styles = StyleSheet.create({
-  area: { padding: 14, borderRadius: 10, borderWidth: StyleSheet.hairlineWidth, marginBottom: 6 },
+  area: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    padding: 14,
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    marginBottom: 6,
+  },
 });

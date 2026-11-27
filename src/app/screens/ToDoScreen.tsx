@@ -5,6 +5,7 @@ import { Button } from "../components/Button";
 import { Checkbox } from "../components/Checkbox";
 import { ChecklistEditor } from "../components/ChecklistEditor";
 import { FieldRow } from "../components/FieldRow";
+import type { IconName } from "../components/Icon";
 import { MovePicker } from "../components/MovePicker";
 import { NotesField } from "../components/NotesField";
 import { EnergyPicker, EstimatePicker, PriorityPicker } from "../components/PlanningPickers";
@@ -16,12 +17,14 @@ import { TimeSlotPicker } from "../components/TimeSlotPicker";
 import { DatePicker, WhenPicker } from "../components/WhenPicker";
 import { useFinishToDo } from "../finish";
 import {
+  energyIcons,
   energyNames,
   formatDate,
   priorityMarks,
   priorityNames,
   repeatText,
   timeSlotText,
+  whenIcon,
   whenText,
 } from "../format";
 import { useNavigation } from "../navigation";
@@ -29,14 +32,16 @@ import { useMyThings } from "../state";
 import { useTheme } from "../theme";
 
 /** Where the To-do is filed, for the Move row. */
-function placeText(app: MyThings, toDo: ToDo): string {
+function place(app: MyThings, toDo: ToDo): { text: string; icon?: IconName } {
   if (toDo.projectId) {
     const project = app.findProject(toDo.projectId)?.title ?? "Project";
     const heading = toDo.headingId ? ` › ${app.getHeading(toDo.headingId).title}` : "";
-    return `◔ ${project}${heading}`;
+    return { text: `${project}${heading}`, icon: "project" };
   }
-  if (toDo.areaId) return `▣ ${app.findArea(toDo.areaId)?.title ?? "Area"}`;
-  return toDo.startDate || toDo.someday ? "No Area or Project" : "📥 Inbox";
+  if (toDo.areaId) return { text: app.findArea(toDo.areaId)?.title ?? "Area", icon: "area" };
+  return toDo.startDate || toDo.someday
+    ? { text: "No Area or Project" }
+    : { text: "Inbox", icon: "inbox" };
 }
 
 type Picker =
@@ -79,6 +84,7 @@ export function ToDoScreen({ id }: { id: string }) {
     );
   }
   const today = app.currentDate();
+  const where = place(app, toDo);
   const trashed = app.isInTrash(id);
   const parent = toDo.parentId ? app.findToDo(toDo.parentId) : undefined;
   const children = toDo.parentId
@@ -127,6 +133,7 @@ export function ToDoScreen({ id }: { id: string }) {
         <FieldRow
           label="When"
           value={whenText(toDo, today)}
+          icon={whenIcon(toDo, today)}
           onPress={() => setPicker("when")}
           testID="todo-when"
         />
@@ -170,6 +177,8 @@ export function ToDoScreen({ id }: { id: string }) {
         <FieldRow
           label="Energy"
           value={toDo.energy ? energyNames[toDo.energy] : "None"}
+          icon={toDo.energy ? energyIcons[toDo.energy] : undefined}
+          iconColor={theme.muted}
           onPress={() => setPicker("energy")}
           testID="todo-energy"
         />
@@ -182,7 +191,9 @@ export function ToDoScreen({ id }: { id: string }) {
         {parent ? null : (
           <FieldRow
             label="Move"
-            value={placeText(app, toDo)}
+            value={where.text}
+            icon={where.icon}
+            iconColor={where.icon === "inbox" ? undefined : theme.muted}
             onPress={() => setPicker("move")}
             testID="todo-move"
           />
@@ -198,7 +209,7 @@ export function ToDoScreen({ id }: { id: string }) {
             onChangeText={setNewChild}
             onSubmitEditing={addChild}
             blurOnSubmit={false}
-            placeholder="＋ Add Sub-to-do"
+            placeholder="Add Sub-to-do"
             placeholderTextColor={theme.muted}
             style={[styles.newChild, { color: theme.text, borderColor: theme.border }]}
             testID="sub-todo-new"

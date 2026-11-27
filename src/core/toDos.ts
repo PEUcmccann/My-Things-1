@@ -59,12 +59,9 @@ export function isValidTimeSlot({ start, end }: TimeSlot): boolean {
 /** How long a Time slot is by default, when the To-do has no Estimate. */
 export const defaultSlotMinutes = 30;
 
-/**
- * How long a new Time slot for this To-do should be: its Estimate, or 30 minutes.
- * Estimates arrive with #22; until then every To-do gets the default.
- */
-function slotLengthFor(_toDo: ToDo): number {
-  return defaultSlotMinutes;
+/** How long a new Time slot for this To-do should be: its Estimate, or 30 minutes. */
+function slotLengthFor(toDo: ToDo): number {
+  return toDo.estimate ?? defaultSlotMinutes;
 }
 
 export function toDoActions(ctx: Context) {

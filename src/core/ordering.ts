@@ -43,16 +43,16 @@ const minGap = 1e-6;
  * is renumbered first, so keys never run out.
  */
 function keyBetween<T>(
-  items: T[],
+  ordered: T[],
   index: number,
-  key: (item: T) => number,
-  renumber: (items: T[]) => void,
+  key: (neighbour: T) => number,
+  renumber: (ordered: T[]) => void,
 ): number {
-  const prev = items[index - 1];
-  const next = items[index];
+  const prev = ordered[index - 1];
+  const next = ordered[index];
   if (prev !== undefined && next !== undefined) {
     if (key(next) - key(prev) < minGap) {
-      renumber(items);
+      renumber(ordered);
       return index - 0.5;
     }
     return (key(prev) + key(next)) / 2;
@@ -92,37 +92,37 @@ export function orderingActions(ctx: Context, q: Queries) {
 
   /** Makes a To-do a member of a list it is being dropped into. */
   function join(id: string, list: ListRef): void {
-    const item = ctx.require("toDos", id);
-    const contained = !item.parentId;
+    const toDo = ctx.require("toDos", id);
+    const contained = !toDo.parentId;
     switch (list.kind) {
       case "inbox":
         if (contained) q.moveToDo(id, { kind: "inbox" });
         return;
       case "today": {
         const evening = list.part === "thisEvening";
-        const due = item.startDate !== null && item.startDate <= clock.today();
-        if (!due || item.evening !== evening) {
+        const due = toDo.startDate !== null && toDo.startDate <= clock.today();
+        if (!due || toDo.evening !== evening) {
           q.setWhen(id, { kind: evening ? "thisEvening" : "today" });
         }
         return;
       }
       case "someday":
-        if (!item.someday) q.setWhen(id, { kind: "someday" });
+        if (!toDo.someday) q.setWhen(id, { kind: "someday" });
         return;
       case "anytime":
         return;
       case "area":
-        if (contained && (item.areaId !== list.id || item.projectId)) {
+        if (contained && (toDo.areaId !== list.id || toDo.projectId)) {
           q.moveToDo(id, { kind: "area", id: list.id });
         }
         return;
       case "project":
-        if (contained && (item.projectId !== list.id || item.headingId)) {
+        if (contained && (toDo.projectId !== list.id || toDo.headingId)) {
           q.moveToDo(id, { kind: "project", id: list.id });
         }
         return;
       case "heading":
-        if (contained && item.headingId !== list.id) {
+        if (contained && toDo.headingId !== list.id) {
           q.moveToDo(id, { kind: "heading", id: list.id });
         }
         return;
@@ -143,7 +143,8 @@ export function orderingActions(ctx: Context, q: Queries) {
       at,
       (s) => s.position ?? 0,
       // Both collections are Ordered, so either takes a position.
-      (items) => items.forEach((s, i) => ctx.update(collection as "areas", s.id, { position: i })),
+      (ordered) =>
+        ordered.forEach((s, i) => ctx.update(collection as "areas", s.id, { position: i })),
     );
     ctx.update(collection as "areas", id, { position });
   }
@@ -154,8 +155,8 @@ export function orderingActions(ctx: Context, q: Queries) {
     const index = beforeId ? others.findIndex((t) => t.id === beforeId) : -1;
     const at = index === -1 ? others.length : index;
     if (list.kind === "today") {
-      const todayPosition = keyBetween(others, at, todayKey, (items) =>
-        items.forEach((t, i) => ctx.update("toDos", t.id, { todayPosition: i })),
+      const todayPosition = keyBetween(others, at, todayKey, (ordered) =>
+        ordered.forEach((t, i) => ctx.update("toDos", t.id, { todayPosition: i })),
       );
       ctx.update("toDos", id, { todayPosition });
     } else {
@@ -163,7 +164,7 @@ export function orderingActions(ctx: Context, q: Queries) {
         others,
         at,
         (t) => t.position ?? 0,
-        (items) => items.forEach((t, i) => ctx.update("toDos", t.id, { position: i })),
+        (ordered) => ordered.forEach((t, i) => ctx.update("toDos", t.id, { position: i })),
       );
       ctx.update("toDos", id, { position });
     }
@@ -179,7 +180,7 @@ export function orderingActions(ctx: Context, q: Queries) {
 
     /** Files or schedules a To-do by dropping it on a list, Area, Project or Heading. */
     dropToDo(id: string, target: DropTarget): void {
-      const item = ctx.require("toDos", id);
+      const toDo = ctx.require("toDos", id);
       switch (target.kind) {
         case "today":
           q.setWhen(id, { kind: "today" });
@@ -188,7 +189,7 @@ export function orderingActions(ctx: Context, q: Queries) {
           q.setWhen(id, { kind: "someday" });
           return;
         default:
-          if (item.parentId) throw new Error("A Sub-to-do moves with its parent");
+          if (toDo.parentId) throw new Error("A Sub-to-do moves with its parent");
           q.moveToDo(id, target);
           // It lands at the end of its new list.
           ctx.update("toDos", id, { position: ctx.nextPosition("toDos") });

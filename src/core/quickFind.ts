@@ -78,10 +78,11 @@ export function quickFindQueries(ctx: Context) {
             excerpt: excerptAround(t.notes, words[0]),
           });
         } else {
-          const item = store
+          const checklistItem = store
             .all("checklistItems")
             .find((c) => c.toDoId === t.id && matches(c.title));
-          if (item) toDos.push({ ...ctx.entry(t), field: "checklist", excerpt: item.title });
+          if (checklistItem)
+            toDos.push({ ...ctx.entry(t), field: "checklist", excerpt: checklistItem.title });
         }
       }
 

@@ -86,10 +86,10 @@ describe("Checklist items", () => {
 
   it("have only a title and a ticked state", () => {
     const id = app.addChecklistItem(toDo, "Passport");
-    const item = app.checklist(toDo).find((c) => c.id === id)!;
-    expect(item).not.toHaveProperty("startDate");
-    expect(item).not.toHaveProperty("deadline");
-    expect(item).not.toHaveProperty("tagIds");
+    const checklistItem = app.checklist(toDo).find((c) => c.id === id)!;
+    expect(checklistItem).not.toHaveProperty("startDate");
+    expect(checklistItem).not.toHaveProperty("deadline");
+    expect(checklistItem).not.toHaveProperty("tagIds");
   });
 
   it("are removed for good with their To-do", () => {

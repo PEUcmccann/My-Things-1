@@ -39,7 +39,7 @@ export type {
   QuickEntryValue,
 } from "./quickEntry";
 export type { MatchField, QuickFindOptions, QuickFindResults, ToDoMatch } from "./quickFind";
-export type { Taggable, TaggedItems, TagNode } from "./tags";
+export type { Taggable, Tagged, TagNode } from "./tags";
 export type { HeadingSection, ProjectContents } from "./headings";
 
 export interface Options {

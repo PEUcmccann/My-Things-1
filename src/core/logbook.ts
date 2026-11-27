@@ -71,7 +71,7 @@ export function logbookActions(ctx: Context) {
   }
 
   /** Stamps everything that has reached the Logbook, so it stays there. */
-  function stampLogged(include: (item: Finishable) => boolean) {
+  function stampLogged(include: (finishable: Finishable) => boolean) {
     const now = ctx.now();
     for (const t of store.all("toDos")) {
       if (!t.loggedAt && include(t)) ctx.update("toDos", t.id, { loggedAt: now });
@@ -134,7 +134,7 @@ export function logbookActions(ctx: Context) {
 
     setLogbookMode(mode: LogbookMode): void {
       // Whatever has reached the Logbook under the old mode stays there.
-      stampLogged((item) => ctx.isInLogbook(item));
+      stampLogged((finishable) => ctx.isInLogbook(finishable));
       store.saveSettings({ ...store.settings(), logbookMode: mode });
     },
 
@@ -144,12 +144,13 @@ export function logbookActions(ctx: Context) {
 
     /** Moves every finished To-do and Project to the Logbook now. */
     moveFinishedToLogbook(): void {
-      stampLogged((item) => item.outcome !== "active");
+      stampLogged((finishable) => finishable.outcome !== "active");
     },
 
     /** Whether there are finished items still waiting to move to the Logbook. */
     hasFinishedOutsideLogbook(): boolean {
-      const waiting = (item: Finishable) => item.outcome !== "active" && !ctx.isInLogbook(item);
+      const waiting = (finishable: Finishable) =>
+        finishable.outcome !== "active" && !ctx.isInLogbook(finishable);
       return (
         store.all("toDos").some((t) => !ctx.isTrashed(t) && waiting(t)) ||
         store.all("projects").some((p) => !p.deletedAt && waiting(p))
@@ -158,7 +159,7 @@ export function logbookActions(ctx: Context) {
 
     /** The Logbook: finished items grouped by the day they were finished, newest first. */
     logbook(): LogbookDay[] {
-      const items: { at: string; entry: LogbookEntry }[] = [
+      const finished: { at: string; entry: LogbookEntry }[] = [
         ...store
           .all("toDos")
           .filter((t) => !ctx.isTrashed(t) && ctx.isInLogbook(t))
@@ -174,9 +175,9 @@ export function logbookActions(ctx: Context) {
             entry: { kind: "project" as const, project: p },
           })),
       ];
-      items.sort((a, b) => b.at.localeCompare(a.at));
+      finished.sort((a, b) => b.at.localeCompare(a.at));
       const days: LogbookDay[] = [];
-      for (const { at, entry } of items) {
+      for (const { at, entry } of finished) {
         const date = toLocalDate(new Date(at));
         let day = days[days.length - 1];
         if (!day || day.date !== date) {

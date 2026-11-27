@@ -241,8 +241,8 @@ export function parseRrule(rrule: string): RepeatPattern {
 }
 
 /** The `n`th item (1-based), or counting back from the end if negative. */
-function nthOf<T>(items: T[], n: number): T | undefined {
-  return n > 0 ? items[n - 1] : items[items.length + n];
+function nthOf<T>(values: T[], n: number): T | undefined {
+  return n > 0 ? values[n - 1] : values[values.length + n];
 }
 
 /** The days of a month that are rule dates, before the interval is applied. */

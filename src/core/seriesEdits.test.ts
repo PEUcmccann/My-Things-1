@@ -156,38 +156,40 @@ describe("the Checklist", () => {
   const titles = (id: string) => app.checklist(id).map((c) => c.title);
 
   /** A repeating To-do with the Checklist "Fill can", "Water", "Feed". */
-  function withChecklist(): { id: string; items: string[] } {
+  function withChecklist(): { id: string; checklistItemIds: string[] } {
     const id = repeatingToDo();
-    const items = ["Fill can", "Water", "Feed"].map((t) => app.addChecklistItem(id, t));
-    return { id, items };
+    const checklistItemIds = ["Fill can", "Water", "Feed"].map((t) => app.addChecklistItem(id, t));
+    return { id, checklistItemIds };
   }
 
   /** Adds "Mist leaves", removes "Feed" and renames "Water" to "Water well". */
-  function editChecklist(id: string, items: string[]) {
+  function editChecklist(id: string, checklistItemIds: string[]) {
     app.addChecklistItem(id, "Mist leaves");
-    app.deleteChecklistItem(items[2]);
-    app.renameChecklistItem(items[1], "Water well");
+    app.deleteChecklistItem(checklistItemIds[2]);
+    app.renameChecklistItem(checklistItemIds[1], "Water well");
   }
 
   it('"this one" leaves later occurrences with the Checklist as it was', () => {
-    const { id, items } = withChecklist();
-    app.editOccurrence(id, "thisOne", () => editChecklist(id, items));
+    const { id, checklistItemIds } = withChecklist();
+    app.editOccurrence(id, "thisOne", () => editChecklist(id, checklistItemIds));
     expect(titles(id)).toEqual(["Fill can", "Water well", "Mist leaves"]);
     expect(titles(completeAndNext(id))).toEqual(["Fill can", "Water", "Feed"]);
   });
 
   it('"all future ones" copies added and renamed items and drops removed ones', () => {
-    const { id, items } = withChecklist();
-    app.editOccurrence(id, "allFuture", () => editChecklist(id, items));
+    const { id, checklistItemIds } = withChecklist();
+    app.editOccurrence(id, "allFuture", () => editChecklist(id, checklistItemIds));
     const next = completeAndNext(id);
     expect(titles(next)).toEqual(["Fill can", "Water well", "Mist leaves"]);
     expect(titles(completeAndNext(next))).toEqual(["Fill can", "Water well", "Mist leaves"]);
   });
 
   it('"all future ones" after "this one" changes the same item for the series', () => {
-    const { id, items } = withChecklist();
-    app.editOccurrence(id, "thisOne", () => app.renameChecklistItem(items[1], "Water well"));
-    app.editOccurrence(id, "allFuture", () => app.deleteChecklistItem(items[1]));
+    const { id, checklistItemIds } = withChecklist();
+    app.editOccurrence(id, "thisOne", () =>
+      app.renameChecklistItem(checklistItemIds[1], "Water well"),
+    );
+    app.editOccurrence(id, "allFuture", () => app.deleteChecklistItem(checklistItemIds[1]));
     expect(titles(completeAndNext(id))).toEqual(["Fill can", "Feed"]);
   });
 
@@ -200,8 +202,8 @@ describe("the Checklist", () => {
   });
 
   it("ticking an item is not a change to the series: the next one starts unticked", () => {
-    const { id, items } = withChecklist();
-    app.editOccurrence(id, "thisOne", () => app.tickChecklistItem(items[0], true));
+    const { id, checklistItemIds } = withChecklist();
+    app.editOccurrence(id, "thisOne", () => app.tickChecklistItem(checklistItemIds[0], true));
     const next = completeAndNext(id);
     expect(app.checklist(next).map((c) => c.ticked)).toEqual([false, false, false]);
   });

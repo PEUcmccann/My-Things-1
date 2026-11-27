@@ -35,7 +35,7 @@ export function trashActions(ctx: Context) {
     store.remove("projects", id);
   }
 
-  function deletedItems(): { toDos: ToDo[]; projects: Project[] } {
+  function trashContents(): { toDos: ToDo[]; projects: Project[] } {
     return {
       toDos: store.all("toDos").filter((t) => t.deletedAt),
       projects: store.all("projects").filter((p) => p.deletedAt),
@@ -59,13 +59,13 @@ export function trashActions(ctx: Context) {
      * Inbox, or becomes a normal To-do in its parent's place.
      */
     restore(id: string): void {
-      const item = ctx.require("toDos", id);
+      const toDo = ctx.require("toDos", id);
       const live = <T extends { deletedAt?: string | null }>(r: T | undefined) =>
         r && !r.deletedAt ? r : undefined;
-      const parent = live(ctx.find("toDos", item.parentId));
-      const project = live(ctx.find("projects", item.projectId));
-      const area = ctx.find("areas", item.areaId);
-      const heading = ctx.find("headings", item.headingId);
+      const parent = live(ctx.find("toDos", toDo.parentId));
+      const project = live(ctx.find("projects", toDo.projectId));
+      const area = ctx.find("areas", toDo.areaId);
+      const heading = ctx.find("headings", toDo.headingId);
       ctx.update("toDos", id, {
         deletedAt: null,
         parentId: parent ? parent.id : null,
@@ -89,7 +89,7 @@ export function trashActions(ctx: Context) {
 
     /** Everything deleted, most recently deleted first. */
     trash(): TrashEntry[] {
-      const { toDos, projects } = deletedItems();
+      const { toDos, projects } = trashContents();
       const entries: (TrashEntry & { at: string })[] = [
         ...toDos.map((t) => ({ kind: "toDo" as const, ...ctx.entry(t), at: t.deletedAt! })),
         ...projects.map((p) => ({
@@ -105,14 +105,14 @@ export function trashActions(ctx: Context) {
     /** Removes everything deleted more than 30 days ago. */
     purgeExpiredTrash(): void {
       const cutoff = new Date(ctx.clock.now().getTime() - trashDays * 86_400_000).toISOString();
-      const { toDos, projects } = deletedItems();
+      const { toDos, projects } = trashContents();
       for (const p of projects) if (p.deletedAt! < cutoff) eraseProject(p.id);
       for (const t of toDos) if (t.deletedAt! < cutoff && store.get("toDos", t.id)) eraseToDo(t.id);
     },
 
     /** Removes everything in the Trash for good. */
     emptyTrash(): void {
-      const { toDos, projects } = deletedItems();
+      const { toDos, projects } = trashContents();
       for (const p of projects) eraseProject(p.id);
       for (const t of toDos) if (store.get("toDos", t.id)) eraseToDo(t.id);
     },

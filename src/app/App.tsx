@@ -20,6 +20,7 @@ import { ProjectScreen } from "./screens/ProjectScreen";
 import { LogbookScreen } from "./screens/LogbookScreen";
 import { QuickFindScreen } from "./screens/QuickFindScreen";
 import { SettingsScreen } from "./screens/SettingsScreen";
+import { SmartListScreen } from "./screens/SmartListScreen";
 import { TagScreen } from "./screens/TagScreen";
 import { TagsScreen } from "./screens/TagsScreen";
 import { ToDoScreen } from "./screens/ToDoScreen";
@@ -29,6 +30,7 @@ import { Sidebar } from "./screens/Sidebar";
 import { SelectionProvider } from "./selection";
 import { MyThingsProvider } from "./state";
 import { useTheme } from "./theme";
+import { TodayViewProvider } from "./todayView";
 import { useKeyboardInset } from "./useKeyboardInset";
 
 /** Screens wider than this show the sidebar beside the content. */
@@ -83,6 +85,8 @@ function ScreenFor({ route }: { route: Route }) {
       return <TagsScreen />;
     case "tag":
       return <TagScreen key={route.id} id={route.id} />;
+    case "smartList":
+      return <SmartListScreen key={route.id} id={route.id} />;
     case "toDo":
       return <ToDoScreen key={route.id} id={route.id} />;
   }
@@ -139,7 +143,9 @@ export default function App() {
       <SafeAreaProvider>
         <MyThingsProvider loading={<Loading />}>
           <FinishProvider>
-            <Layout />
+            <TodayViewProvider>
+              <Layout />
+            </TodayViewProvider>
           </FinishProvider>
         </MyThingsProvider>
       </SafeAreaProvider>

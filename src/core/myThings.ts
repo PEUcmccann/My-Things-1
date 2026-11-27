@@ -3,6 +3,7 @@ import { bulkActions } from "./bulk";
 import { checklistActions } from "./checklist";
 import { containerActions } from "./containers";
 import { createContext } from "./context";
+import { dayTimelineQueries } from "./dayTimeline";
 import { addDays, deadlineFlag, type DeadlineFlag } from "./dates";
 import { headingActions } from "./headings";
 import { listQueries } from "./lists";
@@ -13,12 +14,14 @@ import { repeatActions } from "./repeat";
 import type { Store } from "./store";
 import { quickEntryActions } from "./quickEntry";
 import { quickFindQueries } from "./quickFind";
+import { smartListActions } from "./smartLists";
 import { tagActions } from "./tags";
 import { toDoActions, type NewToDo } from "./toDos";
 import { trashActions } from "./trash";
 import { accentColours, type AccentColour, type LocalDate } from "./types";
 
 export type { ChecklistProgress } from "./checklist";
+export type { DayTimeline, TimelineEntry } from "./dayTimeline";
 export type { ToDoEntry } from "./context";
 export type { AreaContents, NewProject, Progress, SidebarArea, SidebarTree } from "./containers";
 export type { ProjectList, TodayList, UpcomingEntry, UpcomingGroup, UpcomingReason } from "./lists";
@@ -102,8 +105,10 @@ export function createMyThings({ clock, store, newId = randomId, owner = localOw
 
   return {
     ...base,
+    ...dayTimelineQueries(ctx, base),
     ...ordering,
     ...bulkActions(ctx, base),
+    ...smartListActions(ctx, base),
     ...quickEntryActions({ ...base, createToDo }),
     createToDo,
   };

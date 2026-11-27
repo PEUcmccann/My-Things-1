@@ -1,4 +1,13 @@
-import type { Area, ChecklistItem, Heading, Project, Settings, Tag, ToDo } from "./types";
+import type {
+  Area,
+  ChecklistItem,
+  Heading,
+  Project,
+  Settings,
+  SmartList,
+  Tag,
+  ToDo,
+} from "./types";
 
 export interface Collections {
   areas: Area;
@@ -7,6 +16,7 @@ export interface Collections {
   toDos: ToDo;
   checklistItems: ChecklistItem;
   tags: Tag;
+  smartLists: SmartList;
 }
 
 export type CollectionName = keyof Collections;
@@ -37,6 +47,7 @@ const collectionNames: CollectionName[] = [
   "toDos",
   "checklistItems",
   "tags",
+  "smartLists",
 ];
 
 /** Defaults for fields that records saved by earlier versions may lack. */
@@ -64,6 +75,7 @@ const recordDefaults: { [C in CollectionName]: Partial<Collections[C]> } = {
   },
   checklistItems: {},
   tags: {},
+  smartLists: {},
 };
 
 export interface MemoryStore extends Store {

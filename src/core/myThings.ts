@@ -6,6 +6,8 @@ export interface Options {
   clock: Clock;
   store: Store;
   newId?: () => string;
+  /** The user who owns new records. There is one user for now; sharing comes later. */
+  owner?: string;
 }
 
 export interface NewToDo {
@@ -20,22 +22,30 @@ export interface NewProject {
   areaId?: string;
 }
 
-export interface TodayEntry {
+/** A To-do as shown in a list. */
+export interface ToDoEntry {
   toDo: ToDo;
   /** Title of the parent To-do, when this is a Sub-to-do. */
   parentTitle: string | null;
 }
 
 export interface TodayList {
-  main: TodayEntry[];
-  thisEvening: TodayEntry[];
+  main: ToDoEntry[];
+  thisEvening: ToDoEntry[];
 }
 
 function randomId(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
-export function createMyThings({ clock, store, newId = randomId }: Options) {
+export const localOwner = "me";
+
+export function createMyThings({ clock, store, newId = randomId, owner = localOwner }: Options) {
+  function stamp(): { owner: string; createdAt: string; updatedAt: string } {
+    const now = clock.now().toISOString();
+    return { owner, createdAt: now, updatedAt: now };
+  }
+
   function toDo(id: string): ToDo {
     const found = store.get("toDos", id);
     if (!found) throw new Error(`No To-do with id ${id}`);
@@ -49,7 +59,25 @@ export function createMyThings({ clock, store, newId = randomId }: Options) {
   }
 
   function updateToDo(id: string, changes: Partial<ToDo>): void {
-    store.put("toDos", { ...toDo(id), ...changes });
+    store.put("toDos", { ...toDo(id), ...changes, updatedAt: clock.now().toISOString() });
+  }
+
+  function updateProject(id: string, changes: Partial<Project>): void {
+    store.put("projects", { ...project(id), ...changes, updatedAt: clock.now().toISOString() });
+  }
+
+  function entry(item: ToDo): ToDoEntry {
+    const parent = item.parentId ? store.get("toDos", item.parentId) : undefined;
+    return { toDo: item, parentTitle: parent?.title ?? null };
+  }
+
+  /** Whether a To-do shows in ordinary lists: not in the Trash and not yet in the Logbook. */
+  function isOpenInLists(item: ToDo): boolean {
+    return !item.deletedAt && !isInLogbook(item);
+  }
+
+  function byCreation(a: ToDo, b: ToDo): number {
+    return a.createdAt.localeCompare(b.createdAt);
   }
 
   function finish(id: string, outcome: "completed" | "cancelled"): void {
@@ -78,6 +106,7 @@ export function createMyThings({ clock, store, newId = randomId }: Options) {
       const id = newId();
       store.put("toDos", {
         id,
+        ...stamp(),
         title: input.title,
         outcome: "active",
         finishedAt: null,
@@ -100,6 +129,7 @@ export function createMyThings({ clock, store, newId = randomId }: Options) {
       const id = newId();
       store.put("projects", {
         id,
+        ...stamp(),
         title: input.title,
         areaId: input.areaId ?? null,
         outcome: "active",
@@ -130,7 +160,7 @@ export function createMyThings({ clock, store, newId = randomId }: Options) {
     },
 
     moveProjectToSomeday(id: string): void {
-      store.put("projects", { ...project(id), startDate: null, someday: true });
+      updateProject(id, { startDate: null, someday: true });
     },
 
     setDeadline(id: string, date: LocalDate | null): void {
@@ -158,6 +188,15 @@ export function createMyThings({ clock, store, newId = randomId }: Options) {
       return toDo(id);
     },
 
+    /** Inbox: To-dos that have not been organised into an Area or Project. */
+    inbox(): ToDoEntry[] {
+      return store
+        .all("toDos")
+        .filter((item) => isOpenInLists(item) && !item.areaId && !item.projectId)
+        .sort(byCreation)
+        .map(entry);
+    },
+
     /**
      * Today: every active To-do whose Start date or Deadline is today or earlier.
      * To-dos finished today stay visible until they move to the Logbook.
@@ -166,12 +205,9 @@ export function createMyThings({ clock, store, newId = randomId }: Options) {
       const today = clock.today();
       const list: TodayList = { main: [], thisEvening: [] };
       for (const item of store.all("toDos")) {
-        if (item.deletedAt) continue;
-        if (isInLogbook(item)) continue;
+        if (!isOpenInLists(item)) continue;
         if (!isDue(item, today)) continue;
-        const parent = item.parentId ? store.get("toDos", item.parentId) : undefined;
-        const entry: TodayEntry = { toDo: item, parentTitle: parent?.title ?? null };
-        (item.evening ? list.thisEvening : list.main).push(entry);
+        (item.evening ? list.thisEvening : list.main).push(entry(item));
       }
       return list;
     },

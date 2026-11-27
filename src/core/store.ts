@@ -6,33 +6,71 @@ export interface Collections {
   toDos: ToDo;
 }
 
-/** Where the core keeps its records. The app uses a device database; tests use memory. */
+export type CollectionName = keyof Collections;
+
+/** Where the core keeps its records. The app saves them on the device; tests use memory. */
 export interface Store {
-  get<C extends keyof Collections>(collection: C, id: string): Collections[C] | undefined;
-  put<C extends keyof Collections>(collection: C, record: Collections[C]): void;
-  all<C extends keyof Collections>(collection: C): Collections[C][];
+  get<C extends CollectionName>(collection: C, id: string): Collections[C] | undefined;
+  put<C extends CollectionName>(collection: C, record: Collections[C]): void;
+  remove(collection: CollectionName, id: string): void;
+  all<C extends CollectionName>(collection: C): Collections[C][];
   settings(): Settings;
   saveSettings(settings: Settings): void;
 }
 
+/** Everything in a store, as plain data that can be saved and loaded again. */
+export interface Snapshot {
+  version: 1;
+  records: { [C in CollectionName]: Collections[C][] };
+  settings: Settings;
+}
+
 export const defaultSettings: Settings = { logbookMode: "endOfDay" };
 
-export function memoryStore(): Store {
-  const data: { [C in keyof Collections]: Map<string, Collections[C]> } = {
-    areas: new Map(),
-    projects: new Map(),
-    toDos: new Map(),
-  };
-  let settings: Settings = { ...defaultSettings };
+const collectionNames: CollectionName[] = ["areas", "projects", "toDos"];
+
+export interface MemoryStore extends Store {
+  snapshot(): Snapshot;
+}
+
+/**
+ * A store held in memory. It can start from a saved snapshot, and calls `onChange`
+ * after every write so the app can save it to the device.
+ */
+export function memoryStore(initial?: Snapshot, onChange?: () => void): MemoryStore {
+  const data = {} as { [C in CollectionName]: Map<string, Collections[C]> };
+  for (const name of collectionNames) {
+    const records = (initial?.records[name] ?? []) as Collections[typeof name][];
+    (data as Record<CollectionName, Map<string, unknown>>)[name] = new Map(
+      records.map((r) => [r.id, r]),
+    );
+  }
+  let settings: Settings = { ...defaultSettings, ...initial?.settings };
+  const changed = () => onChange?.();
   return {
     get: (collection, id) => data[collection].get(id),
     put: (collection, record) => {
       (data[collection] as Map<string, typeof record>).set(record.id, record);
+      changed();
+    },
+    remove: (collection, id) => {
+      data[collection].delete(id);
+      changed();
     },
     all: (collection) => [...data[collection].values()],
     settings: () => ({ ...settings }),
     saveSettings: (next) => {
       settings = { ...next };
+      changed();
     },
+    snapshot: () => ({
+      version: 1,
+      records: {
+        areas: [...data.areas.values()],
+        projects: [...data.projects.values()],
+        toDos: [...data.toDos.values()],
+      },
+      settings: { ...settings },
+    }),
   };
 }

@@ -1,34 +1,43 @@
 /** A calendar day in the user's time zone, written as YYYY-MM-DD. */
 export type LocalDate = string;
 
+/** A moment in time, written as an ISO 8601 string. */
+export type Moment = string;
+
 export type Outcome = "active" | "completed" | "cancelled";
 
 export type LogbookMode = "immediately" | "endOfDay" | "manually";
 
-export interface Area {
+/** Fields every record carries, so sync and sharing can be added later (ADR 0002). */
+export interface RecordMeta {
   id: string;
+  /** The user the record belongs to. */
+  owner: string;
+  createdAt: Moment;
+  updatedAt: Moment;
+}
+
+export interface Area extends RecordMeta {
   title: string;
 }
 
-export interface Project {
-  id: string;
+export interface Project extends RecordMeta {
   title: string;
   areaId: string | null;
   outcome: Outcome;
   startDate: LocalDate | null;
   someday: boolean;
   deadline: LocalDate | null;
-  deletedAt: string | null;
+  deletedAt: Moment | null;
 }
 
-export interface ToDo {
-  id: string;
+export interface ToDo extends RecordMeta {
   title: string;
   outcome: Outcome;
   /** When the To-do was Completed or Cancelled. */
-  finishedAt: string | null;
+  finishedAt: Moment | null;
   /** Set once the To-do has moved to the Logbook. */
-  loggedAt: string | null;
+  loggedAt: Moment | null;
   startDate: LocalDate | null;
   evening: boolean;
   someday: boolean;
@@ -38,7 +47,7 @@ export interface ToDo {
   headingId: string | null;
   /** The parent To-do of a Sub-to-do. */
   parentId: string | null;
-  deletedAt: string | null;
+  deletedAt: Moment | null;
 }
 
 export interface Settings {

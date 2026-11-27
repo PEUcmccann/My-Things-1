@@ -72,6 +72,7 @@ const recordDefaults: { [C in CollectionName]: Partial<Collections[C]> } = {
     estimate: null,
     repeat: null,
     seriesId: null,
+    seriesValues: null,
   },
   checklistItems: {},
   tags: {},

@@ -2,6 +2,7 @@ import { byPosition, todayKey, type Context, type ToDoEntry } from "./context";
 import { addDays, daysBetween, startOfMonth, startOfWeek } from "./dates";
 import { occurrencesLeft } from "./repeat";
 import { parseRrule, repeatDates } from "./rrule";
+import { seriesFieldsFor } from "./seriesEdits";
 import type { LocalDate, Project, ToDo } from "./types";
 
 /** Why an item shows on a day in Upcoming. */
@@ -157,7 +158,9 @@ export function listQueries(ctx: Context) {
         if (item.outcome !== "active" || !ctx.isOpenInLists(item)) continue;
         add(item, (date, reason) => ({ kind: "toDo", date, reason, ...ctx.entry(item) }));
         for (const date of projectedDates(ctx, item, today)) {
-          entries.push({ kind: "projected", date, reason: "start", ...ctx.entry(item) });
+          // A later occurrence is created from the series, without "this one" changes.
+          const later = { ...item, ...seriesFieldsFor(ctx, item, date) };
+          entries.push({ kind: "projected", date, reason: "start", ...ctx.entry(later) });
         }
       }
       for (const project of store.all("projects")) {

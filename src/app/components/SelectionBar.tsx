@@ -7,11 +7,21 @@ import { useMyThings } from "../state";
 import { useTheme } from "../theme";
 import { Button } from "./Button";
 import { MovePicker } from "./MovePicker";
+import { EnergyPicker, EstimatePicker, PriorityPicker } from "./PlanningPickers";
 import { RemainingChoice } from "./RemainingChoice";
 import { TagPicker } from "./TagPicker";
 import { DatePicker, WhenPicker } from "./WhenPicker";
 
-type Dialog = "move" | "when" | "deadline" | "tags" | { finish: "complete" | "cancel" } | null;
+type Dialog =
+  | "move"
+  | "when"
+  | "deadline"
+  | "tags"
+  | "priority"
+  | "energy"
+  | "estimate"
+  | { finish: "complete" | "cancel" }
+  | null;
 
 /** The actions for the selected To-dos, shown instead of Magic Plus while selecting. */
 export function SelectionBar() {
@@ -80,6 +90,27 @@ export function SelectionBar() {
         />
         <Button
           small
+          title="Priority"
+          disabled={none}
+          onPress={() => setDialog("priority")}
+          testID="bulk-priority"
+        />
+        <Button
+          small
+          title="Energy"
+          disabled={none}
+          onPress={() => setDialog("energy")}
+          testID="bulk-energy"
+        />
+        <Button
+          small
+          title="Estimate"
+          disabled={none}
+          onPress={() => setDialog("estimate")}
+          testID="bulk-estimate"
+        />
+        <Button
+          small
           title="Complete"
           disabled={none}
           onPress={() => askFinish("complete")}
@@ -145,6 +176,30 @@ export function SelectionBar() {
           }
           close();
         }}
+      />
+      <PriorityPicker
+        visible={dialog === "priority"}
+        onChoose={(priority) => {
+          app.setPriorityMany(ids, priority);
+          done();
+        }}
+        onClose={close}
+      />
+      <EnergyPicker
+        visible={dialog === "energy"}
+        onChoose={(energy) => {
+          app.setEnergyMany(ids, energy);
+          done();
+        }}
+        onClose={close}
+      />
+      <EstimatePicker
+        visible={dialog === "estimate"}
+        onChoose={(minutes) => {
+          app.setEstimateMany(ids, minutes);
+          done();
+        }}
+        onClose={close}
       />
       <RemainingChoice
         visible={finishing !== null}

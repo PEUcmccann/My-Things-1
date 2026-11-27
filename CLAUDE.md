@@ -11,7 +11,7 @@ A personal task manager app built with React Native and Expo. The design decisio
 ## Commands
 
 ```bash
-npm test            # core tests (Vitest)
+npm test            # Vitest: core tests, plus pure helpers in src/app
 npm run lint        # ESLint
 npm run typecheck   # tsc --noEmit
 npm run format      # Prettier

@@ -91,7 +91,20 @@ export interface ToDo extends RecordMeta, Ordered {
   /** The parent To-do of a Sub-to-do. */
   parentId: string | null;
   deletedAt: Moment | null;
+  priority: Priority;
+  /** Not set when null. */
+  energy: Energy | null;
+  /** Minutes, a whole positive number. Not set when null. */
+  estimate: number | null;
 }
+
+/** How important a To-do is. "none" is the default. */
+export const priorities = ["none", "low", "medium", "high"] as const;
+export type Priority = (typeof priorities)[number];
+
+/** How much focus a To-do needs. */
+export const energies = ["low", "high"] as const;
+export type Energy = (typeof energies)[number];
 
 /** A small step inside a To-do that can only be ticked off. */
 export interface ChecklistItem extends RecordMeta {

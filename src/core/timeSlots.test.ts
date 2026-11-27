@@ -90,6 +90,18 @@ describe("the end pre-filled for a start time", () => {
     const id = app.createToDo({ title: "Call Sam" });
     expect(app.suggestedSlotEnd(id, at(23, 45))).toBe(at(24));
   });
+
+  it("is the start plus the Estimate for a To-do with one", () => {
+    const id = app.createToDo({ title: "Write report" });
+    app.setEstimate(id, 90);
+    expect(app.suggestedSlotEnd(id, at(14))).toBe(at(15, 30));
+  });
+
+  it("is cut to 24:00 when the Estimate would pass midnight", () => {
+    const id = app.createToDo({ title: "Write report" });
+    app.setEstimate(id, 120);
+    expect(app.suggestedSlotEnd(id, at(23))).toBe(at(24));
+  });
 });
 
 describe("when the Start date changes", () => {

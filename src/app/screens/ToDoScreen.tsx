@@ -1,19 +1,27 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-import type { MyThings, ToDo } from "../../core";
+import { formatEstimate, type MyThings, type ToDo } from "../../core";
 import { Button } from "../components/Button";
 import { Checkbox } from "../components/Checkbox";
 import { ChecklistEditor } from "../components/ChecklistEditor";
 import { FieldRow } from "../components/FieldRow";
 import { MovePicker } from "../components/MovePicker";
 import { NotesField } from "../components/NotesField";
+import { EnergyPicker, EstimatePicker, PriorityPicker } from "../components/PlanningPickers";
 import { Screen } from "../components/Screen";
 import { TagPicker } from "../components/TagPicker";
 import { ToDoList } from "../components/ToDoList";
 import { TimeSlotPicker } from "../components/TimeSlotPicker";
 import { DatePicker, WhenPicker } from "../components/WhenPicker";
 import { useFinishToDo } from "../finish";
-import { formatDate, timeSlotText, whenText } from "../format";
+import {
+  energyNames,
+  formatDate,
+  priorityMarks,
+  priorityNames,
+  timeSlotText,
+  whenText,
+} from "../format";
 import { useNavigation } from "../navigation";
 import { useMyThings } from "../state";
 import { useTheme } from "../theme";
@@ -29,7 +37,13 @@ function placeText(app: MyThings, toDo: ToDo): string {
   return toDo.startDate || toDo.someday ? "No Area or Project" : "📥 Inbox";
 }
 
-type Picker = "when" | "timeSlot" | "deadline" | "move" | "tags" | null;
+type Picker =
+  "when" | "timeSlot" | "deadline" | "move" | "tags" | "priority" | "energy" | "estimate" | null;
+
+function priorityText(toDo: ToDo): string {
+  if (toDo.priority === "none") return "None";
+  return `${priorityMarks[toDo.priority]} ${priorityNames[toDo.priority]}`;
+}
 
 /** The next whole hour from now, as a first start time to offer (23:00 at the latest). */
 function nextHour(): number {
@@ -125,6 +139,24 @@ export function ToDoScreen({ id }: { id: string }) {
           onPress={() => setPicker("tags")}
           testID="todo-tags"
         />
+        <FieldRow
+          label="Priority"
+          value={priorityText(toDo)}
+          onPress={() => setPicker("priority")}
+          testID="todo-priority"
+        />
+        <FieldRow
+          label="Energy"
+          value={toDo.energy ? energyNames[toDo.energy] : "None"}
+          onPress={() => setPicker("energy")}
+          testID="todo-energy"
+        />
+        <FieldRow
+          label="Estimate"
+          value={toDo.estimate ? formatEstimate(toDo.estimate) : "None"}
+          onPress={() => setPicker("estimate")}
+          testID="todo-estimate"
+        />
         {parent ? null : (
           <FieldRow
             label="Move"
@@ -200,6 +232,21 @@ export function ToDoScreen({ id }: { id: string }) {
         onToggle={(tagId, on) =>
           on ? app.addTag({ kind: "toDo", id }, tagId) : app.removeTag({ kind: "toDo", id }, tagId)
         }
+        onClose={() => setPicker(null)}
+      />
+      <PriorityPicker
+        visible={picker === "priority"}
+        onChoose={(priority) => app.setPriority(id, priority)}
+        onClose={() => setPicker(null)}
+      />
+      <EnergyPicker
+        visible={picker === "energy"}
+        onChoose={(energy) => app.setEnergy(id, energy)}
+        onClose={() => setPicker(null)}
+      />
+      <EstimatePicker
+        visible={picker === "estimate"}
+        onChoose={(minutes) => app.setEstimate(id, minutes)}
         onClose={() => setPicker(null)}
       />
       <MovePicker

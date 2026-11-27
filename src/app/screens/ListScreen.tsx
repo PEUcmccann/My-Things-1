@@ -27,6 +27,10 @@ function useSections(list: BuiltInList): Section[] {
         { key: "evening", title: "🌙 This Evening", entries: thisEvening },
       ];
     }
+    case "anytime":
+      return [{ key: "anytime", entries: app.anytime() }];
+    case "someday":
+      return [{ key: "someday", entries: app.someday() }];
     default:
       return [];
   }

@@ -126,3 +126,9 @@ Deleted items, which can be restored for 30 days before they are removed for goo
 **Smart List**:
 A saved, named combination of filters (Tags, Areas, Projects, dates, Priority, Energy, Estimate) shown in the sidebar.
 _Avoid_: Perspective, filter, saved search
+
+## Accounts
+
+**Owner**:
+The account a record belongs to: "me" until you sign in, then the account's user id. Signing in makes every record on the device the account's; signing out erases the device.
+_Avoid_: User, author, creator

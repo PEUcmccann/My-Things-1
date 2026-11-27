@@ -16,6 +16,11 @@ export interface ToDoEntry {
 export interface Context {
   store: Store;
   clock: Clock;
+  /**
+   * The Owner new and restored records belong to: the account if signed in, else "me".
+   * Signing in and erasing the device change it (owner.ts).
+   */
+  owner: string;
   now(): Moment;
   /** A new record's id, owner and timestamps. */
   meta(): RecordMeta;
@@ -65,10 +70,11 @@ export function createContext(opts: {
   const ctx: Context = {
     store,
     clock,
+    owner,
     now,
     meta() {
       const at = now();
-      return { id: newId(), owner, createdAt: at, updatedAt: at };
+      return { id: newId(), owner: ctx.owner, createdAt: at, updatedAt: at };
     },
     find(collection, id) {
       return id === null ? undefined : store.get(collection, id);

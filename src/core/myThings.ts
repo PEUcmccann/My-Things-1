@@ -4,10 +4,13 @@ import { checklistActions } from "./checklist";
 import { containerActions } from "./containers";
 import { createContext } from "./context";
 import { dayTimelineQueries } from "./dayTimeline";
+import { csvQueries } from "./csvExport";
+import { exportActions } from "./exportRestore";
 import { addDays, deadlineFlag, type DeadlineFlag } from "./dates";
 import { headingActions } from "./headings";
 import { listQueries } from "./lists";
 import { logbookActions } from "./logbook";
+import { localOwner, ownerActions } from "./owner";
 import { orderingActions, type ListRef } from "./ordering";
 import { planningActions } from "./planning";
 import { repeatActions } from "./repeat";
@@ -16,6 +19,7 @@ import type { Store } from "./store";
 import { quickEntryActions } from "./quickEntry";
 import { quickFindQueries } from "./quickFind";
 import { smartListActions } from "./smartLists";
+import { randomUuid, syncedStore } from "./sync";
 import { tagActions } from "./tags";
 import { toDoActions, type NewToDo } from "./toDos";
 import { trashActions } from "./trash";
@@ -23,6 +27,7 @@ import { accentColours, type AccentColour, type LocalDate } from "./types";
 
 export type { ChecklistProgress } from "./checklist";
 export type { DayTimeline, TimelineEntry } from "./dayTimeline";
+export type { ExportFile, RestoreProblem } from "./exportRestore";
 export type { ToDoEntry } from "./context";
 export type { AreaContents, NewProject, Progress, SidebarArea, SidebarTree } from "./containers";
 export type { ProjectList, TodayList, UpcomingEntry, UpcomingGroup, UpcomingReason } from "./lists";
@@ -30,6 +35,7 @@ export type { FinishOptions, LogbookDay, LogbookEntry, Remaining } from "./logbo
 export type { Destination, NewToDo, When } from "./toDos";
 export type { ByDay, Frequency, RepeatPattern, WeekdayCode } from "./rrule";
 export type { SeriesScope } from "./seriesEdits";
+export type { SyncActions } from "./sync";
 export type { TrashEntry } from "./trash";
 export type { DropTarget, ListRef } from "./ordering";
 export type {
@@ -46,7 +52,15 @@ export interface Options {
   clock: Clock;
   store: Store;
   newId?: () => string;
-  /** The user who owns new records. There is one user for now; sharing comes later. */
+  /**
+   * Makes v4 UUIDs for sync edits and the device id. The app passes expo-crypto's
+   * `randomUUID`; tests pass a counter.
+   */
+  newEditId?: () => string;
+  /**
+   * The Owner of new records: the signed-in account's user id, or "me" (the default)
+   * while signed out. `changeOwner` and `eraseDevice` change it later.
+   */
   owner?: string;
 }
 
@@ -54,10 +68,18 @@ function randomId(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
-export const localOwner = "me";
+export { localOwner };
 
 /** The core of MyThings: every rule, as actions and list queries. */
-export function createMyThings({ clock, store, newId = randomId, owner = localOwner }: Options) {
+export function createMyThings({
+  clock,
+  store: saved,
+  newId = randomId,
+  newEditId = randomUuid,
+  owner = localOwner,
+}: Options) {
+  // Every write records per-field edits for sync, so no action needs to know about it.
+  const { store, sync, replaceEverything, eraseEverything } = syncedStore(saved, clock, newEditId);
   const ctx = createContext({ clock, store, newId, owner });
   const base = {
     ...toDoActions(ctx),
@@ -72,6 +94,10 @@ export function createMyThings({ clock, store, newId = randomId, owner = localOw
     ...logbookActions(ctx),
     ...listQueries(ctx),
     ...trashActions(ctx),
+    ...exportActions(ctx, replaceEverything),
+    ...csvQueries(ctx),
+    ...sync,
+    ...ownerActions(ctx, eraseEverything),
 
     /** Whether to flag a Deadline as close or passed, as of today. */
     deadlineFlag(deadline: LocalDate | null): DeadlineFlag {

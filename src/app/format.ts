@@ -6,6 +6,7 @@ import {
   type Energy,
   type LocalDate,
   type Priority,
+  type RepeatMode,
   type RepeatPattern,
   type ToDo,
   type WeekdayCode,
@@ -138,10 +139,18 @@ export function ordinal(n: number): string {
 
 const units = { daily: "day", weekly: "week", monthly: "month", yearly: "year" } as const;
 
-/** A Repeat rule in words, e.g. "Every 2 weeks on Mon, Thu", for a rule starting on `start`. */
-export function repeatText(p: RepeatPattern, start: LocalDate): string {
+/**
+ * A Repeat rule in words, e.g. "Every 2 weeks on Mon, Thu" or "Every 3 days after
+ * completion", for a rule starting on `start`.
+ */
+export function repeatText(
+  p: RepeatPattern,
+  start: LocalDate,
+  mode: RepeatMode = "onSchedule",
+): string {
   const unit = units[p.freq];
   const every = p.interval === 1 ? `Every ${unit}` : `Every ${p.interval} ${unit}s`;
+  if (mode === "afterCompletion") return `${every} after completion`;
   const { m, d } = dateParts(start);
   switch (p.freq) {
     case "daily":

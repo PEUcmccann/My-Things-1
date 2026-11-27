@@ -1,4 +1,4 @@
-import { addDays, daysBetween, startOfWeek, weekday } from "./dates";
+import { addDays, addMonths, daysBetween, startOfWeek, weekday } from "./dates";
 import type { LocalDate } from "./types";
 
 /**
@@ -51,15 +51,18 @@ export function checkPattern(p: RepeatPattern): void {
   for (const d of byMonthDay) if (!isValidMonthDay(d)) throw new Error(`No day of the month ${d}`);
 }
 
-/** Writes a pattern as an RRULE value, e.g. "FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,TH;WKST=MO". */
-export function formatRrule(p: RepeatPattern): string {
+/**
+ * Writes a pattern as an RRULE value, e.g. "FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,TH;WKST=MO".
+ * A gap (a rule after completion) has no weeks to start, so it leaves out WKST.
+ */
+export function formatRrule(p: RepeatPattern, { gap = false }: { gap?: boolean } = {}): string {
   checkPattern(p);
   const parts = [`FREQ=${p.freq.toUpperCase()}`, `INTERVAL=${p.interval}`];
   const byDay = weekdayCodes.filter((d) => p.byDay?.includes(d));
   if (byDay.length) parts.push(`BYDAY=${byDay.join(",")}`);
   const byMonthDay = [...new Set(p.byMonthDay ?? [])].sort((a, b) => a - b);
   if (byMonthDay.length) parts.push(`BYMONTHDAY=${byMonthDay.join(",")}`);
-  parts.push("WKST=MO");
+  if (!gap) parts.push("WKST=MO");
   return parts.join(";");
 }
 
@@ -166,6 +169,23 @@ export function* repeatDates(
       gap = 0;
     } else gap++;
     date = addDays(date, 1);
+  }
+}
+
+/**
+ * The date one gap (INTERVAL × FREQ) after `date`, for a rule after completion. A
+ * month or year gap from a day the target month lacks lands on its last day.
+ */
+export function afterGap(p: RepeatPattern, date: LocalDate): LocalDate {
+  switch (p.freq) {
+    case "daily":
+      return addDays(date, p.interval);
+    case "weekly":
+      return addDays(date, 7 * p.interval);
+    case "monthly":
+      return addMonths(date, p.interval);
+    case "yearly":
+      return addMonths(date, 12 * p.interval);
   }
 }
 

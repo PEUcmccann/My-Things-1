@@ -16,6 +16,19 @@ export function addDays(date: LocalDate, days: number): LocalDate {
   return format(next);
 }
 
+/**
+ * The same day `months` months after `date`. A day the target month lacks becomes
+ * its last day: 1 month after 31 January is 28 (or 29) February.
+ */
+export function addMonths(date: LocalDate, months: number): LocalDate {
+  const [y, m, d] = date.split("-").map(Number);
+  const total = y * 12 + (m - 1) + months;
+  const year = Math.floor(total / 12);
+  const month = (total % 12) + 1;
+  const length = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(Math.min(d, length)).padStart(2, "0")}`;
+}
+
 /** Whole days from `from` to `to`. */
 export function daysBetween(from: LocalDate, to: LocalDate): number {
   return Math.round((parse(to).getTime() - parse(from).getTime()) / 86_400_000);

@@ -104,9 +104,11 @@ export interface ToDo extends RecordMeta, Ordered {
 
 /**
  * How a Repeat rule works out its next date. "onSchedule" follows fixed dates;
- * "afterCompletion" (a gap after the previous one is done) comes later.
+ * "afterCompletion" leaves a gap (FREQ and INTERVAL) after the day the previous
+ * occurrence was finished.
  */
-export type RepeatMode = "onSchedule";
+export const repeatModes = ["onSchedule", "afterCompletion"] as const;
+export type RepeatMode = (typeof repeatModes)[number];
 
 /** A To-do's Repeat rule, kept in iCalendar form. */
 export interface RepeatRule {

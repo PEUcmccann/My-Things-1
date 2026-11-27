@@ -141,7 +141,11 @@ export function ToDoScreen({ id }: { id: string }) {
           <FieldRow
             label="Repeat"
             icon={repeat ? "repeat" : undefined}
-            value={repeat && toDo.repeat ? repeatText(repeat, toDo.repeat.start) : "None"}
+            value={
+              repeat && toDo.repeat
+                ? repeatText(repeat, toDo.repeat.start, toDo.repeat.mode)
+                : "None"
+            }
             onPress={() => setPicker("repeat")}
             testID="todo-repeat"
           />
@@ -298,8 +302,9 @@ export function ToDoScreen({ id }: { id: string }) {
       <RepeatPicker
         visible={picker === "repeat"}
         current={repeat}
+        currentMode={toDo.repeat?.mode ?? "onSchedule"}
         from={repeatFrom}
-        onChoose={(pattern) => app.setRepeat(id, pattern)}
+        onChoose={(pattern, mode) => app.setRepeat(id, pattern, mode)}
         onClose={() => setPicker(null)}
       />
       <TimeSlotPicker

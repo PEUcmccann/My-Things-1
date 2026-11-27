@@ -6,21 +6,25 @@ import {
   weekdayCodes,
   type Frequency,
   type LocalDate,
+  type RepeatMode,
   type RepeatPattern,
   type WeekdayCode,
 } from "../../core";
 import { dateParts, ordinal, repeatText, weekdayNames } from "../format";
 import { useTheme } from "../theme";
 import { Button } from "./Button";
+import { Segmented } from "./Segmented";
 import { Sheet } from "./Sheet";
 
 interface Props {
   visible: boolean;
   /** The current rule, or null if the To-do doesn't repeat yet. */
   current: RepeatPattern | null;
+  /** The current rule's mode; on schedule for a new rule. */
+  currentMode: RepeatMode;
   /** The date a new rule's defaults (weekday, day of the month) come from. */
   from: LocalDate;
-  onChoose: (pattern: RepeatPattern | null) => void;
+  onChoose: (pattern: RepeatPattern | null, mode: RepeatMode) => void;
   onClose: () => void;
 }
 
@@ -38,16 +42,25 @@ const unitNames: Record<Frequency, [string, string]> = {
   yearly: ["year", "years"],
 };
 
+const modeOptions: { value: RepeatMode; title: string }[] = [
+  { value: "onSchedule", title: "On schedule" },
+  { value: "afterCompletion", title: "After completion" },
+];
+
 const monthDays = Array.from({ length: 31 }, (_, i) => i + 1);
 
-/** Sets a Repeat rule on schedule: how often, every N, and on which days. */
+/**
+ * Sets a Repeat rule: on schedule (how often, every N, and on which days) or after
+ * completion (a gap of N days, weeks, months or years).
+ */
 export function RepeatPicker(props: Props) {
   if (!props.visible) return null;
   return <RepeatSheet {...props} />;
 }
 
-function RepeatSheet({ current, from, onChoose, onClose }: Props) {
+function RepeatSheet({ current, currentMode, from, onChoose, onClose }: Props) {
   const theme = useTheme();
+  const [mode, setMode] = useState<RepeatMode>(currentMode);
   const [freq, setFreq] = useState<Frequency>(current?.freq ?? "daily");
   const [interval, setEvery] = useState(current?.interval ?? 1);
   const [byDay, setByDay] = useState<WeekdayCode[]>(
@@ -56,14 +69,17 @@ function RepeatSheet({ current, from, onChoose, onClose }: Props) {
   const [monthDay, setMonthDay] = useState(current?.byMonthDay?.[0] ?? dateParts(from).d);
 
   const pattern: RepeatPattern =
-    freq === "weekly"
-      ? { freq, interval, byDay }
-      : freq === "monthly"
-        ? { freq, interval, byMonthDay: [monthDay] }
-        : { freq, interval };
-  const valid = freq !== "weekly" || byDay.length > 0;
+    mode === "afterCompletion"
+      ? { freq, interval }
+      : freq === "weekly"
+        ? { freq, interval, byDay }
+        : freq === "monthly"
+          ? { freq, interval, byMonthDay: [monthDay] }
+          : { freq, interval };
+  const onSchedule = mode === "onSchedule";
+  const valid = !onSchedule || freq !== "weekly" || byDay.length > 0;
   const choose = (next: RepeatPattern | null) => {
-    onChoose(next);
+    onChoose(next, mode);
     onClose();
   };
   const toggleDay = (code: WeekdayCode) =>
@@ -91,6 +107,9 @@ function RepeatSheet({ current, from, onChoose, onClose }: Props) {
     <Sheet visible onClose={onClose} testID="repeat-picker">
       <ScrollView>
         <Text style={[styles.heading, { color: theme.text }]}>Repeat</Text>
+        <View style={styles.mode}>
+          <Segmented options={modeOptions} value={mode} onChange={setMode} testID="repeat-mode" />
+        </View>
         <View style={styles.row}>
           {(Object.keys(frequencyNames) as Frequency[]).map((f) =>
             chip(frequencyNames[f], freq === f, () => setFreq(f), `repeat-freq-${f}`, true),
@@ -117,7 +136,7 @@ function RepeatSheet({ current, from, onChoose, onClose }: Props) {
           />
           <Text style={{ color: theme.text }}>{unitNames[freq][interval === 1 ? 0 : 1]}</Text>
         </View>
-        {freq === "weekly" ? (
+        {onSchedule && freq === "weekly" ? (
           <View style={styles.row}>
             {weekdayCodes.map((code) =>
               chip(
@@ -129,7 +148,7 @@ function RepeatSheet({ current, from, onChoose, onClose }: Props) {
             )}
           </View>
         ) : null}
-        {freq === "monthly" ? (
+        {onSchedule && freq === "monthly" ? (
           <>
             <View style={styles.row}>
               {monthDays.map((d) =>
@@ -151,14 +170,19 @@ function RepeatSheet({ current, from, onChoose, onClose }: Props) {
             ) : null}
           </>
         ) : null}
-        {freq === "yearly" ? (
+        {onSchedule && freq === "yearly" ? (
           <Text style={[styles.hint, { color: theme.muted }]}>
             On the same day and month as the Start date.
           </Text>
         ) : null}
         <Text style={[styles.summary, { color: theme.text }]} testID="repeat-summary">
-          {valid ? repeatText(pattern, from) : "Choose at least one day."}
+          {valid ? repeatText(pattern, from, mode) : "Choose at least one day."}
         </Text>
+        {onSchedule ? null : (
+          <Text style={[styles.hint, styles.after, { color: theme.muted }]}>
+            The next one starts this long after the day you complete or cancel this one.
+          </Text>
+        )}
         <View style={styles.footer}>
           {current ? (
             <Button
@@ -185,6 +209,8 @@ function RepeatSheet({ current, from, onChoose, onClose }: Props) {
 
 const styles = StyleSheet.create({
   heading: { fontSize: 18, fontWeight: "600", marginBottom: 12 },
+  mode: { marginBottom: 12 },
+  after: { marginTop: 8 },
   row: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 12 },
   interval: { alignItems: "center", gap: 10 },
   count: { fontSize: 18, fontWeight: "600", minWidth: 24, textAlign: "center" },

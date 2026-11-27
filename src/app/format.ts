@@ -1,4 +1,32 @@
-import { addDays, daysBetween, type LocalDate, type ToDo } from "../core";
+import {
+  addDays,
+  daysBetween,
+  type Energy,
+  type LocalDate,
+  type Priority,
+  type ToDo,
+} from "../core";
+
+/** Names for each Priority, as the pickers show them. */
+export const priorityNames: Record<Priority, string> = {
+  none: "None",
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+};
+
+/** The badge for a set Priority: ! low, !! medium, !!! high. */
+export const priorityMarks: Record<Exclude<Priority, "none">, string> = {
+  low: "!",
+  medium: "!!",
+  high: "!!!",
+};
+
+/** What a row and the detail show for a set Energy. */
+export const energyNames: Record<Energy, string> = {
+  high: "⚡ High energy",
+  low: "Low energy",
+};
 
 const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];

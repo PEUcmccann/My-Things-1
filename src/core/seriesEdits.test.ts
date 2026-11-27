@@ -299,6 +299,23 @@ describe("changing the Repeat rule", () => {
   });
 });
 
+describe("Upcoming's projected entries", () => {
+  const projected = () =>
+    app
+      .upcoming()
+      .flatMap((g) => g.entries)
+      .filter((e) => e.kind === "projected")
+      .map((e) => (e.kind === "projected" ? `${e.toDo.title} ${e.date}` : ""));
+
+  it('show later occurrences as the series is, without "this one" changes', () => {
+    const id = repeatingToDo();
+    app.editOccurrence(id, "thisOne", () => app.editToDo(id, { title: "Water the ferns" }));
+    expect(projected()[0]).toBe("Water plants 2026-11-27");
+    app.editOccurrence(id, "allFuture", () => app.editToDo(id, { title: "Water the cacti" }));
+    expect(projected()[0]).toBe("Water the cacti 2026-11-27");
+  });
+});
+
 describe("which edits ask", () => {
   it("only the current occurrence of a repeating To-do asks", () => {
     const id = repeatingToDo();

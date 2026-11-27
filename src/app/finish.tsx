@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
-import { MenuSheet } from "./components/MenuSheet";
+import { RemainingChoice } from "./components/RemainingChoice";
 import { haptics } from "./haptics";
 import { useMyThings } from "./state";
 
@@ -39,23 +39,12 @@ export function FinishProvider({ children }: { children: ReactNode }) {
   return (
     <Context.Provider value={finish}>
       {children}
-      <MenuSheet
+      <RemainingChoice
         visible={asking !== null}
         title={asking?.outcome === "completed" ? "Complete To-do" : "Cancel To-do"}
         message={asking ? `It still has ${app.openSubToDoCount(asking.id)} open Sub-to-do(s).` : ""}
+        onChoose={apply}
         onClose={() => setAsking(null)}
-        options={[
-          {
-            title: "Complete all remaining",
-            onPress: () => apply("complete"),
-            testID: "remaining-complete",
-          },
-          {
-            title: "Cancel all remaining",
-            onPress: () => apply("cancel"),
-            testID: "remaining-cancel",
-          },
-        ]}
       />
     </Context.Provider>
   );

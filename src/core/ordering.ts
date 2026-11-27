@@ -130,7 +130,7 @@ export function orderingActions(ctx: Context, q: Queries) {
   }
 
   function placeIn<T extends RecordMeta & Ordered>(
-    collection: "areas" | "projects" | "headings",
+    collection: "areas" | "projects",
     siblings: T[],
     id: string,
     beforeId: string | null,
@@ -142,7 +142,7 @@ export function orderingActions(ctx: Context, q: Queries) {
       others,
       at,
       (s) => s.position ?? 0,
-      // All three collections are Ordered, so any of them takes a position.
+      // Both collections are Ordered, so either takes a position.
       (items) => items.forEach((s, i) => ctx.update(collection as "areas", s.id, { position: i })),
     );
     ctx.update(collection as "areas", id, { position });
@@ -212,16 +212,6 @@ export function orderingActions(ctx: Context, q: Queries) {
         .filter((p) => p.areaId === areaId && !p.deletedAt)
         .sort(byPosition);
       placeIn("projects", siblings, id, beforeId);
-    },
-
-    /** Reorders a Heading within its Project. */
-    placeHeading(id: string, beforeId: string | null): void {
-      const heading = ctx.require("headings", id);
-      const siblings = store
-        .all("headings")
-        .filter((h) => h.projectId === heading.projectId)
-        .sort(byPosition);
-      placeIn("headings", siblings, id, beforeId);
     },
   };
 }

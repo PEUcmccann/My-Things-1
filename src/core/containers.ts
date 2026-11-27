@@ -51,16 +51,25 @@ export function containerActions(ctx: Context) {
     },
 
     /**
-     * Deletes an Area. Its Projects are kept with no Area and the To-dos filed
-     * directly in it go back to the Inbox.
+     * Deletes an Area. By default its Projects are kept with no Area and the
+     * To-dos filed directly in it go back to the Inbox; with `contents: "trash"`
+     * they go to the Trash instead (and come back to the Inbox or no Area).
      */
-    deleteArea(id: string): void {
+    deleteArea(id: string, opts: { contents?: "keep" | "trash" } = {}): void {
       ctx.require("areas", id);
+      const now = ctx.now();
+      const trash = opts.contents === "trash";
       for (const p of store.all("projects")) {
-        if (p.areaId === id) ctx.update("projects", p.id, { areaId: null });
+        if (p.areaId !== id) continue;
+        ctx.update("projects", p.id, {
+          areaId: null,
+          ...(trash && !p.deletedAt ? { deletedAt: now } : {}),
+        });
       }
       for (const t of store.all("toDos")) {
-        if (t.areaId === id) ctx.update("toDos", t.id, { areaId: null });
+        if (t.areaId !== id) continue;
+        const own = trash && !t.deletedAt && !t.parentId;
+        ctx.update("toDos", t.id, { areaId: null, ...(own ? { deletedAt: now } : {}) });
       }
       store.remove("areas", id);
     },

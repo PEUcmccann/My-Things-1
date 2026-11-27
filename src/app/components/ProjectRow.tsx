@@ -1,9 +1,9 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { Project } from "../../core";
-import { formatDate } from "../format";
 import { useNavigation } from "../navigation";
 import { useMyThings } from "../state";
 import { useTheme } from "../theme";
+import { DateBadges } from "./DateBadges";
 import { ProgressPie } from "./ProgressPie";
 import { TagChips } from "./TagChips";
 
@@ -13,8 +13,6 @@ export function ProjectRow({ project }: { project: Project }) {
   const theme = useTheme();
   const nav = useNavigation();
   const progress = app.projectProgress(project.id);
-  const today = app.currentDate();
-  const flag = app.deadlineFlag(project.deadline);
   const finished = project.outcome !== "active";
   return (
     <Pressable
@@ -34,27 +32,7 @@ export function ProjectRow({ project }: { project: Project }) {
           {project.title}
         </Text>
         <TagChips tags={app.tagsOf({ kind: "project", id: project.id })} />
-        {project.deadline || (project.startDate && project.startDate > today) ? (
-          <View style={styles.badges}>
-            {project.startDate && project.startDate > today ? (
-              <Text style={[styles.badge, { color: theme.muted }]}>
-                {formatDate(project.startDate, today)}
-              </Text>
-            ) : null}
-            {project.deadline ? (
-              <Text
-                style={[
-                  styles.badge,
-                  {
-                    color: flag === "overdue" ? theme.danger : flag ? theme.warning : theme.muted,
-                  },
-                ]}
-              >
-                {flag ? "⚑ " : ""}Deadline {formatDate(project.deadline, today)}
-              </Text>
-            ) : null}
-          </View>
-        ) : null}
+        <DateBadges item={project} />
       </View>
       {finished ? (
         <Text style={[styles.badge, { color: theme.muted }]}>
@@ -78,6 +56,5 @@ const styles = StyleSheet.create({
   body: { flex: 1 },
   title: { fontSize: 16, fontWeight: "600" },
   struck: { textDecorationLine: "line-through" },
-  badges: { flexDirection: "row", gap: 10, marginTop: 3 },
   badge: { fontSize: 12 },
 });

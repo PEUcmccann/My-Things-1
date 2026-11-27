@@ -186,12 +186,4 @@ describe("sidebar order", () => {
     expect(app.sidebar().areas[0].projects.map((p) => p.title)).toEqual(["P1"]);
     expect(app.sidebar().projects.map((p) => p.title)).toEqual(["P2"]);
   });
-
-  it("reorders Headings in a Project", () => {
-    const project = app.createProject({ title: "Move house" });
-    const h1 = app.createHeading(project, "First");
-    app.createHeading(project, "Second");
-    app.placeHeading(h1, null);
-    expect(app.headings(project).map((h) => h.title)).toEqual(["Second", "First"]);
-  });
 });

@@ -95,17 +95,25 @@ export function AreaScreen({ id }: { id: string }) {
       <MenuSheet
         visible={dialog === "delete"}
         title={`Delete “${area.title}”?`}
-        message="Its Projects are kept with no Area, and its To-dos go back to the Inbox."
+        message="What should happen to its Projects and To-dos?"
         onClose={close}
         options={[
           {
-            title: "Delete Area",
-            danger: true,
+            title: "Keep them (Projects with no Area, To-dos to the Inbox)",
             onPress: () => {
-              app.deleteArea(id);
+              app.deleteArea(id, { contents: "keep" });
               nav.back();
             },
             testID: "area-delete-confirm",
+          },
+          {
+            title: "Move them to the Trash too",
+            danger: true,
+            onPress: () => {
+              app.deleteArea(id, { contents: "trash" });
+              nav.back();
+            },
+            testID: "area-delete-trash",
           },
         ]}
       />

@@ -35,11 +35,7 @@ export function UpcomingScreen() {
     .upcoming()
     .map((g) => ({
       ...g,
-      entries: g.entries.filter((e) =>
-        e.kind === "toDo"
-          ? app.filterByTags([e], filter.selected).length > 0
-          : app.filterProjectsByTags([e.project], filter.selected).length > 0,
-      ),
+      entries: g.entries.filter((e) => app.entryHasTags(e, filter.selected)),
     }))
     .filter((g) => g.entries.length > 0);
   const today = app.currentDate();

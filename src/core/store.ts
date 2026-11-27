@@ -39,6 +39,22 @@ const collectionNames: CollectionName[] = [
   "tags",
 ];
 
+/** Defaults for fields that records saved by earlier versions may lack. */
+const recordDefaults: { [C in CollectionName]: Partial<Collections[C]> } = {
+  areas: { tagIds: [], position: 0 },
+  projects: {
+    tagIds: [],
+    notes: "",
+    position: 0,
+    finishedAt: null,
+    loggedAt: null,
+  },
+  headings: { position: 0, archivedAt: null },
+  toDos: { tagIds: [], notes: "", position: 0, todayPosition: null },
+  checklistItems: {},
+  tags: {},
+};
+
 export interface MemoryStore extends Store {
   snapshot(): Snapshot;
 }
@@ -50,8 +66,12 @@ export interface MemoryStore extends Store {
 export function memoryStore(initial?: Snapshot, onChange?: () => void): MemoryStore {
   const data = {} as { [C in CollectionName]: Map<string, Collections[C]> };
   for (const name of collectionNames) {
-    // Collections added after a snapshot was saved start empty.
-    const records = (initial?.records[name] ?? []) as Collections[typeof name][];
+    // Collections added after a snapshot was saved start empty, and fields added
+    // since then get their defaults.
+    const records = (initial?.records[name] ?? []).map((r) => ({
+      ...recordDefaults[name],
+      ...r,
+    })) as Collections[typeof name][];
     (data as Record<CollectionName, Map<string, unknown>>)[name] = new Map(
       records.map((r) => [r.id, r]),
     );

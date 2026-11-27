@@ -1,4 +1,4 @@
-import { addDays, daysBetween, type LocalDate } from "../core";
+import { addDays, daysBetween, type LocalDate, type ToDo } from "../core";
 
 const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -34,4 +34,15 @@ export function formatRange(start: LocalDate, days: number): string {
   const a = dateParts(start);
   const b = dateParts(addDays(start, days - 1));
   return `${a.d} ${monthName(a.m)} – ${b.d} ${monthName(b.m)}`;
+}
+
+/** What "When" shows for a To-do or Project. */
+export function whenText(
+  toDo: Pick<ToDo, "someday" | "startDate"> & { evening?: boolean },
+  today: string,
+): string {
+  if (toDo.someday) return "📦 Someday";
+  if (!toDo.startDate) return "No Start date";
+  if (toDo.startDate <= today) return toDo.evening ? "🌙 This Evening" : "☀️ Today";
+  return formatDate(toDo.startDate, today);
 }

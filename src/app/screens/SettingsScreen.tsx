@@ -8,11 +8,15 @@ import { useMyThings } from "../state";
 import { accents, useTheme } from "../theme";
 
 const logbookOptions: { value: LogbookMode; title: string; detail: string }[] = [
-  { value: "immediately", title: "Immediately", detail: "As soon as you finish an item" },
+  {
+    value: "immediately",
+    title: "Immediately",
+    detail: "As soon as a To-do or Project is Completed or Cancelled",
+  },
   {
     value: "endOfDay",
     title: "At the end of the day",
-    detail: "Finished items stay until tomorrow",
+    detail: "Completed and Cancelled To-dos stay in their list until tomorrow",
   },
   { value: "manually", title: "Manually", detail: "When you choose to move them" },
 ];
@@ -34,7 +38,7 @@ export function SettingsScreen() {
       {mode === "manually" ? (
         <View style={styles.after}>
           <Button
-            title="Move finished items to the Logbook"
+            title="Move Completed and Cancelled to the Logbook"
             onPress={() => app.moveFinishedToLogbook()}
             disabled={!app.hasFinishedOutsideLogbook()}
             testID="settings-log-finished"

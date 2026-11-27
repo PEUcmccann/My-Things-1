@@ -138,3 +138,19 @@ describe("moving To-dos", () => {
     expect(app.getToDo(id).areaId).toBeNull();
   });
 });
+
+describe("deleting an Area with its contents", () => {
+  it("can move its Projects and To-dos to the Trash", () => {
+    const area = app.createArea("Home");
+    const project = app.createProject({ title: "Paint the hall", areaId: area });
+    const id = app.createToDo({ title: "Fix the tap", areaId: area });
+    app.deleteArea(area, { contents: "trash" });
+    expect(app.sidebar().projects).toEqual([]);
+    expect(inboxTitles()).toEqual([]);
+    expect(app.trash().length).toBe(2);
+    app.restore(id);
+    app.restoreProject(project);
+    expect(inboxTitles()).toEqual(["Fix the tap"]);
+    expect(app.getProject(project).areaId).toBeNull();
+  });
+});

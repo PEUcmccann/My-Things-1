@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import type { Project, Remaining } from "../../core";
+import type { Remaining } from "../../core";
 import { Button } from "../components/Button";
 import { Empty } from "../components/Empty";
 import { FieldRow } from "../components/FieldRow";
@@ -9,13 +9,14 @@ import { NotesField } from "../components/NotesField";
 import { MenuSheet } from "../components/MenuSheet";
 import { ProgressPie } from "../components/ProgressPie";
 import { PromptSheet } from "../components/PromptSheet";
+import { RemainingChoice } from "../components/RemainingChoice";
 import { Screen } from "../components/Screen";
 import { TagChips } from "../components/TagChips";
 import { useTagFilter } from "../components/TagFilter";
 import { TagPicker } from "../components/TagPicker";
 import { ToDoList } from "../components/ToDoList";
 import { DatePicker, WhenPicker } from "../components/WhenPicker";
-import { formatDate } from "../format";
+import { formatDate, whenText } from "../format";
 import { toDoTargetDrop, useDrag, useDropTarget } from "../drag";
 import { useNavigation } from "../navigation";
 import { useMyThings } from "../state";
@@ -32,13 +33,6 @@ type Dialog =
   | "tags"
   | { finish: "completed" | "cancelled" }
   | null;
-
-function whenText(project: Project, today: string): string {
-  if (project.someday) return "📦 Someday";
-  if (!project.startDate) return "No Start date";
-  if (project.startDate <= today) return "☀️ Today";
-  return formatDate(project.startDate, today);
-}
 
 /** A Heading's title bar, which To-dos and Magic Plus can be dropped on. */
 function HeadingTarget({ id, children }: { id: string; children: React.ReactNode }) {
@@ -220,23 +214,12 @@ export function ProjectScreen({ id }: { id: string }) {
           },
         ]}
       />
-      <MenuSheet
+      <RemainingChoice
         visible={finishing !== null}
         title={finishing === "completed" ? "Complete Project" : "Cancel Project"}
         message={`This Project still has ${app.openToDoCount(id)} open To-do(s).`}
+        onChoose={(remaining) => finish(finishing!, remaining)}
         onClose={close}
-        options={[
-          {
-            title: "Complete all remaining",
-            onPress: () => finish(finishing!, "complete"),
-            testID: "remaining-complete",
-          },
-          {
-            title: "Cancel all remaining",
-            onPress: () => finish(finishing!, "cancel"),
-            testID: "remaining-cancel",
-          },
-        ]}
       />
       <MenuSheet
         visible={dialog === "moveArea"}

@@ -73,3 +73,22 @@ describe("saving", () => {
     expect(changes).toBeGreaterThan(0);
   });
 });
+
+describe("loading older saved data", () => {
+  it("fills in fields added since the data was saved", () => {
+    const old = memoryStore();
+    const clock = fixedClock(NOW);
+    createMyThings({ clock, store: old }).createToDo({ title: "Buy milk" });
+    const snapshot = old.snapshot();
+    // Data saved before notes, Tags and ordering existed.
+    const legacy = snapshot.records.toDos.map(
+      ({ notes: _n, tagIds: _t, position: _p, ...rest }) => rest,
+    );
+    const loaded = createMyThings({
+      clock,
+      store: memoryStore({ ...snapshot, records: { ...snapshot.records, toDos: legacy as never } }),
+    });
+    const [entry] = loaded.inbox();
+    expect(entry.toDo).toMatchObject({ notes: "", tagIds: [], position: 0 });
+  });
+});

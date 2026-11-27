@@ -6,8 +6,8 @@ import { useSelection } from "../selection";
 import { useMyThings } from "../state";
 import { useTheme } from "../theme";
 import { Button } from "./Button";
-import { MenuSheet } from "./MenuSheet";
 import { MovePicker } from "./MovePicker";
+import { RemainingChoice } from "./RemainingChoice";
 import { TagPicker } from "./TagPicker";
 import { DatePicker, WhenPicker } from "./WhenPicker";
 
@@ -146,23 +146,12 @@ export function SelectionBar() {
           close();
         }}
       />
-      <MenuSheet
+      <RemainingChoice
         visible={finishing !== null}
         title={finishing === "complete" ? "Complete selected" : "Cancel selected"}
         message="Some of them have open Sub-to-dos that are not selected."
+        onChoose={(remaining) => finish(finishing!, remaining)}
         onClose={close}
-        options={[
-          {
-            title: "Complete all remaining",
-            onPress: () => finish(finishing!, "complete"),
-            testID: "remaining-complete",
-          },
-          {
-            title: "Cancel all remaining",
-            onPress: () => finish(finishing!, "cancel"),
-            testID: "remaining-cancel",
-          },
-        ]}
       />
     </View>
   );

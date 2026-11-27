@@ -12,17 +12,10 @@ import { TagPicker } from "../components/TagPicker";
 import { ToDoList } from "../components/ToDoList";
 import { DatePicker, WhenPicker } from "../components/WhenPicker";
 import { useFinishToDo } from "../finish";
-import { formatDate } from "../format";
+import { formatDate, whenText } from "../format";
 import { useNavigation } from "../navigation";
 import { useMyThings } from "../state";
 import { useTheme } from "../theme";
-
-export function whenText(toDo: Pick<ToDo, "someday" | "startDate" | "evening">, today: string) {
-  if (toDo.someday) return "📦 Someday";
-  if (!toDo.startDate) return "No Start date";
-  if (toDo.startDate <= today) return toDo.evening ? "🌙 This Evening" : "☀️ Today";
-  return formatDate(toDo.startDate, today);
-}
 
 /** Where the To-do is filed, for the Move row. */
 function placeText(app: MyThings, toDo: ToDo): string {

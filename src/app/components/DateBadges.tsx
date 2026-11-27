@@ -4,8 +4,11 @@ import { formatDate } from "../format";
 import { useMyThings } from "../state";
 import { useTheme } from "../theme";
 
+/** The dates of a To-do or Project. Projects have no This Evening. */
+type Dated = Pick<ToDo, "startDate" | "deadline"> & { evening?: boolean };
+
 /** The Start date and Deadline shown on a list row. */
-export function DateBadges({ toDo, showStart = true }: { toDo: ToDo; showStart?: boolean }) {
+export function DateBadges({ item: toDo, showStart = true }: { item: Dated; showStart?: boolean }) {
   const app = useMyThings();
   const theme = useTheme();
   const today = app.currentDate();

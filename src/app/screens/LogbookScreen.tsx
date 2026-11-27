@@ -19,11 +19,7 @@ export function LogbookScreen() {
     .logbook()
     .map((d) => ({
       ...d,
-      entries: d.entries.filter((e) =>
-        e.kind === "toDo"
-          ? app.filterByTags([e], filter.selected).length > 0
-          : app.filterProjectsByTags([e.project], filter.selected).length > 0,
-      ),
+      entries: d.entries.filter((e) => app.entryHasTags(e, filter.selected)),
     }))
     .filter((d) => d.entries.length > 0);
   const today = app.currentDate();
@@ -38,14 +34,16 @@ export function LogbookScreen() {
         showMove ? (
           <Button
             small
-            title="Log finished"
+            title="Move to Logbook"
             onPress={() => app.moveFinishedToLogbook()}
             testID="log-finished"
           />
         ) : null
       }
     >
-      {days.length === 0 ? <Empty text="Completed and Cancelled items appear here" /> : null}
+      {days.length === 0 ? (
+        <Empty text="Completed and Cancelled To-dos and Projects appear here" />
+      ) : null}
       {days.map((day) => (
         <View key={day.date} testID={`logbook-day-${day.date}`}>
           <Text style={[styles.day, { color: theme.muted }]}>{formatDate(day.date, today)}</Text>

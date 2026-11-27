@@ -121,7 +121,7 @@ export function TagsScreen() {
       <MenuSheet
         visible={dialog?.kind === "delete"}
         title={`Delete “${current?.title ?? ""}”?`}
-        message="It will be removed from every item. Tags nested under it move up a level."
+        message="It will be removed from every To-do, Project and Area. Tags nested under it move up a level."
         onClose={close}
         options={
           current

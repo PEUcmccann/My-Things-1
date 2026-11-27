@@ -163,6 +163,17 @@ export function tagActions(ctx: Context) {
       return entries.filter((e) => hasAny(effectiveToDoTags(e.toDo), wanted));
     },
 
+    /**
+     * Whether a list entry (a To-do or a Project) has any of the Tags, by the same
+     * rules as filterByTags and filterProjectsByTags. No Tags matches everything.
+     */
+    entryHasTags(entry: { toDo: ToDo } | { project: Project }, tagIds: string[]): boolean {
+      if (tagIds.length === 0) return true;
+      const wanted = withDescendants(tagIds);
+      const tags = "toDo" in entry ? effectiveToDoTags(entry.toDo) : projectTags(entry.project);
+      return hasAny(tags, wanted);
+    },
+
     /** Keeps the Projects that have any of the Tags, themselves or through their Area. */
     filterProjectsByTags(projects: Project[], tagIds: string[]): Project[] {
       if (tagIds.length === 0) return projects;

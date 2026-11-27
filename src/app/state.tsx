@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { randomUUID } from "expo-crypto";
 import { LayoutAnimation, Platform } from "react-native";
 import { createMyThings, systemClock, type MyThings } from "../core";
 import { loadDeviceStore } from "./storage";
@@ -30,7 +31,7 @@ export function MyThingsProvider({
       setVersion((v) => v + 1);
     }).then((store) => {
       if (cancelled) return;
-      const created = createMyThings({ clock: systemClock, store });
+      const created = createMyThings({ clock: systemClock, store, newEditId: randomUUID });
       created.purgeExpiredTrash();
       setApp(created);
     });

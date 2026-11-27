@@ -236,3 +236,22 @@ export interface Settings {
   logbookMode: LogbookMode;
   accentColour: AccentColour;
 }
+
+/**
+ * One change to one field of one record, as devices send it to each other (ADR 0002).
+ * Per field, the most recent edit wins.
+ */
+export interface Edit {
+  /** A v4 UUID, unique per edit, so sending one twice is harmless. */
+  id: string;
+  /** "toDos", "projects", …, or "settings". */
+  collection: string;
+  recordId: string;
+  /** A record field, or "_removed" (true: removed for good; false: brought back by a restore). */
+  field: string;
+  /** The whole field value, as JSON. */
+  value: unknown;
+  /** The device clock when the edit was made. */
+  editedAt: Moment;
+  deviceId: string;
+}

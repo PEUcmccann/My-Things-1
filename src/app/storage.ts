@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { memoryStore, type MemoryStore, type Snapshot } from "../core";
+import { memoryStore, type MemoryStore, type Snapshot, type SnapshotV1 } from "../core";
 
 const KEY = "mythings:store";
 
@@ -8,10 +8,11 @@ const KEY = "mythings:store";
  * localStorage on the web) and saves it again after every change.
  */
 export async function loadDeviceStore(onChange: () => void): Promise<MemoryStore> {
-  let snapshot: Snapshot | undefined;
+  // Version 1 was saved before sync (Milestones 1 and 2); the core migrates it.
+  let snapshot: Snapshot | SnapshotV1 | undefined;
   try {
     const raw = await AsyncStorage.getItem(KEY);
-    if (raw) snapshot = JSON.parse(raw) as Snapshot;
+    if (raw) snapshot = JSON.parse(raw) as Snapshot | SnapshotV1;
   } catch (error) {
     console.warn("Could not load saved data", error);
   }

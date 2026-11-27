@@ -16,6 +16,7 @@ import type { Store } from "./store";
 import { quickEntryActions } from "./quickEntry";
 import { quickFindQueries } from "./quickFind";
 import { smartListActions } from "./smartLists";
+import { randomUuid, syncedStore } from "./sync";
 import { tagActions } from "./tags";
 import { toDoActions, type NewToDo } from "./toDos";
 import { trashActions } from "./trash";
@@ -30,6 +31,7 @@ export type { FinishOptions, LogbookDay, LogbookEntry, Remaining } from "./logbo
 export type { Destination, NewToDo, When } from "./toDos";
 export type { ByDay, Frequency, RepeatPattern, WeekdayCode } from "./rrule";
 export type { SeriesScope } from "./seriesEdits";
+export type { SyncActions } from "./sync";
 export type { TrashEntry } from "./trash";
 export type { DropTarget, ListRef } from "./ordering";
 export type {
@@ -46,6 +48,11 @@ export interface Options {
   clock: Clock;
   store: Store;
   newId?: () => string;
+  /**
+   * Makes v4 UUIDs for sync edits and the device id. The app passes expo-crypto's
+   * `randomUUID`; tests pass a counter.
+   */
+  newEditId?: () => string;
   /** The user who owns new records. There is one user for now; sharing comes later. */
   owner?: string;
 }
@@ -57,7 +64,15 @@ function randomId(): string {
 export const localOwner = "me";
 
 /** The core of MyThings: every rule, as actions and list queries. */
-export function createMyThings({ clock, store, newId = randomId, owner = localOwner }: Options) {
+export function createMyThings({
+  clock,
+  store: saved,
+  newId = randomId,
+  newEditId = randomUuid,
+  owner = localOwner,
+}: Options) {
+  // Every write records per-field edits for sync, so no action needs to know about it.
+  const { store, sync } = syncedStore(saved, clock, newEditId);
   const ctx = createContext({ clock, store, newId, owner });
   const base = {
     ...toDoActions(ctx),
@@ -72,6 +87,7 @@ export function createMyThings({ clock, store, newId = randomId, owner = localOw
     ...logbookActions(ctx),
     ...listQueries(ctx),
     ...trashActions(ctx),
+    ...sync,
 
     /** Whether to flag a Deadline as close or passed, as of today. */
     deadlineFlag(deadline: LocalDate | null): DeadlineFlag {

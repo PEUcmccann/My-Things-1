@@ -27,13 +27,24 @@ describe("date words in quick entry", () => {
 
   it.each([
     ["today", TODAY],
-    ["tom", TOMORROW],
     ["Tomorrow", TOMORROW],
     ["TODAY", TODAY],
   ])("sets the Start date from %s", (phrase, date) => {
     const toDo = enter(`Buy milk ${phrase}`);
     expect(toDo.startDate).toBe(date);
     expect(toDo.title).toBe("Buy milk");
+  });
+
+  it("keeps 'Tom' as part of the title, with no date", () => {
+    const toDo = enter("Call Tom");
+    expect(toDo.title).toBe("Call Tom");
+    expect(toDo.startDate).toBeNull();
+  });
+
+  it("still dates 'Call tomorrow' for tomorrow", () => {
+    const toDo = enter("Call tomorrow");
+    expect(toDo.title).toBe("Call");
+    expect(toDo.startDate).toBe(TOMORROW);
   });
 });
 

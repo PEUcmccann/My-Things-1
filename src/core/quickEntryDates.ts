@@ -10,7 +10,7 @@ const onDate = (date: LocalDate): QuickEntryValue => ({
 });
 
 /** Words for days relative to today. */
-const relativeDays: Record<string, number> = { today: 0, tomorrow: 1, tom: 1 };
+const relativeDays: Record<string, number> = { today: 0, tomorrow: 1 };
 
 /** Weekday names in full and as three letters, plus "tues" and "thurs"; 0 = Monday. */
 const weekdayNames: Record<string, number> = {};

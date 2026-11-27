@@ -118,7 +118,7 @@ export function containerActions(ctx: Context) {
 
     /** How much of a Project is Completed. Cancelled To-dos count on neither side. */
     projectProgress(id: string): Progress {
-      const toDos = store.all("toDos").filter((t) => t.projectId === id && !t.deletedAt);
+      const toDos = store.all("toDos").filter((t) => t.projectId === id && !ctx.isTrashed(t));
       return {
         completed: toDos.filter((t) => t.outcome === "completed").length,
         total: toDos.filter((t) => t.outcome !== "cancelled").length,

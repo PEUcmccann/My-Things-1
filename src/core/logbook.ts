@@ -61,14 +61,16 @@ export function logbookActions(ctx: Context) {
     hasFinishedOutsideLogbook(): boolean {
       return store
         .all("toDos")
-        .some((item) => !item.deletedAt && item.outcome !== "active" && !ctx.isInLogbook(item));
+        .some(
+          (item) => !ctx.isTrashed(item) && item.outcome !== "active" && !ctx.isInLogbook(item),
+        );
     },
 
     /** The Logbook: finished To-dos grouped by the day they were finished, newest first. */
     logbook(): LogbookDay[] {
       const finished = store
         .all("toDos")
-        .filter((item) => !item.deletedAt && ctx.isInLogbook(item))
+        .filter((item) => !ctx.isTrashed(item) && ctx.isInLogbook(item))
         .sort((a, b) => (b.finishedAt ?? "").localeCompare(a.finishedAt ?? ""));
       const days: LogbookDay[] = [];
       for (const item of finished) {

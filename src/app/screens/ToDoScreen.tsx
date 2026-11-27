@@ -6,6 +6,7 @@ import { MovePicker } from "../components/MovePicker";
 import { DatePicker, WhenPicker } from "../components/WhenPicker";
 import { Screen } from "../components/Screen";
 import { formatDate } from "../format";
+import { useNavigation } from "../navigation";
 import { useMyThings } from "../state";
 import { useTheme } from "../theme";
 import type { MyThings, ToDo } from "../../core";
@@ -27,6 +28,7 @@ function placeText(app: MyThings, toDo: ToDo): string {
 export function ToDoScreen({ id }: { id: string }) {
   const app = useMyThings();
   const theme = useTheme();
+  const nav = useNavigation();
   const toDo = app.findToDo(id);
   const [title, setTitle] = useState(toDo?.title ?? "");
   const [picker, setPicker] = useState<"when" | "deadline" | "move" | null>(null);
@@ -39,6 +41,7 @@ export function ToDoScreen({ id }: { id: string }) {
     );
   }
   const today = app.currentDate();
+  const trashed = app.isInTrash(id);
   const saveTitle = () => app.editToDo(id, { title });
 
   const row = (label: string, value: string, onPress: () => void, testID: string) => (
@@ -84,6 +87,23 @@ export function ToDoScreen({ id }: { id: string }) {
           : row("Move", placeText(app, toDo), () => setPicker("move"), "todo-move")}
       </View>
       <View style={styles.actions}>
+        {trashed ? (
+          <Button
+            title="Restore from Trash"
+            onPress={() => app.restore(id)}
+            testID="todo-restore"
+          />
+        ) : (
+          <Button
+            title="Delete"
+            kind="danger"
+            onPress={() => {
+              app.delete(id);
+              nav.back();
+            }}
+            testID="todo-delete"
+          />
+        )}
         {toDo.outcome === "active" ? (
           <>
             <Button title="Complete" onPress={() => app.complete(id)} testID="todo-complete" />

@@ -8,6 +8,7 @@ import { ProjectScreen } from "./screens/ProjectScreen";
 import { LogbookScreen } from "./screens/LogbookScreen";
 import { SettingsScreen } from "./screens/SettingsScreen";
 import { ToDoScreen } from "./screens/ToDoScreen";
+import { TrashScreen } from "./screens/TrashScreen";
 import { Sidebar } from "./screens/Sidebar";
 import { MyThingsProvider } from "./state";
 import { useTheme } from "./theme";
@@ -22,6 +23,7 @@ function CurrentScreen() {
       return <Sidebar />;
     case "list":
       if (route.list === "logbook") return <LogbookScreen />;
+      if (route.list === "trash") return <TrashScreen />;
       return <ListScreen key={route.list} list={route.list} />;
     case "settings":
       return <SettingsScreen />;

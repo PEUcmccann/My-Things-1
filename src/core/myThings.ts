@@ -6,6 +6,7 @@ import { listQueries } from "./lists";
 import { logbookActions } from "./logbook";
 import type { Store } from "./store";
 import { toDoActions } from "./toDos";
+import { trashActions } from "./trash";
 import type { LocalDate } from "./types";
 
 export type { ToDoEntry } from "./context";
@@ -13,6 +14,7 @@ export type { AreaContents, NewProject, Progress, SidebarArea, SidebarTree } fro
 export type { TodayList } from "./lists";
 export type { LogbookDay, LogbookEntry } from "./logbook";
 export type { Destination, NewToDo, When } from "./toDos";
+export type { TrashEntry } from "./trash";
 
 export interface Options {
   clock: Clock;
@@ -36,11 +38,7 @@ export function createMyThings({ clock, store, newId = randomId, owner = localOw
     ...containerActions(ctx),
     ...logbookActions(ctx),
     ...listQueries(ctx),
-
-    /** Moves a To-do to the Trash. */
-    delete(id: string): void {
-      ctx.update("toDos", id, { deletedAt: ctx.now() });
-    },
+    ...trashActions(ctx),
 
     /** Whether to flag a Deadline as close or passed, as of today. */
     deadlineFlag(deadline: LocalDate | null): DeadlineFlag {

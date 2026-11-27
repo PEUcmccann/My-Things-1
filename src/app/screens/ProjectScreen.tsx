@@ -8,6 +8,7 @@ import { ProgressPie } from "../components/ProgressPie";
 import { PromptSheet } from "../components/PromptSheet";
 import { Screen } from "../components/Screen";
 import { ToDoList } from "../components/ToDoList";
+import { useNavigation } from "../navigation";
 import { useMyThings } from "../state";
 import { useTheme } from "../theme";
 
@@ -16,6 +17,7 @@ type Dialog = "menu" | "rename" | "moveArea" | null;
 export function ProjectScreen({ id }: { id: string }) {
   const app = useMyThings();
   const theme = useTheme();
+  const nav = useNavigation();
   const [dialog, setDialog] = useState<Dialog>(null);
   const project = app.findProject(id);
   if (!project) {
@@ -57,6 +59,15 @@ export function ProjectScreen({ id }: { id: string }) {
         options={[
           { title: "Rename", onPress: () => setDialog("rename"), testID: "project-rename" },
           { title: "Move to Area…", onPress: () => setDialog("moveArea"), testID: "project-move" },
+          {
+            title: "Delete Project",
+            danger: true,
+            onPress: () => {
+              app.deleteProject(id);
+              nav.back();
+            },
+            testID: "project-delete",
+          },
         ]}
       />
       <MenuSheet

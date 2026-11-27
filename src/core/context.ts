@@ -27,6 +27,8 @@ export interface Context {
     changes: Partial<Collections[C]>,
   ): void;
   isInLogbook(item: Finishable): boolean;
+  /** Whether a To-do is in the Trash, itself or with its parent To-do or Project. */
+  isTrashed(item: ToDo): boolean;
   /** Whether a To-do shows in ordinary lists: not in the Trash and not yet in the Logbook. */
   isOpenInLists(item: ToDo): boolean;
   entry(item: ToDo): ToDoEntry;
@@ -79,8 +81,13 @@ export function createContext(opts: {
       if (mode === "manually" || !item.finishedAt) return false;
       return toLocalDate(new Date(item.finishedAt)) < clock.today();
     },
+    isTrashed(item) {
+      if (item.deletedAt) return true;
+      if (ctx.find("toDos", item.parentId)?.deletedAt) return true;
+      return Boolean(ctx.find("projects", item.projectId)?.deletedAt);
+    },
     isOpenInLists(item) {
-      return !item.deletedAt && !ctx.isInLogbook(item);
+      return !ctx.isTrashed(item) && !ctx.isInLogbook(item);
     },
     entry(item) {
       const parent = ctx.find("toDos", item.parentId);

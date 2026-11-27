@@ -23,12 +23,29 @@ export function MyThingsProvider({
   useEffect(() => {
     let cancelled = false;
     loadDeviceStore(() => setVersion((v) => v + 1)).then((store) => {
-      if (!cancelled) setApp(createMyThings({ clock: systemClock, store }));
+      if (cancelled) return;
+      const created = createMyThings({ clock: systemClock, store });
+      created.purgeExpiredTrash();
+      setApp(created);
     });
     return () => {
       cancelled = true;
     };
   }, []);
+
+  // When the date changes while the app is open, lists move on a day and old
+  // Trash items expire.
+  useEffect(() => {
+    if (!app) return;
+    let day = app.currentDate();
+    const timer = setInterval(() => {
+      if (app.currentDate() === day) return;
+      day = app.currentDate();
+      app.purgeExpiredTrash();
+      setVersion((v) => v + 1);
+    }, 30_000);
+    return () => clearInterval(timer);
+  }, [app]);
 
   if (!app) return <>{loading}</>;
   return <Context.Provider value={{ app, version }}>{children}</Context.Provider>;

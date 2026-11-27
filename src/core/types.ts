@@ -58,6 +58,15 @@ export interface Heading extends RecordMeta, Ordered {
   archivedAt: Moment | null;
 }
 
+/**
+ * A start and end time on a To-do's Start date, in whole minutes from 00:00. The end
+ * is after the start and no later than 24:00 (1440), so a slot never crosses midnight.
+ */
+export interface TimeSlot {
+  start: number;
+  end: number;
+}
+
 export interface ToDo extends RecordMeta, Ordered {
   /** Order within Today, which has its own order. Falls back to `position`. */
   todayPosition: number | null;
@@ -74,6 +83,8 @@ export interface ToDo extends RecordMeta, Ordered {
   evening: boolean;
   someday: boolean;
   deadline: LocalDate | null;
+  /** At most one, on the Start date; there is none without a Start date. */
+  timeSlot: TimeSlot | null;
   areaId: string | null;
   projectId: string | null;
   headingId: string | null;

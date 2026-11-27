@@ -48,7 +48,9 @@ export function NavigationProvider({ root, children }: { root: Route; children: 
   const [stack, setStack] = useState<Route[]>([root]);
   const push = useCallback((route: Route) => setStack((s) => [...s, route]), []);
   const reset = useCallback(
-    (route: Route) => setStack(route.name === root.name ? [root] : [root, route]),
+    // Compared whole, since Today and the Inbox (the wide root) are both "list" routes.
+    (route: Route) =>
+      setStack(JSON.stringify(route) === JSON.stringify(root) ? [root] : [root, route]),
     [root],
   );
   const back = useCallback(() => setStack((s) => (s.length > 1 ? s.slice(0, -1) : s)), []);

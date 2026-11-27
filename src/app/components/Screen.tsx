@@ -22,6 +22,8 @@ interface Props {
   selectable?: boolean;
   /** Offers Quick Find: a search button, and pulling the list down. */
   searchable?: boolean;
+  /** False when the content scrolls itself, as the day timeline does. */
+  scrolls?: boolean;
   testID?: string;
 }
 
@@ -31,6 +33,7 @@ const pullToFind = 70;
 export function Screen(props: Props) {
   const { title, icon, iconColor, children, actions, header, testID, selectable, searchable } =
     props;
+  const scrolls = props.scrolls ?? true;
   const theme = useTheme();
   const nav = useNavigation();
   const drag = useDrag();
@@ -74,19 +77,23 @@ export function Screen(props: Props) {
         </View>
         {header}
       </View>
-      <ScrollView
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
-        scrollEnabled={!drag.dragging}
-        alwaysBounceVertical={searchable}
-        onScrollEndDrag={(e) => {
-          if (searchable && e.nativeEvent.contentOffset.y < -pullToFind) {
-            nav.push({ name: "quickFind" });
-          }
-        }}
-      >
-        {children}
-      </ScrollView>
+      {!scrolls ? (
+        <View style={styles.fixed}>{children}</View>
+      ) : (
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          scrollEnabled={!drag.dragging}
+          alwaysBounceVertical={searchable}
+          onScrollEndDrag={(e) => {
+            if (searchable && e.nativeEvent.contentOffset.y < -pullToFind) {
+              nav.push({ name: "quickFind" });
+            }
+          }}
+        >
+          {children}
+        </ScrollView>
+      )}
     </View>
   );
 }
@@ -113,4 +120,5 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, fontWeight: "700", flex: 1 },
   actions: { flexDirection: "row", gap: 8, alignItems: "center" },
   content: { paddingHorizontal: 12, paddingBottom: 120 },
+  fixed: { flex: 1 },
 });

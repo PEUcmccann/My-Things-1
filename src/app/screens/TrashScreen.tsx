@@ -15,6 +15,7 @@ export function TrashScreen() {
   return (
     <Screen
       title="Trash"
+      icon="trash"
       testID="screen-trash"
       actions={
         entries.length > 0 ? (

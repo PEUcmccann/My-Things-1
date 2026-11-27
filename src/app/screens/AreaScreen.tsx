@@ -39,6 +39,8 @@ export function AreaScreen({ id }: { id: string }) {
     <View style={styles.fill}>
       <Screen
         title={area.title}
+        icon="area"
+        iconColor={theme.muted}
         testID="screen-area"
         selectable
         searchable
@@ -48,7 +50,15 @@ export function AreaScreen({ id }: { id: string }) {
             {filter.bar}
           </>
         }
-        actions={<Button small title="•••" onPress={() => setDialog("menu")} testID="area-menu" />}
+        actions={
+          <Button
+            small
+            icon="more"
+            accessibilityLabel="Area actions"
+            onPress={() => setDialog("menu")}
+            testID="area-menu"
+          />
+        }
       >
         {projects.length === 0 && toDos.length === 0 ? <Empty text="Nothing here yet" /> : null}
         {projects.map((p) => {

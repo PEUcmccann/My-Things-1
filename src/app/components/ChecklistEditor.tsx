@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useMyThings } from "../state";
 import { useTheme } from "../theme";
 import { Checkbox } from "./Checkbox";
+import { Icon } from "./Icon";
 
 function ItemTitle(props: { title: string; ticked: boolean; onRename: (t: string) => void }) {
   const theme = useTheme();
@@ -73,7 +74,9 @@ export function ChecklistEditor({ toDoId }: { toDoId: string }) {
         </View>
       ))}
       <View style={styles.item}>
-        <Text style={[styles.plus, { color: theme.accent }]}>＋</Text>
+        <View style={styles.plus}>
+          <Icon name="add" size={16} color={theme.accent} />
+        </View>
         <TextInput
           value={draft}
           onChangeText={setDraft}
@@ -95,5 +98,5 @@ const styles = StyleSheet.create({
   title: { flex: 1, minWidth: 0, fontSize: 15, paddingVertical: 4 },
   struck: { textDecorationLine: "line-through" },
   small: { paddingHorizontal: 4 },
-  plus: { width: 22, textAlign: "center", fontSize: 16 },
+  plus: { width: 22, alignItems: "center" },
 });

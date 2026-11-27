@@ -27,6 +27,7 @@ export function LogbookScreen() {
   return (
     <Screen
       title="Logbook"
+      icon="logbook"
       testID="screen-logbook"
       searchable
       header={filter.bar}

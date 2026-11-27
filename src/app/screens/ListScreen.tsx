@@ -2,10 +2,11 @@ import { StyleSheet, Text, View } from "react-native";
 import { formatEstimate, type ListRef, type NewToDo, type ToDoEntry } from "../../core";
 import { useDrag } from "../drag";
 import { type BuiltInList } from "../navigation";
-import { listTitles } from "../lists";
+import { listIcons, listTitles } from "../lists";
 import { useMyThings } from "../state";
 import { useTheme } from "../theme";
 import { Empty } from "../components/Empty";
+import { Icon, type IconName } from "../components/Icon";
 import { MagicPlus } from "../components/MagicPlus";
 import { Screen } from "../components/Screen";
 import { ProjectRow } from "../components/ProjectRow";
@@ -15,6 +16,7 @@ import { ToDoList } from "../components/ToDoList";
 interface Section {
   key: string;
   title?: string;
+  icon?: IconName;
   entries: ToDoEntry[];
   list: ListRef;
 }
@@ -30,7 +32,8 @@ function useSections(list: BuiltInList): Section[] {
         { key: "main", entries: main, list: { kind: "today", part: "main" } },
         {
           key: "evening",
-          title: "🌙 This Evening",
+          title: "This Evening",
+          icon: "evening",
           entries: thisEvening,
           list: { kind: "today", part: "thisEvening" },
         },
@@ -69,6 +72,7 @@ export function ListScreen({ list }: { list: BuiltInList }) {
     <View style={styles.fill}>
       <Screen
         title={listTitles[list]}
+        icon={listIcons[list]}
         testID={`screen-${list}`}
         selectable
         searchable
@@ -92,7 +96,10 @@ export function ListScreen({ list }: { list: BuiltInList }) {
           section.entries.length === 0 && !drag.dragging ? null : (
             <View key={section.key} testID={`section-${section.key}`}>
               {section.title ? (
-                <Text style={[styles.sectionTitle, { color: theme.muted }]}>{section.title}</Text>
+                <View style={styles.sectionHeader}>
+                  {section.icon ? <Icon name={section.icon} size={14} color={theme.muted} /> : null}
+                  <Text style={[styles.sectionTitle, { color: theme.muted }]}>{section.title}</Text>
+                </View>
               ) : null}
               <ToDoList entries={section.entries} list={section.list} />
             </View>
@@ -107,5 +114,13 @@ export function ListScreen({ list }: { list: BuiltInList }) {
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   estimate: { fontSize: 14, marginTop: 2 },
-  sectionTitle: { fontSize: 14, fontWeight: "600", marginTop: 16, marginBottom: 6, marginLeft: 8 },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 16,
+    marginBottom: 6,
+    marginLeft: 8,
+  },
+  sectionTitle: { fontSize: 14, fontWeight: "600" },
 });

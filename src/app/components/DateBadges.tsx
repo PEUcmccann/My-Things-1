@@ -1,8 +1,9 @@
 import { StyleSheet, Text, View } from "react-native";
 import { formatEstimate, type ToDo } from "../../core";
-import { energyNames, formatDate, priorityMarks, timeSlotText } from "../format";
+import { energyIcons, energyNames, formatDate, priorityMarks, timeSlotText } from "../format";
 import { useMyThings } from "../state";
 import { useTheme, type Theme } from "../theme";
+import { Icon } from "./Icon";
 
 /** The dates of a To-do or Project. Projects have no This Evening or Time slot. */
 type Dated = Pick<ToDo, "startDate" | "deadline"> & {
@@ -46,6 +47,7 @@ export function DateBadges({
   const estimate = planning?.estimate ?? null;
   const hasDates = toDo.deadline || slot || (showStart && (startsLater || toDo.evening));
   if (!hasDates && !priority && !energy && !estimate) return null;
+  const deadlineColour = flag === "overdue" ? theme.danger : flag ? theme.warning : theme.muted;
   return (
     <View style={styles.row}>
       {priority ? (
@@ -58,7 +60,10 @@ export function DateBadges({
         </Text>
       ) : null}
       {showStart && toDo.evening ? (
-        <Text style={[styles.badge, { color: theme.muted }]}>🌙 This Evening</Text>
+        <View style={styles.badgeRow}>
+          <Icon name="evening" size={12} color={theme.muted} />
+          <Text style={[styles.badge, { color: theme.muted }]}>This Evening</Text>
+        </View>
       ) : null}
       {slot ? (
         <Text
@@ -77,21 +82,22 @@ export function DateBadges({
         </Text>
       ) : null}
       {toDo.deadline ? (
-        <Text
-          style={[
-            styles.badge,
-            { color: flag === "overdue" ? theme.danger : flag ? theme.warning : theme.muted },
-          ]}
-          testID={flag ? `deadline-flag-${flag}` : undefined}
-        >
-          {flag ? "⚑ " : ""}
-          Deadline {formatDate(toDo.deadline, today)}
-        </Text>
+        <View style={styles.badgeRow} testID={flag ? `deadline-flag-${flag}` : undefined}>
+          {flag ? <Icon name="deadline" size={12} color={deadlineColour} /> : null}
+          <Text style={[styles.badge, { color: deadlineColour }]}>
+            Deadline {formatDate(toDo.deadline, today)}
+          </Text>
+        </View>
       ) : null}
       {energy ? (
-        <Text style={[styles.badge, { color: theme.muted }]} testID="badge-energy">
-          {energyNames[energy]}
-        </Text>
+        <View style={styles.badgeRow}>
+          {energyIcons[energy] ? (
+            <Icon name={energyIcons[energy]} size={12} color={theme.muted} />
+          ) : null}
+          <Text style={[styles.badge, { color: theme.muted }]} testID="badge-energy">
+            {energyNames[energy]}
+          </Text>
+        </View>
       ) : null}
       {estimate ? (
         <Text style={[styles.badge, { color: theme.muted }]} testID="badge-estimate">
@@ -104,6 +110,7 @@ export function DateBadges({
 
 const styles = StyleSheet.create({
   row: { flexDirection: "row", gap: 10, marginTop: 3, flexWrap: "wrap" },
+  badgeRow: { flexDirection: "row", alignItems: "center", gap: 3 },
   badge: { fontSize: 12 },
   priority: { fontWeight: "700" },
   slotToday: { fontWeight: "600" },

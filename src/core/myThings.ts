@@ -1,179 +1,95 @@
-import { toLocalDate, type Clock } from "./clock";
+import type { Clock } from "./clock";
+import { bulkActions } from "./bulk";
+import { checklistActions } from "./checklist";
+import { containerActions } from "./containers";
+import { createContext } from "./context";
+import { addDays, deadlineFlag, type DeadlineFlag } from "./dates";
+import { headingActions } from "./headings";
+import { listQueries } from "./lists";
+import { logbookActions } from "./logbook";
+import { orderingActions, type ListRef } from "./ordering";
 import type { Store } from "./store";
-import type { LocalDate, LogbookMode, Project, ToDo } from "./types";
+import { quickFindQueries } from "./quickFind";
+import { tagActions } from "./tags";
+import { toDoActions, type NewToDo } from "./toDos";
+import { trashActions } from "./trash";
+import { accentColours, type AccentColour, type LocalDate } from "./types";
+
+export type { ChecklistProgress } from "./checklist";
+export type { ToDoEntry } from "./context";
+export type { AreaContents, NewProject, Progress, SidebarArea, SidebarTree } from "./containers";
+export type { ProjectList, TodayList, UpcomingEntry, UpcomingGroup, UpcomingReason } from "./lists";
+export type { FinishOptions, LogbookDay, LogbookEntry, Remaining } from "./logbook";
+export type { Destination, NewToDo, When } from "./toDos";
+export type { TrashEntry } from "./trash";
+export type { DropTarget, ListRef } from "./ordering";
+export type { MatchField, QuickFindOptions, QuickFindResults, ToDoMatch } from "./quickFind";
+export type { Taggable, TaggedItems, TagNode } from "./tags";
+export type { HeadingSection, ProjectContents } from "./headings";
 
 export interface Options {
   clock: Clock;
   store: Store;
   newId?: () => string;
-}
-
-export interface NewToDo {
-  title: string;
-  areaId?: string;
-  projectId?: string;
-  parentId?: string;
-}
-
-export interface NewProject {
-  title: string;
-  areaId?: string;
-}
-
-export interface TodayEntry {
-  toDo: ToDo;
-  /** Title of the parent To-do, when this is a Sub-to-do. */
-  parentTitle: string | null;
-}
-
-export interface TodayList {
-  main: TodayEntry[];
-  thisEvening: TodayEntry[];
+  /** The user who owns new records. There is one user for now; sharing comes later. */
+  owner?: string;
 }
 
 function randomId(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
-export function createMyThings({ clock, store, newId = randomId }: Options) {
-  function toDo(id: string): ToDo {
-    const found = store.get("toDos", id);
-    if (!found) throw new Error(`No To-do with id ${id}`);
-    return found;
-  }
+export const localOwner = "me";
 
-  function project(id: string): Project {
-    const found = store.get("projects", id);
-    if (!found) throw new Error(`No Project with id ${id}`);
-    return found;
-  }
+/** The core of MyThings: every rule, as actions and list queries. */
+export function createMyThings({ clock, store, newId = randomId, owner = localOwner }: Options) {
+  const ctx = createContext({ clock, store, newId, owner });
+  const base = {
+    ...toDoActions(ctx),
+    ...containerActions(ctx),
+    ...headingActions(ctx),
+    ...checklistActions(ctx),
+    ...tagActions(ctx),
+    ...quickFindQueries(ctx),
+    ...logbookActions(ctx),
+    ...listQueries(ctx),
+    ...trashActions(ctx),
 
-  function updateToDo(id: string, changes: Partial<ToDo>): void {
-    store.put("toDos", { ...toDo(id), ...changes });
-  }
+    /** Whether to flag a Deadline as close or passed, as of today. */
+    deadlineFlag(deadline: LocalDate | null): DeadlineFlag {
+      return deadlineFlag(deadline, clock.today());
+    },
 
-  function finish(id: string, outcome: "completed" | "cancelled"): void {
-    const now = clock.now().toISOString();
-    const logNow = store.settings().logbookMode === "immediately";
-    updateToDo(id, { outcome, finishedAt: now, loggedAt: logNow ? now : null });
-  }
+    /** Tomorrow's date, for the "When" picker. */
+    tomorrow(): LocalDate {
+      return addDays(clock.today(), 1);
+    },
 
-  /** Whether a finished To-do has reached the Logbook, given the Logbook mode. */
-  function isInLogbook(item: ToDo): boolean {
-    if (item.outcome === "active") return false;
-    if (item.loggedAt) return true;
-    if (store.settings().logbookMode !== "endOfDay" || !item.finishedAt) return false;
-    return toLocalDate(new Date(item.finishedAt)) < clock.today();
-  }
+    accentColour(): AccentColour {
+      return store.settings().accentColour;
+    },
 
-  function isDue(item: ToDo, today: LocalDate): boolean {
-    const started = item.startDate !== null && item.startDate <= today;
-    const deadlineReached = item.deadline !== null && item.deadline <= today;
-    return started || deadlineReached;
-  }
+    setAccentColour(colour: AccentColour): void {
+      if (!accentColours.includes(colour)) throw new Error(`Unknown accent colour ${colour}`);
+      store.saveSettings({ ...store.settings(), accentColour: colour });
+    },
 
+    /** Today's date, from the core's clock. */
+    currentDate(): LocalDate {
+      return clock.today();
+    },
+  };
+  const ordering = orderingActions(ctx, base);
   return {
-    createToDo(input: NewToDo): string {
-      const parent = input.parentId ? toDo(input.parentId) : null;
-      const id = newId();
-      store.put("toDos", {
-        id,
-        title: input.title,
-        outcome: "active",
-        finishedAt: null,
-        loggedAt: null,
-        startDate: null,
-        evening: false,
-        someday: false,
-        deadline: null,
-        // A Sub-to-do always sits where its parent sits.
-        areaId: parent ? parent.areaId : (input.areaId ?? null),
-        projectId: parent ? parent.projectId : (input.projectId ?? null),
-        headingId: parent ? parent.headingId : null,
-        parentId: parent ? parent.id : null,
-        deletedAt: null,
-      });
+    ...base,
+    ...ordering,
+    ...bulkActions(ctx, base),
+
+    /** Creates a To-do, optionally at a spot in a list (before a To-do, or at the end). */
+    createToDo(input: NewToDo & { at?: { list: ListRef; beforeId: string | null } }): string {
+      const id = base.createToDo(input);
+      if (input.at) ordering.placeToDo(input.at.list, id, input.at.beforeId);
       return id;
-    },
-
-    createProject(input: NewProject): string {
-      const id = newId();
-      store.put("projects", {
-        id,
-        title: input.title,
-        areaId: input.areaId ?? null,
-        outcome: "active",
-        startDate: null,
-        someday: false,
-        deadline: null,
-        deletedAt: null,
-      });
-      return id;
-    },
-
-    /** Sets the Start date ("When"). `evening` puts it in This Evening. */
-    setStartDate(id: string, date: LocalDate | null, opts: { evening?: boolean } = {}): void {
-      updateToDo(id, {
-        startDate: date,
-        evening: date !== null && (opts.evening ?? false),
-        someday: false,
-      });
-    },
-
-    /** Choosing "Today" just sets the Start date to today. */
-    moveToToday(id: string, opts: { evening?: boolean } = {}): void {
-      this.setStartDate(id, clock.today(), opts);
-    },
-
-    moveToSomeday(id: string): void {
-      updateToDo(id, { startDate: null, evening: false, someday: true });
-    },
-
-    moveProjectToSomeday(id: string): void {
-      store.put("projects", { ...project(id), startDate: null, someday: true });
-    },
-
-    setDeadline(id: string, date: LocalDate | null): void {
-      updateToDo(id, { deadline: date });
-    },
-
-    complete(id: string): void {
-      finish(id, "completed");
-    },
-
-    cancel(id: string): void {
-      finish(id, "cancelled");
-    },
-
-    /** Moves a To-do to the Trash. */
-    delete(id: string): void {
-      updateToDo(id, { deletedAt: clock.now().toISOString() });
-    },
-
-    setLogbookMode(mode: LogbookMode): void {
-      store.saveSettings({ ...store.settings(), logbookMode: mode });
-    },
-
-    getToDo(id: string): ToDo {
-      return toDo(id);
-    },
-
-    /**
-     * Today: every active To-do whose Start date or Deadline is today or earlier.
-     * To-dos finished today stay visible until they move to the Logbook.
-     */
-    today(): TodayList {
-      const today = clock.today();
-      const list: TodayList = { main: [], thisEvening: [] };
-      for (const item of store.all("toDos")) {
-        if (item.deletedAt) continue;
-        if (isInLogbook(item)) continue;
-        if (!isDue(item, today)) continue;
-        const parent = item.parentId ? store.get("toDos", item.parentId) : undefined;
-        const entry: TodayEntry = { toDo: item, parentTitle: parent?.title ?? null };
-        (item.evening ? list.thisEvening : list.main).push(entry);
-      }
-      return list;
     },
   };
 }

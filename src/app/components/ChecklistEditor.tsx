@@ -22,15 +22,25 @@ function ItemTitle(props: { title: string; ticked: boolean; onRename: (t: string
   );
 }
 
+interface Props {
+  toDoId: string;
+  /**
+   * Makes an edit that changes the Checklist's contents (adding, renaming or
+   * deleting), as a repeating To-do asks first. Ticking and reordering don't go
+   * through it.
+   */
+  edit?: (change: () => void) => void;
+}
+
 /** A To-do's Checklist: add, tick, rename, reorder and delete its items. */
-export function ChecklistEditor({ toDoId }: { toDoId: string }) {
+export function ChecklistEditor({ toDoId, edit = (change) => change() }: Props) {
   const app = useMyThings();
   const theme = useTheme();
   const [draft, setDraft] = useState("");
   const items = app.checklist(toDoId);
   const add = () => {
     if (!draft.trim()) return;
-    app.addChecklistItem(toDoId, draft);
+    edit(() => app.addChecklistItem(toDoId, draft));
     setDraft("");
   };
   const small = (label: string, onPress: () => void, testID: string, disabled = false) => (
@@ -61,7 +71,9 @@ export function ChecklistEditor({ toDoId }: { toDoId: string }) {
           <ItemTitle
             title={item.title}
             ticked={item.ticked}
-            onRename={(t) => app.renameChecklistItem(item.id, t)}
+            onRename={(t) => {
+              if (t.trim() !== item.title) edit(() => app.renameChecklistItem(item.id, t));
+            }}
           />
           {small("↑", () => app.moveChecklistItem(item.id, i - 1), `checklist-up-${i}`, i === 0)}
           {small(
@@ -70,7 +82,7 @@ export function ChecklistEditor({ toDoId }: { toDoId: string }) {
             `checklist-down-${i}`,
             i === items.length - 1,
           )}
-          {small("✕", () => app.deleteChecklistItem(item.id), `checklist-delete-${i}`)}
+          {small("✕", () => edit(() => app.deleteChecklistItem(item.id)), `checklist-delete-${i}`)}
         </View>
       ))}
       <View style={styles.item}>

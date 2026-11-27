@@ -13,6 +13,8 @@ export interface NewToDo {
   title: string;
   areaId?: string;
   projectId?: string;
+  /** Files the new To-do under this Heading, in the Heading's Project. */
+  headingId?: string;
   parentId?: string;
   /** "When" for the new To-do, as when it is created from Today or Someday. */
   when?: When;
@@ -20,7 +22,10 @@ export interface NewToDo {
 
 /** Where a To-do can be filed. */
 export type Destination =
-  { kind: "inbox" } | { kind: "area"; id: string } | { kind: "project"; id: string };
+  | { kind: "inbox" }
+  | { kind: "area"; id: string }
+  | { kind: "project"; id: string }
+  | { kind: "heading"; id: string };
 
 /** The Start date fields for a choice of "When". */
 export function whenFields(
@@ -59,7 +64,8 @@ export function toDoActions(ctx: Context) {
   return {
     createToDo(input: NewToDo): string {
       const parent = input.parentId ? ctx.require("toDos", input.parentId) : null;
-      const projectId = parent ? parent.projectId : (input.projectId ?? null);
+      const heading = input.headingId ? ctx.require("headings", input.headingId) : null;
+      const projectId = parent ? parent.projectId : (heading?.projectId ?? input.projectId ?? null);
       const meta = ctx.meta();
       store.put("toDos", {
         ...meta,
@@ -75,7 +81,7 @@ export function toDoActions(ctx: Context) {
         // its Area from the Project.
         areaId: parent ? parent.areaId : projectId ? null : (input.areaId ?? null),
         projectId,
-        headingId: parent ? parent.headingId : null,
+        headingId: parent ? parent.headingId : (heading?.id ?? null),
         parentId: parent ? parent.id : null,
         deletedAt: null,
       });
@@ -111,16 +117,19 @@ export function toDoActions(ctx: Context) {
     },
 
     /**
-     * Files a To-do in the Inbox, an Area or a Project. Moving to the Inbox also
-     * clears "When", since a To-do with a Start date has already been organised.
+     * Files a To-do in the Inbox, an Area, a Project or under a Heading. Its
+     * Sub-to-dos move with it. Moving to the Inbox also clears "When", since a
+     * To-do with a Start date has already been organised.
      */
     moveToDo(id: string, to: Destination): void {
       const item = ctx.require("toDos", id);
       if (item.parentId) throw new Error("A Sub-to-do moves with its parent");
+      const heading = to.kind === "heading" ? ctx.require("headings", to.id) : null;
       const place: Pick<ToDo, "areaId" | "projectId" | "headingId"> = {
         areaId: to.kind === "area" ? ctx.require("areas", to.id).id : null,
-        projectId: to.kind === "project" ? ctx.require("projects", to.id).id : null,
-        headingId: null,
+        projectId:
+          to.kind === "project" ? ctx.require("projects", to.id).id : (heading?.projectId ?? null),
+        headingId: heading?.id ?? null,
       };
       const extra = to.kind === "inbox" ? whenFields({ kind: "none" }, clock.today()) : {};
       ctx.update("toDos", id, { ...place, ...extra });

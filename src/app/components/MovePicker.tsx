@@ -12,22 +12,30 @@ interface Props {
 export function MovePicker({ visible, onChoose, onClose }: Props) {
   const app = useMyThings();
   const tree = app.sidebar();
-  const projectOption = (id: string, title: string, depth: number): MenuOption => ({
-    title: `◔ ${title}`,
-    depth,
-    onPress: () => onChoose({ kind: "project", id }),
-    testID: `move-project-${id}`,
-  });
+  const projectOptions = (id: string, title: string, depth: number): MenuOption[] => [
+    {
+      title: `◔ ${title}`,
+      depth,
+      onPress: () => onChoose({ kind: "project", id }),
+      testID: `move-project-${id}`,
+    },
+    ...app.headings(id).map((h) => ({
+      title: `— ${h.title}`,
+      depth: depth + 1,
+      onPress: () => onChoose({ kind: "heading", id: h.id }),
+      testID: `move-heading-${h.id}`,
+    })),
+  ];
   const options: MenuOption[] = [
     { title: "📥 Inbox", onPress: () => onChoose({ kind: "inbox" }), testID: "move-inbox" },
-    ...tree.projects.map((p) => projectOption(p.id, p.title, 0)),
+    ...tree.projects.flatMap((p) => projectOptions(p.id, p.title, 0)),
     ...tree.areas.flatMap(({ area, projects }) => [
       {
         title: `▣ ${area.title}`,
         onPress: () => onChoose({ kind: "area", id: area.id }),
         testID: `move-area-${area.id}`,
       },
-      ...projects.map((p) => projectOption(p.id, p.title, 1)),
+      ...projects.flatMap((p) => projectOptions(p.id, p.title, 1)),
     ]),
   ];
   return (

@@ -35,6 +35,14 @@ export interface Project extends RecordMeta {
   deletedAt: Moment | null;
 }
 
+/** A named section of a Project. */
+export interface Heading extends RecordMeta {
+  projectId: string;
+  title: string;
+  /** Set once the Heading is archived: it and its To-dos leave the Project screen. */
+  archivedAt: Moment | null;
+}
+
 export interface ToDo extends RecordMeta {
   title: string;
   outcome: Outcome;

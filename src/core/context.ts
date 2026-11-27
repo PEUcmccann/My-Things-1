@@ -44,6 +44,7 @@ export interface Context {
 const names: Record<CollectionName, string> = {
   areas: "Area",
   projects: "Project",
+  headings: "Heading",
   toDos: "To-do",
 };
 

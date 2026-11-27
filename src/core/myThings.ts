@@ -2,6 +2,7 @@ import type { Clock } from "./clock";
 import { containerActions } from "./containers";
 import { createContext } from "./context";
 import { addDays, deadlineFlag, type DeadlineFlag } from "./dates";
+import { headingActions } from "./headings";
 import { listQueries } from "./lists";
 import { logbookActions } from "./logbook";
 import type { Store } from "./store";
@@ -15,6 +16,7 @@ export type { ProjectList, TodayList, UpcomingEntry, UpcomingGroup, UpcomingReas
 export type { FinishOptions, LogbookDay, LogbookEntry, Remaining } from "./logbook";
 export type { Destination, NewToDo, When } from "./toDos";
 export type { TrashEntry } from "./trash";
+export type { HeadingSection, ProjectContents } from "./headings";
 
 export interface Options {
   clock: Clock;
@@ -36,6 +38,7 @@ export function createMyThings({ clock, store, newId = randomId, owner = localOw
   return {
     ...toDoActions(ctx),
     ...containerActions(ctx),
+    ...headingActions(ctx),
     ...logbookActions(ctx),
     ...listQueries(ctx),
     ...trashActions(ctx),

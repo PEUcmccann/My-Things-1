@@ -70,6 +70,9 @@ export function logbookActions(ctx: Context) {
     /** Makes a Completed or Cancelled To-do active again, in its original place. */
     reopen(id: string): void {
       ctx.update("toDos", id, { outcome: "active", finishedAt: null, loggedAt: null });
+      // An open To-do brings its archived Heading back to the Project.
+      const heading = ctx.find("headings", ctx.require("toDos", id).headingId);
+      if (heading?.archivedAt) ctx.update("headings", heading.id, { archivedAt: null });
     },
 
     /** How many active To-dos a Project still has. */

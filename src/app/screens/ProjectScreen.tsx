@@ -18,6 +18,8 @@ import { useTheme } from "../theme";
 
 type Dialog =
   | "menu"
+  | "newHeading"
+  | { heading: string; action: "menu" | "rename" | "delete" | "add" }
   | "rename"
   | "moveArea"
   | "when"
@@ -48,7 +50,8 @@ export function ProjectScreen({ id }: { id: string }) {
   const today = app.currentDate();
   const progress = app.projectProgress(id);
   const share = progress.total ? progress.completed / progress.total : 0;
-  const entries = app.projectToDos(id);
+  const contents = app.projectContents(id);
+  const isEmpty = contents.toDos.length === 0 && contents.headings.length === 0;
   const close = () => setDialog(null);
   const finished = project.outcome !== "active";
 
@@ -60,7 +63,10 @@ export function ProjectScreen({ id }: { id: string }) {
     if (app.openToDoCount(id) > 0) setDialog({ finish: outcome });
     else finish(outcome);
   };
-  const finishing = dialog && typeof dialog === "object" ? dialog.finish : null;
+  const finishing =
+    dialog && typeof dialog === "object" && "finish" in dialog ? dialog.finish : null;
+  const headingDialog = dialog && typeof dialog === "object" && "heading" in dialog ? dialog : null;
+  const dialogHeading = headingDialog ? app.getHeading(headingDialog.heading) : null;
 
   return (
     <View style={styles.fill}>
@@ -106,8 +112,28 @@ export function ProjectScreen({ id }: { id: string }) {
             testID="project-deadline"
           />
         </View>
-        {entries.length === 0 ? <Empty text="No To-dos yet" /> : null}
-        <ToDoList entries={entries} />
+        {isEmpty ? <Empty text="No To-dos yet" /> : null}
+        <ToDoList entries={contents.toDos} />
+        {contents.headings.map(({ heading, toDos }) => (
+          <View key={heading.id} testID={`heading-${heading.id}`}>
+            <View style={[styles.heading, { borderColor: theme.accent }]}>
+              <Text style={[styles.headingTitle, { color: theme.accent }]}>{heading.title}</Text>
+              <Button
+                small
+                title="＋"
+                onPress={() => setDialog({ heading: heading.id, action: "add" })}
+                testID={`heading-add-${heading.id}`}
+              />
+              <Button
+                small
+                title="•••"
+                onPress={() => setDialog({ heading: heading.id, action: "menu" })}
+                testID={`heading-menu-${heading.id}`}
+              />
+            </View>
+            <ToDoList entries={toDos} />
+          </View>
+        ))}
       </Screen>
       <MagicPlus placement={{ projectId: id }} />
       <MenuSheet
@@ -129,6 +155,11 @@ export function ProjectScreen({ id }: { id: string }) {
                   testID: "project-cancel",
                 },
               ]),
+          {
+            title: "Add Heading",
+            onPress: () => setDialog("newHeading"),
+            testID: "project-add-heading",
+          },
           { title: "Rename", onPress: () => setDialog("rename"), testID: "project-rename" },
           { title: "Move to Area…", onPress: () => setDialog("moveArea"), testID: "project-move" },
           {
@@ -188,6 +219,85 @@ export function ProjectScreen({ id }: { id: string }) {
         onClose={close}
         testID="deadline-picker"
       />
+      {dialog === "newHeading" ? (
+        <PromptSheet
+          title="New Heading"
+          placeholder="Heading name"
+          confirmTitle="Add"
+          onSubmit={(t) => app.createHeading(id, t)}
+          onClose={close}
+        />
+      ) : null}
+      <MenuSheet
+        visible={headingDialog?.action === "menu"}
+        title={dialogHeading?.title}
+        onClose={close}
+        options={
+          dialogHeading
+            ? [
+                {
+                  title: "Rename",
+                  onPress: () => setDialog({ heading: dialogHeading.id, action: "rename" }),
+                  testID: "heading-rename",
+                },
+                {
+                  title: app.canArchiveHeading(dialogHeading.id)
+                    ? "Archive"
+                    : "Archive (finish its To-dos first)",
+                  disabled: !app.canArchiveHeading(dialogHeading.id),
+                  onPress: () => app.archiveHeading(dialogHeading.id),
+                  testID: "heading-archive",
+                },
+                {
+                  title: "Delete…",
+                  danger: true,
+                  onPress: () => setDialog({ heading: dialogHeading.id, action: "delete" }),
+                  testID: "heading-delete",
+                },
+              ]
+            : []
+        }
+      />
+      <MenuSheet
+        visible={headingDialog?.action === "delete"}
+        title={`Delete “${dialogHeading?.title ?? ""}”?`}
+        message="What should happen to the To-dos under it?"
+        onClose={close}
+        options={
+          dialogHeading
+            ? [
+                {
+                  title: "Keep them in the Project",
+                  onPress: () => app.deleteHeading(dialogHeading.id, { toDos: "keep" }),
+                  testID: "heading-delete-keep",
+                },
+                {
+                  title: "Move them to the Trash",
+                  danger: true,
+                  onPress: () => app.deleteHeading(dialogHeading.id, { toDos: "delete" }),
+                  testID: "heading-delete-trash",
+                },
+              ]
+            : []
+        }
+      />
+      {headingDialog?.action === "rename" && dialogHeading ? (
+        <PromptSheet
+          title="Rename Heading"
+          initial={dialogHeading.title}
+          onSubmit={(t) => app.renameHeading(dialogHeading.id, t)}
+          onClose={close}
+        />
+      ) : null}
+      {headingDialog?.action === "add" && dialogHeading ? (
+        <PromptSheet
+          title={`New To-do in ${dialogHeading.title}`}
+          placeholder="What do you need to do?"
+          confirmTitle="Add"
+          onSubmit={(t) => app.createToDo({ title: t, headingId: dialogHeading.id })}
+          onClose={close}
+        />
+      ) : null}
       {dialog === "rename" ? (
         <PromptSheet
           title="Rename Project"
@@ -204,6 +314,17 @@ const styles = StyleSheet.create({
   fill: { flex: 1 },
   progress: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 },
   fields: { gap: 8, marginBottom: 16 },
+  heading: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderBottomWidth: 1,
+    marginTop: 20,
+    marginBottom: 8,
+    paddingBottom: 4,
+    marginHorizontal: 4,
+  },
+  headingTitle: { flex: 1, fontSize: 16, fontWeight: "700" },
   banner: {
     flexDirection: "row",
     alignItems: "center",

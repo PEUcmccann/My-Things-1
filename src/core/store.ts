@@ -1,8 +1,9 @@
-import type { Area, Project, Settings, ToDo } from "./types";
+import type { Area, Heading, Project, Settings, ToDo } from "./types";
 
 export interface Collections {
   areas: Area;
   projects: Project;
+  headings: Heading;
   toDos: ToDo;
 }
 
@@ -27,7 +28,7 @@ export interface Snapshot {
 
 export const defaultSettings: Settings = { logbookMode: "endOfDay" };
 
-const collectionNames: CollectionName[] = ["areas", "projects", "toDos"];
+const collectionNames: CollectionName[] = ["areas", "projects", "headings", "toDos"];
 
 export interface MemoryStore extends Store {
   snapshot(): Snapshot;
@@ -40,6 +41,7 @@ export interface MemoryStore extends Store {
 export function memoryStore(initial?: Snapshot, onChange?: () => void): MemoryStore {
   const data = {} as { [C in CollectionName]: Map<string, Collections[C]> };
   for (const name of collectionNames) {
+    // Collections added after a snapshot was saved start empty.
     const records = (initial?.records[name] ?? []) as Collections[typeof name][];
     (data as Record<CollectionName, Map<string, unknown>>)[name] = new Map(
       records.map((r) => [r.id, r]),
@@ -63,14 +65,12 @@ export function memoryStore(initial?: Snapshot, onChange?: () => void): MemorySt
       settings = { ...next };
       changed();
     },
-    snapshot: () => ({
-      version: 1,
-      records: {
-        areas: [...data.areas.values()],
-        projects: [...data.projects.values()],
-        toDos: [...data.toDos.values()],
-      },
-      settings: { ...settings },
-    }),
+    snapshot: () => {
+      const records = {} as Snapshot["records"];
+      for (const name of collectionNames) {
+        (records as Record<CollectionName, unknown[]>)[name] = [...data[name].values()];
+      }
+      return { version: 1, records, settings: { ...settings } };
+    },
   };
 }

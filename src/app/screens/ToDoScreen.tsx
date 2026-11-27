@@ -20,7 +20,11 @@ function whenText(toDo: ToDo, today: string): string {
 
 /** Where the To-do is filed, for the Move row. */
 function placeText(app: MyThings, toDo: ToDo): string {
-  if (toDo.projectId) return `◔ ${app.findProject(toDo.projectId)?.title ?? "Project"}`;
+  if (toDo.projectId) {
+    const project = app.findProject(toDo.projectId)?.title ?? "Project";
+    const heading = toDo.headingId ? ` › ${app.getHeading(toDo.headingId).title}` : "";
+    return `◔ ${project}${heading}`;
+  }
   if (toDo.areaId) return `▣ ${app.findArea(toDo.areaId)?.title ?? "Area"}`;
   return toDo.startDate || toDo.someday ? "No Area or Project" : "📥 Inbox";
 }

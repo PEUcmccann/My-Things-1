@@ -23,6 +23,9 @@ export function trashActions(ctx: Context) {
     for (const t of store.all("toDos")) {
       if (t.projectId === id) store.remove("toDos", t.id);
     }
+    for (const h of store.all("headings")) {
+      if (h.projectId === id) store.remove("headings", h.id);
+    }
     store.remove("projects", id);
   }
 
@@ -56,12 +59,13 @@ export function trashActions(ctx: Context) {
       const parent = live(ctx.find("toDos", item.parentId));
       const project = live(ctx.find("projects", item.projectId));
       const area = ctx.find("areas", item.areaId);
+      const heading = ctx.find("headings", item.headingId);
       ctx.update("toDos", id, {
         deletedAt: null,
         parentId: parent ? parent.id : null,
         projectId: project ? project.id : null,
         areaId: project ? null : (area?.id ?? null),
-        headingId: project ? item.headingId : null,
+        headingId: project && heading?.projectId === project.id ? heading.id : null,
       });
     },
 

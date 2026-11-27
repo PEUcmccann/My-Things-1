@@ -1,4 +1,5 @@
 import { toLocalDate, type Clock } from "./clock";
+import { addDays, deadlineFlag, type DeadlineFlag } from "./dates";
 import type { Store } from "./store";
 import type { LocalDate, LogbookMode, Project, ToDo } from "./types";
 
@@ -15,7 +16,17 @@ export interface NewToDo {
   areaId?: string;
   projectId?: string;
   parentId?: string;
+  /** "When" for the new To-do, as when it is created from Today or Someday. */
+  when?: When;
 }
+
+/** A choice of "When" for a To-do: what the Start date picker offers. */
+export type When =
+  | { kind: "today" }
+  | { kind: "thisEvening" }
+  | { kind: "date"; date: LocalDate }
+  | { kind: "someday" }
+  | { kind: "none" };
 
 export interface NewProject {
   title: string;
@@ -122,6 +133,7 @@ export function createMyThings({ clock, store, newId = randomId, owner = localOw
         parentId: parent ? parent.id : null,
         deletedAt: null,
       });
+      if (input.when) this.setWhen(id, input.when);
       return id;
     },
 
@@ -139,6 +151,28 @@ export function createMyThings({ clock, store, newId = randomId, owner = localOw
         deletedAt: null,
       });
       return id;
+    },
+
+    editToDo(id: string, changes: { title?: string }): void {
+      const next: Partial<ToDo> = {};
+      if (changes.title !== undefined) next.title = changes.title.trim() || toDo(id).title;
+      updateToDo(id, next);
+    },
+
+    /** Sets "When": Today, This Evening, a date, Someday, or nothing. */
+    setWhen(id: string, when: When): void {
+      switch (when.kind) {
+        case "today":
+          return this.moveToToday(id);
+        case "thisEvening":
+          return this.moveToToday(id, { evening: true });
+        case "date":
+          return this.setStartDate(id, when.date);
+        case "someday":
+          return this.moveToSomeday(id);
+        case "none":
+          return this.setStartDate(id, null);
+      }
     },
 
     /** Sets the Start date ("When"). `evening` puts it in This Evening. */
@@ -188,11 +222,41 @@ export function createMyThings({ clock, store, newId = randomId, owner = localOw
       return toDo(id);
     },
 
-    /** Inbox: To-dos that have not been organised into an Area or Project. */
+    /** The To-do with this id, or undefined once it has been removed for good. */
+    findToDo(id: string): ToDo | undefined {
+      return store.get("toDos", id);
+    },
+
+    /** Whether to flag a Deadline as close or passed, as of today. */
+    deadlineFlag(deadline: LocalDate | null): DeadlineFlag {
+      return deadlineFlag(deadline, clock.today());
+    },
+
+    /** Tomorrow's date, for the "When" picker. */
+    tomorrow(): LocalDate {
+      return addDays(clock.today(), 1);
+    },
+
+    /** Today's date, from the core's clock. */
+    currentDate(): LocalDate {
+      return clock.today();
+    },
+
+    /**
+     * Inbox: To-dos that have not been organised yet. Filing a To-do in an Area or
+     * Project, giving it a Start date, or moving it to Someday all organise it.
+     */
     inbox(): ToDoEntry[] {
       return store
         .all("toDos")
-        .filter((item) => isOpenInLists(item) && !item.areaId && !item.projectId)
+        .filter(
+          (item) =>
+            isOpenInLists(item) &&
+            !item.areaId &&
+            !item.projectId &&
+            !item.startDate &&
+            !item.someday,
+        )
         .sort(byCreation)
         .map(entry);
     },

@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { ToDoEntry } from "../../core";
 import { useTheme } from "../theme";
+import { DateBadges } from "./DateBadges";
 
 interface Props {
   entry: ToDoEntry;
@@ -27,6 +28,7 @@ export function ToDoRow({ entry, onPress }: Props) {
         <Text style={[styles.title, { color: theme.text }]} numberOfLines={2}>
           {toDo.title}
         </Text>
+        <DateBadges toDo={toDo} />
       </View>
     </Pressable>
   );

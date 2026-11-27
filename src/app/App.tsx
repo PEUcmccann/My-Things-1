@@ -4,6 +4,7 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { NavigationProvider, useNavigation, type Route } from "./navigation";
 import { ListScreen } from "./screens/ListScreen";
 import { SettingsScreen } from "./screens/SettingsScreen";
+import { ToDoScreen } from "./screens/ToDoScreen";
 import { Sidebar } from "./screens/Sidebar";
 import { MyThingsProvider } from "./state";
 import { useTheme } from "./theme";
@@ -20,6 +21,8 @@ function CurrentScreen() {
       return <ListScreen key={route.list} list={route.list} />;
     case "settings":
       return <SettingsScreen />;
+    case "toDo":
+      return <ToDoScreen key={route.id} id={route.id} />;
   }
 }
 

@@ -17,3 +17,17 @@ export async function addToDo(page: Page, title: string) {
   await page.getByTestId("new-todo-add").click();
   await expect(page.getByTestId("new-todo-sheet")).toBeHidden();
 }
+
+/** Opens a To-do's detail from the current list. */
+export async function openToDo(page: Page, title: string) {
+  await row(page, title).click();
+  await expect(page.getByTestId("screen-todo")).toBeVisible();
+}
+
+/** The list row of the To-do with this title. */
+export function row(page: Page, title: string) {
+  return page
+    .locator('[data-testid^="todo-row-"]')
+    .filter({ has: page.getByText(title, { exact: true }) })
+    .first();
+}

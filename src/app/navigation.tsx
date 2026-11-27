@@ -22,7 +22,10 @@ export const builtInLists = [
 export type BuiltInList = (typeof builtInLists)[number];
 
 export type Route =
-  { name: "sidebar" } | { name: "list"; list: BuiltInList } | { name: "settings" };
+  | { name: "sidebar" }
+  | { name: "list"; list: BuiltInList }
+  | { name: "settings" }
+  | { name: "toDo"; id: string };
 
 interface Navigation {
   route: Route;

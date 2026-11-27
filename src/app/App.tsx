@@ -20,6 +20,7 @@ import { ProjectScreen } from "./screens/ProjectScreen";
 import { LogbookScreen } from "./screens/LogbookScreen";
 import { QuickFindScreen } from "./screens/QuickFindScreen";
 import { SettingsScreen } from "./screens/SettingsScreen";
+import { SmartListScreen } from "./screens/SmartListScreen";
 import { TagScreen } from "./screens/TagScreen";
 import { TagsScreen } from "./screens/TagsScreen";
 import { ToDoScreen } from "./screens/ToDoScreen";
@@ -84,6 +85,8 @@ function ScreenFor({ route }: { route: Route }) {
       return <TagsScreen />;
     case "tag":
       return <TagScreen key={route.id} id={route.id} />;
+    case "smartList":
+      return <SmartListScreen key={route.id} id={route.id} />;
     case "toDo":
       return <ToDoScreen key={route.id} id={route.id} />;
   }

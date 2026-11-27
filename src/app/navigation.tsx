@@ -30,6 +30,7 @@ export type Route =
   | { name: "project"; id: string }
   | { name: "tags" }
   | { name: "tag"; id: string }
+  | { name: "smartList"; id: string }
   | { name: "quickFind" };
 
 interface Navigation {

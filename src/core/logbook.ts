@@ -1,5 +1,6 @@
 import { toLocalDate } from "./clock";
 import type { Context, Finishable, ToDoEntry } from "./context";
+import { createNextOccurrence, reopenOccurrence } from "./repeat";
 import type { LocalDate, LogbookMode, Project } from "./types";
 
 export type LogbookEntry = ({ kind: "toDo" } & ToDoEntry) | { kind: "project"; project: Project };
@@ -50,6 +51,8 @@ export function logbookActions(ctx: Context) {
     }
     for (const t of open) finishToDo(t.id, outcomeOf[opts.remaining!]);
     finishToDo(id, outcome);
+    // Completing or cancelling a repeating To-do brings on its next occurrence.
+    createNextOccurrence(ctx, id);
   }
 
   function openToDosOf(projectId: string) {
@@ -99,6 +102,7 @@ export function logbookActions(ctx: Context) {
 
     /** Makes a Completed or Cancelled To-do active again, in its original place. */
     reopen(id: string): void {
+      reopenOccurrence(ctx, id);
       ctx.update("toDos", id, { outcome: "active", finishedAt: null, loggedAt: null });
       // An open To-do brings its archived Heading back to the Project.
       const heading = ctx.find("headings", ctx.require("toDos", id).headingId);

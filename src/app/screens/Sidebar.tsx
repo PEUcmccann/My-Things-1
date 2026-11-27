@@ -16,6 +16,7 @@ import { ProgressPie } from "../components/ProgressPie";
 import { PromptSheet } from "../components/PromptSheet";
 import { builtInLists, useNavigation, type BuiltInList, type Route } from "../navigation";
 import { listIcons, listTitles } from "../lists";
+import { editOnFirstOpen } from "./SmartListScreen";
 import { useMyThings } from "../state";
 import { useTheme } from "../theme";
 
@@ -24,7 +25,7 @@ interface Props {
   wide?: boolean;
 }
 
-type Dialog = "new" | "newArea" | "newProject" | null;
+type Dialog = "new" | "newArea" | "newProject" | "newSmartList" | null;
 
 const areasListKey = "sidebar-areas";
 
@@ -158,6 +159,7 @@ export function Sidebar({ wide }: Props) {
   const open = (route: Route) => (wide ? nav.reset(route) : nav.push(route));
   const isCurrent = (route: Route) => JSON.stringify(route) === JSON.stringify(nav.route);
   const tree = app.sidebar();
+  const smartLists = app.smartLists();
 
   const item = (
     key: string,
@@ -211,6 +213,18 @@ export function Sidebar({ wide }: Props) {
         <View style={styles.group}>{builtInLists.slice(0, 1).map(listItem)}</View>
         <View style={styles.group}>{builtInLists.slice(1, 5).map(listItem)}</View>
         <View style={styles.group}>{builtInLists.slice(5).map(listItem)}</View>
+        {smartLists.length > 0 ? (
+          <View style={styles.group} testID="sidebar-smart-lists">
+            {smartLists.map((s) =>
+              item(
+                `smartlist-${s.id}`,
+                <Icon name="smartList" size={20} color={theme.accent} />,
+                s.title,
+                { name: "smartList", id: s.id },
+              ),
+            )}
+          </View>
+        ) : null}
         <ProjectDropList areaId={null}>
           {(listKey) =>
             tree.projects.length > 0 ? (
@@ -271,8 +285,28 @@ export function Sidebar({ wide }: Props) {
             onPress: () => setDialog("newArea"),
             testID: "new-area",
           },
+          {
+            title: "New Smart List",
+            icon: "smartList",
+            iconColor: theme.accent,
+            onPress: () => setDialog("newSmartList"),
+            testID: "new-smart-list",
+          },
         ]}
       />
+      {dialog === "newSmartList" ? (
+        <PromptSheet
+          title="New Smart List"
+          placeholder="Name, e.g. Quick errands"
+          confirmTitle="Create"
+          onSubmit={(title) => {
+            const id = app.createSmartList(title);
+            editOnFirstOpen(id);
+            open({ name: "smartList", id });
+          }}
+          onClose={() => setDialog(null)}
+        />
+      ) : null}
       {dialog === "newProject" ? (
         <PromptSheet
           title="New Project"

@@ -1,10 +1,14 @@
 import {
   addDays,
   daysBetween,
+  weekday,
+  weekdayCodes,
   type Energy,
   type LocalDate,
   type Priority,
+  type RepeatPattern,
   type ToDo,
+  type WeekdayCode,
 } from "../core";
 import type { IconName } from "./components/Icon";
 
@@ -112,4 +116,49 @@ export function timeSlotText(
   const times = `${formatTime(toDo.timeSlot.start)}–${formatTime(toDo.timeSlot.end)}`;
   if (!withDay || !toDo.startDate || toDo.startDate === today) return times;
   return `${formatDate(toDo.startDate, today)} ${times}`;
+}
+
+/** Short weekday names, Monday first, as RRULE orders them. */
+export const weekdayNames: Record<WeekdayCode, string> = {
+  MO: "Mon",
+  TU: "Tue",
+  WE: "Wed",
+  TH: "Thu",
+  FR: "Fri",
+  SA: "Sat",
+  SU: "Sun",
+};
+
+/** "1st", "2nd", "3rd", "11th", "22nd"… */
+export function ordinal(n: number): string {
+  const teen = n % 100 >= 11 && n % 100 <= 13;
+  const suffix = teen ? "th" : ({ 1: "st", 2: "nd", 3: "rd" } as Record<number, string>)[n % 10];
+  return `${n}${suffix ?? "th"}`;
+}
+
+const units = { daily: "day", weekly: "week", monthly: "month", yearly: "year" } as const;
+
+/** A Repeat rule in words, e.g. "Every 2 weeks on Mon, Thu", for a rule starting on `start`. */
+export function repeatText(p: RepeatPattern, start: LocalDate): string {
+  const unit = units[p.freq];
+  const every = p.interval === 1 ? `Every ${unit}` : `Every ${p.interval} ${unit}s`;
+  const { m, d } = dateParts(start);
+  switch (p.freq) {
+    case "daily":
+      return every;
+    case "weekly": {
+      const codes = p.byDay?.length ? p.byDay : [weekdayCodes[weekday(start)]];
+      const sorted = weekdayCodes.filter((c) => codes.includes(c));
+      return `${every} on ${sorted.map((c) => weekdayNames[c]).join(", ")}`;
+    }
+    case "monthly": {
+      const monthDays = [...(p.byMonthDay?.length ? p.byMonthDay : [d])];
+      // The last day reads last.
+      monthDays.sort((a, b) => (a < 0 ? 99 : a) - (b < 0 ? 99 : b));
+      const names = monthDays.map((n) => (n === -1 ? "last day" : ordinal(n)));
+      return `${every} on the ${names.join(", ")}`;
+    }
+    case "yearly":
+      return `${every} on ${d} ${monthName(m)}`;
+  }
 }

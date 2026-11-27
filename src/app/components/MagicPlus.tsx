@@ -1,5 +1,11 @@
-import { useEffect, useRef, useState } from "react";
-import { PanResponder, StyleSheet, Text, TextInput, View } from "react-native";
+import { useEffect, useState } from "react";
+import { StyleSheet, Text, TextInput, View } from "react-native";
+import {
+  GestureDetector,
+  useCompetingGestures,
+  usePanGesture,
+  useTapGesture,
+} from "react-native-gesture-handler";
 import type { NewToDo } from "../../core";
 import { useDrag, useManualDrag, type NewToDoSpot } from "../drag";
 import { haptics } from "../haptics";
@@ -18,36 +24,6 @@ interface Props {
 /** How far a press must move before it becomes a drag. */
 const dragDistance = 8;
 
-type Manual = ReturnType<typeof useManualDrag>;
-
-function plusResponder(latest: { current: { manual: Manual; tap: () => void } }) {
-  let dragging = false;
-  return PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onMoveShouldSetPanResponder: () => true,
-    onPanResponderTerminationRequest: () => false,
-    onPanResponderGrant: () => {
-      dragging = false;
-    },
-    onPanResponderMove: (_, g) => {
-      if (!dragging && Math.hypot(g.dx, g.dy) > dragDistance) {
-        dragging = true;
-        latest.current.manual.start({ kind: "new" }, g.moveX, g.moveY);
-      }
-      if (dragging) latest.current.manual.move(g.moveX, g.moveY);
-    },
-    onPanResponderRelease: () => {
-      if (dragging) latest.current.manual.finish();
-      else latest.current.tap();
-      dragging = false;
-    },
-    onPanResponderTerminate: () => {
-      if (dragging) latest.current.manual.cancel();
-      dragging = false;
-    },
-  });
-}
-
 /**
  * The add button shown on every list. Tap it to add a To-do here, or drag it to
  * a spot in the list, onto the Inbox, a Project or a Heading to create it there.
@@ -61,13 +37,19 @@ export function MagicPlus({ placement }: Props) {
   const [spot, setSpot] = useState<NewToDoSpot | null>(null);
   const [title, setTitle] = useState("");
 
-  const latest = useRef({ manual, tap: () => setSpot({ placement }) });
-  useEffect(() => {
-    latest.current = { manual, tap: () => setSpot({ placement }) };
+  // Tap to add here; once a press moves, it becomes a drag.
+  const tap = useTapGesture({
+    maxDistance: dragDistance,
+    maxDuration: 60_000,
+    onActivate: () => setSpot({ placement }),
   });
-  // The responder only reads `latest` while a gesture runs, never during render.
-  // eslint-disable-next-line react-hooks/refs
-  const [responder] = useState(() => plusResponder(latest));
+  const pan = usePanGesture({
+    minDistance: dragDistance,
+    onActivate: (e) => manual.start({ kind: "new" }, e.absoluteX, e.absoluteY),
+    onUpdate: (e) => manual.move(e.absoluteX, e.absoluteY),
+    onDeactivate: (e) => (e.canceled ? manual.cancel() : manual.finish()),
+  });
+  const gesture = useCompetingGestures(pan, tap);
 
   useEffect(() => {
     drag.setNewToDoOpener(setSpot);
@@ -91,15 +73,16 @@ export function MagicPlus({ placement }: Props) {
 
   return (
     <>
-      <View
-        {...responder.panHandlers}
-        style={[styles.fab, { backgroundColor: theme.accent }]}
-        accessibilityRole="button"
-        accessibilityLabel="Add To-do"
-        testID="magic-plus"
-      >
-        <Text style={[styles.plus, { color: theme.onAccent }]}>+</Text>
-      </View>
+      <GestureDetector gesture={gesture}>
+        <View
+          style={[styles.fab, { backgroundColor: theme.accent }]}
+          accessibilityRole="button"
+          accessibilityLabel="Add To-do"
+          testID="magic-plus"
+        >
+          <Text style={[styles.plus, { color: theme.onAccent }]}>+</Text>
+        </View>
+      </GestureDetector>
       <Sheet visible={spot !== null} onClose={close} testID="new-todo-sheet">
         <Text style={[styles.heading, { color: theme.text }]}>New To-do</Text>
         <TextInput

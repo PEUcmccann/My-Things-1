@@ -12,12 +12,14 @@ import {
 } from "react";
 import {
   Animated,
-  PanResponder,
+  Pressable,
   StyleSheet,
   Text,
   View,
-  type GestureResponderHandlers,
+  type StyleProp,
+  type ViewStyle,
 } from "react-native";
+import { GestureDetector, usePanGesture } from "react-native-gesture-handler";
 import type { DropTarget, ListRef, MyThings, NewToDo } from "../core";
 import { haptics } from "./haptics";
 import { useMyThings } from "./state";
@@ -259,33 +261,37 @@ export function useManualDrag() {
   return api;
 }
 
-type Manual = ReturnType<typeof useManualDrag>;
-
-function handleResponder(latest: { current: { item: DragItem; manual: Manual } }) {
-  return PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onMoveShouldSetPanResponder: () => true,
-    onPanResponderTerminationRequest: () => false,
-    onPanResponderGrant: (_, g) => latest.current.manual.start(latest.current.item, g.x0, g.y0),
-    onPanResponderMove: (_, g) => latest.current.manual.move(g.moveX, g.moveY),
-    onPanResponderRelease: () => {
-      latest.current.manual.finish();
-    },
-    onPanResponderTerminate: () => latest.current.manual.cancel(),
-  });
-}
-
-/** Gesture handlers for a drag handle: dragging starts as soon as it is touched. */
-export function useDragHandle(item: DragItem): GestureResponderHandlers {
+/**
+ * A drag handle: dragging starts as soon as it is touched. It is a Pressable that does nothing
+ * on press, so a row it sits in does not take the touch (or, on the web, the click) as its own.
+ */
+export function DragHandle({
+  item,
+  style,
+  testID,
+  accessibilityLabel,
+  children,
+}: {
+  item: DragItem;
+  style: StyleProp<ViewStyle>;
+  testID: string;
+  accessibilityLabel?: string;
+  children: ReactNode;
+}) {
   const manual = useManualDrag();
-  const latest = useRef({ item, manual });
-  useEffect(() => {
-    latest.current = { item, manual };
+  const gesture = usePanGesture({
+    minDistance: 0,
+    onActivate: (e) => manual.start(item, e.absoluteX, e.absoluteY),
+    onUpdate: (e) => manual.move(e.absoluteX, e.absoluteY),
+    onDeactivate: (e) => (e.canceled ? manual.cancel() : manual.finish()),
   });
-  // The responder only reads `latest` while a gesture runs, never during render.
-  // eslint-disable-next-line react-hooks/refs
-  const [responder] = useState(() => handleResponder(latest));
-  return responder.panHandlers;
+  return (
+    <GestureDetector gesture={gesture}>
+      <Pressable style={style} testID={testID} accessibilityLabel={accessibilityLabel}>
+        {children}
+      </Pressable>
+    </GestureDetector>
+  );
 }
 
 /** Registers a view as somewhere items can be dropped. Returns its ref. */

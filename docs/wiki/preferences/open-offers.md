@@ -10,3 +10,4 @@ Changes waiting on the user's decision. Each entry is dated. When the user answe
 Answers:
 
 - 2026-11-27, the user said "Go" to all four offers. Both skill changes were made in `55d0000`. The network hosts are on a new personal environment, "My-Things-1", saved for this repo; see [Cloud environment](../subsystems/cloud-environment.md). The gesture change is ADR 0004 (`348fa0b`) and `8f65b7c`.
+- 2026-11-27, offered: add the M2 retro's rule to the chief-of-staff skill: before merging a ticket, compare the implementer's checklist with the ticket's criteria and Decisions. Source: [M2 retro](../retros/2026-11-27-m2-build.md) #1.

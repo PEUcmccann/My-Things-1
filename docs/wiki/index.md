@@ -31,3 +31,4 @@ A historical record kept by the chief-of-staff sessions (`.claude/skills/chief-o
 ## Retros
 
 - [M1 build retro](retros/2026-11-27-m1-build.md): eight findings on the Milestone 1 session; four fixed in the repo, four offered to the user.
+- [M2 build retro](retros/2026-11-27-m2-build.md): seven findings on two M2 sessions; the biggest was a coordinator brief that narrowed a ticket's scope.

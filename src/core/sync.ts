@@ -4,6 +4,7 @@ import {
   recordDefaults,
   type CollectionName,
   type Collections,
+  type Snapshot,
   type Stamp,
   type Store,
   type SyncCollection,
@@ -90,7 +91,11 @@ export function syncedStore(
   inner: Store,
   clock: Clock,
   newEditId: () => string,
-): { store: Store; sync: SyncActions } {
+): {
+  store: Store;
+  sync: SyncActions;
+  replaceEverything: (records: Snapshot["records"], settings: Settings) => void;
+} {
   const book = inner.syncBook();
 
   function deviceId(): string {
@@ -244,5 +249,30 @@ export function syncedStore(
     deviceId,
   };
 
-  return { store, sync };
+  /**
+   * Replaces every record and the settings (a restore). Every field is recorded as an
+   * edit made now, changed or not, and each restored record gets `_removed: false`, so
+   * other devices follow the restore over their own older edits and removals. Records
+   * that are not in `records` are removed for good.
+   */
+  function replaceEverything(records: Snapshot["records"], settings: Settings): void {
+    for (const name of collectionNames) {
+      const keep = new Map<string, Fields>(
+        (records[name] as unknown as Fields[]).map((r) => [r.id as string, copy(r)]),
+      );
+      for (const live of inner.all(name)) if (!keep.has(live.id)) store.remove(name, live.id);
+      for (const [id, next] of keep) {
+        delete removedOf(name)[id];
+        record(name, id, removedField, false);
+        for (const f of Object.keys(next)) if (f !== "id") record(name, id, f, next[f]);
+        inner.put(name, next as unknown as Collections[CollectionName]);
+      }
+    }
+    const fields = settings as unknown as Fields;
+    for (const f of Object.keys(fields)) record("settings", settingsRecordId, f, fields[f]);
+    inner.saveSettings(settings);
+    inner.syncBookChanged();
+  }
+
+  return { store, sync, replaceEverything };
 }

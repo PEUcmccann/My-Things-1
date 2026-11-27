@@ -4,6 +4,7 @@ import { checklistActions } from "./checklist";
 import { containerActions } from "./containers";
 import { createContext } from "./context";
 import { dayTimelineQueries } from "./dayTimeline";
+import { exportActions } from "./exportRestore";
 import { addDays, deadlineFlag, type DeadlineFlag } from "./dates";
 import { headingActions } from "./headings";
 import { listQueries } from "./lists";
@@ -24,6 +25,7 @@ import { accentColours, type AccentColour, type LocalDate } from "./types";
 
 export type { ChecklistProgress } from "./checklist";
 export type { DayTimeline, TimelineEntry } from "./dayTimeline";
+export type { ExportFile, RestoreProblem } from "./exportRestore";
 export type { ToDoEntry } from "./context";
 export type { AreaContents, NewProject, Progress, SidebarArea, SidebarTree } from "./containers";
 export type { ProjectList, TodayList, UpcomingEntry, UpcomingGroup, UpcomingReason } from "./lists";
@@ -72,7 +74,7 @@ export function createMyThings({
   owner = localOwner,
 }: Options) {
   // Every write records per-field edits for sync, so no action needs to know about it.
-  const { store, sync } = syncedStore(saved, clock, newEditId);
+  const { store, sync, replaceEverything } = syncedStore(saved, clock, newEditId);
   const ctx = createContext({ clock, store, newId, owner });
   const base = {
     ...toDoActions(ctx),
@@ -87,6 +89,7 @@ export function createMyThings({
     ...logbookActions(ctx),
     ...listQueries(ctx),
     ...trashActions(ctx),
+    ...exportActions(ctx, replaceEverything),
     ...sync,
 
     /** Whether to flag a Deadline as close or passed, as of today. */

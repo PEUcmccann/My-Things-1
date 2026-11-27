@@ -1,8 +1,12 @@
+import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { accentColours, type LogbookMode } from "../../core";
+import { accentColours, readExport, RestoreError, type LogbookMode } from "../../core";
 import { Button } from "../components/Button";
 import { Choice } from "../components/Choice";
+import { MenuSheet } from "../components/MenuSheet";
 import { Screen } from "../components/Screen";
+import { exportDateText, exportFileName, restoreProblemText } from "../dataFiles";
+import { pickTextFile, saveFile } from "../fileSaving";
 import { useNavigation } from "../navigation";
 import { useMyThings } from "../state";
 import { accents, useTheme } from "../theme";
@@ -74,7 +78,98 @@ export function SettingsScreen() {
         onPress={() => nav.push({ name: "tags" })}
         testID="settings-tags"
       />
+      <DataSection />
     </Screen>
+  );
+}
+
+const jsonType = "application/json";
+
+/** Export all data as one JSON file, and restore such a file. */
+function DataSection() {
+  const app = useMyThings();
+  const theme = useTheme();
+  const [status, setStatus] = useState<{ text: string; error: boolean } | null>(null);
+  // A picked file waiting for the user to confirm the restore.
+  const [pending, setPending] = useState<{ text: string; date: string } | null>(null);
+
+  async function exportAll() {
+    setStatus(null);
+    try {
+      const file = app.exportAll();
+      await saveFile(exportFileName(app.currentDate()), JSON.stringify(file, null, 2), jsonType);
+    } catch (error) {
+      console.warn("Could not export", error);
+      setStatus({ text: "Could not export", error: true });
+    }
+  }
+
+  async function pick() {
+    setStatus(null);
+    try {
+      const text = await pickTextFile(jsonType);
+      if (text === null) return;
+      setPending({ text, date: exportDateText(readExport(text).exportedAt) });
+    } catch (error) {
+      if (error instanceof RestoreError) {
+        setStatus({ text: restoreProblemText(error.problem), error: true });
+      } else {
+        console.warn("Could not read the file", error);
+        setStatus({ text: "Could not read the file", error: true });
+      }
+    }
+  }
+
+  function replace(text: string) {
+    try {
+      app.restoreExport(text);
+      // As when the app opens: Trash older than 30 days in the file goes for good.
+      app.purgeExpiredTrash();
+      setStatus({ text: "Restored", error: false });
+    } catch (error) {
+      setStatus({
+        text:
+          error instanceof RestoreError ? restoreProblemText(error.problem) : "Could not restore",
+        error: true,
+      });
+    }
+  }
+
+  return (
+    <>
+      <Text style={[styles.section, { color: theme.muted }]}>Data</Text>
+      <View style={styles.buttons}>
+        <Button title="Export all data" onPress={exportAll} testID="export-data" />
+        <Button title="Restore from file" onPress={pick} testID="restore-data" />
+      </View>
+      {status ? (
+        <Text
+          style={[styles.status, { color: status.error ? theme.danger : theme.muted }]}
+          testID="data-status"
+        >
+          {status.text}
+        </Text>
+      ) : null}
+      <MenuSheet
+        visible={pending !== null}
+        title="Restore from file?"
+        message={
+          pending
+            ? `Replace everything on this device with the data from ${pending.date}? This can't be undone.`
+            : undefined
+        }
+        onClose={() => setPending(null)}
+        testID="restore-confirm-sheet"
+        options={[
+          {
+            title: "Replace",
+            danger: true,
+            onPress: () => pending && replace(pending.text),
+            testID: "restore-data-confirm",
+          },
+        ]}
+      />
+    </>
   );
 }
 
@@ -88,6 +183,8 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   after: { marginTop: 12 },
+  buttons: { gap: 8 },
+  status: { fontSize: 13, marginTop: 8, marginLeft: 8 },
   swatches: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginLeft: 8 },
   swatch: {
     width: 40,

@@ -16,6 +16,8 @@ export interface ToDoEntry {
 export interface Context {
   store: Store;
   clock: Clock;
+  /** The user new and restored records belong to: the account if signed in, else "me". */
+  owner: string;
   now(): Moment;
   /** A new record's id, owner and timestamps. */
   meta(): RecordMeta;
@@ -65,6 +67,7 @@ export function createContext(opts: {
   const ctx: Context = {
     store,
     clock,
+    owner,
     now,
     meta() {
       const at = now();

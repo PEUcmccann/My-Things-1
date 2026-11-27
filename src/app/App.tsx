@@ -15,6 +15,7 @@ import { ToDoScreen } from "./screens/ToDoScreen";
 import { TrashScreen } from "./screens/TrashScreen";
 import { UpcomingScreen } from "./screens/UpcomingScreen";
 import { Sidebar } from "./screens/Sidebar";
+import { SelectionProvider } from "./selection";
 import { MyThingsProvider } from "./state";
 import { useTheme } from "./theme";
 
@@ -54,20 +55,22 @@ function Layout() {
   return (
     <SafeAreaView style={[styles.fill, { backgroundColor: theme.background }]}>
       <NavigationProvider key={wide ? "wide" : "narrow"} root={root}>
-        <DragProvider>
-          {wide ? (
-            <View style={styles.row}>
-              <View style={[styles.side, { borderColor: theme.border }]}>
-                <Sidebar wide />
+        <SelectionProvider>
+          <DragProvider>
+            {wide ? (
+              <View style={styles.row}>
+                <View style={[styles.side, { borderColor: theme.border }]}>
+                  <Sidebar wide />
+                </View>
+                <View style={styles.fill}>
+                  <CurrentScreen />
+                </View>
               </View>
-              <View style={styles.fill}>
-                <CurrentScreen />
-              </View>
-            </View>
-          ) : (
-            <CurrentScreen />
-          )}
-        </DragProvider>
+            ) : (
+              <CurrentScreen />
+            )}
+          </DragProvider>
+        </SelectionProvider>
       </NavigationProvider>
       <StatusBar style={theme.dark ? "light" : "dark"} />
     </SafeAreaView>

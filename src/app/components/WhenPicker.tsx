@@ -19,6 +19,7 @@ interface Props {
 export function WhenPicker({ visible, current, onChoose, onClose, allowEvening = true }: Props) {
   const app = useMyThings();
   const theme = useTheme();
+  if (!visible) return null;
   const choose = (when: When) => {
     onChoose(when);
     onClose();
@@ -76,6 +77,7 @@ interface DateProps {
 export function DatePicker({ visible, title, current, onChoose, onClose, testID }: DateProps) {
   const app = useMyThings();
   const theme = useTheme();
+  if (!visible) return null;
   const choose = (date: LocalDate | null) => {
     onChoose(date);
     onClose();

@@ -3,9 +3,11 @@ import { PanResponder, StyleSheet, Text, TextInput, View } from "react-native";
 import type { NewToDo } from "../../core";
 import { useDrag, useManualDrag, type NewToDoSpot } from "../drag";
 import { haptics } from "../haptics";
+import { useSelection } from "../selection";
 import { useMyThings } from "../state";
 import { useTheme } from "../theme";
 import { Button } from "./Button";
+import { SelectionBar } from "./SelectionBar";
 import { Sheet } from "./Sheet";
 
 interface Props {
@@ -55,6 +57,7 @@ export function MagicPlus({ placement }: Props) {
   const theme = useTheme();
   const drag = useDrag();
   const manual = useManualDrag();
+  const selection = useSelection();
   const [spot, setSpot] = useState<NewToDoSpot | null>(null);
   const [title, setTitle] = useState("");
 
@@ -71,6 +74,8 @@ export function MagicPlus({ placement }: Props) {
     return () => drag.setNewToDoOpener(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drag.setNewToDoOpener]);
+
+  if (selection.active) return <SelectionBar />;
 
   const close = () => {
     setSpot(null);

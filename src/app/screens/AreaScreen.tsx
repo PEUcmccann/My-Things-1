@@ -40,6 +40,7 @@ export function AreaScreen({ id }: { id: string }) {
       <Screen
         title={area.title}
         testID="screen-area"
+        selectable
         header={
           <>
             <TagChips tags={app.tagsOf({ kind: "area", id })} />

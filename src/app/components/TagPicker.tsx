@@ -19,6 +19,7 @@ export function TagPicker({ visible, title = "Tags", selected, onToggle, onClose
   const app = useMyThings();
   const theme = useTheme();
   const [draft, setDraft] = useState("");
+  if (!visible) return null;
   const create = () => {
     if (!draft.trim()) return;
     onToggle(app.createTag(draft), true);

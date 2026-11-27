@@ -1,4 +1,5 @@
 import type { Clock } from "./clock";
+import { bulkActions } from "./bulk";
 import { checklistActions } from "./checklist";
 import { containerActions } from "./containers";
 import { createContext } from "./context";
@@ -70,6 +71,7 @@ export function createMyThings({ clock, store, newId = randomId, owner = localOw
   return {
     ...base,
     ...ordering,
+    ...bulkActions(ctx, base),
 
     /** Creates a To-do, optionally at a spot in a list (before a To-do, or at the end). */
     createToDo(input: NewToDo & { at?: { list: ListRef; beforeId: string | null } }): string {

@@ -14,7 +14,7 @@ async function titlesIn(page: Page, screen: string) {
   return page
     .getByTestId(`screen-${screen}`)
     .locator('[data-testid^="todo-row-"]')
-    .evaluateAll((rows) => rows.map((r) => r.textContent?.replace("≡", "").trim()));
+    .evaluateAll((rows) => rows.map((r) => r.textContent?.replace(/[≡⋯]/g, "").trim()));
 }
 
 test("dragging a To-do reorders the Inbox", async ({ page }) => {

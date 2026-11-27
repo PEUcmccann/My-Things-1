@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useDrag } from "../drag";
+import { useSelection } from "../selection";
+import { Button } from "./Button";
 import { useNavigation } from "../navigation";
 import { useTheme } from "../theme";
 
@@ -11,10 +13,12 @@ interface Props {
   actions?: ReactNode;
   /** Shown under the title, above the scrolling content. */
   header?: ReactNode;
+  /** Offers a Select button that starts selecting To-dos. */
+  selectable?: boolean;
   testID?: string;
 }
 
-export function Screen({ title, children, actions, header, testID }: Props) {
+export function Screen({ title, children, actions, header, testID, selectable }: Props) {
   const theme = useTheme();
   const nav = useNavigation();
   const drag = useDrag();
@@ -37,7 +41,10 @@ export function Screen({ title, children, actions, header, testID }: Props) {
           <Text style={[styles.title, { color: theme.text }]} accessibilityRole="header">
             {title}
           </Text>
-          <View style={styles.actions}>{actions}</View>
+          <View style={styles.actions}>
+            {selectable ? <SelectButton /> : null}
+            {actions}
+          </View>
         </View>
         {header}
       </View>
@@ -49,6 +56,18 @@ export function Screen({ title, children, actions, header, testID }: Props) {
         {children}
       </ScrollView>
     </View>
+  );
+}
+
+function SelectButton() {
+  const selection = useSelection();
+  return (
+    <Button
+      small
+      title={selection.active ? "Done" : "Select"}
+      onPress={() => (selection.active ? selection.clear() : selection.start())}
+      testID="select-mode"
+    />
   );
 }
 

@@ -11,6 +11,7 @@ interface Props {
 /** Chooses where to file To-dos: the Inbox, an Area or a Project. */
 export function MovePicker({ visible, onChoose, onClose }: Props) {
   const app = useMyThings();
+  if (!visible) return null;
   const tree = app.sidebar();
   const projectOptions = (id: string, title: string, depth: number): MenuOption[] => [
     {

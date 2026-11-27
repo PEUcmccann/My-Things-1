@@ -45,7 +45,7 @@ export function UpcomingScreen() {
   const today = app.currentDate();
   return (
     <View style={styles.fill}>
-      <Screen title="Upcoming" testID="screen-upcoming" header={filter.bar}>
+      <Screen title="Upcoming" testID="screen-upcoming" selectable header={filter.bar}>
         {groups.length === 0 ? <Empty text="Nothing scheduled" /> : null}
         {groups.map((group) => (
           <View key={`${group.kind}-${group.start}`} testID={`upcoming-${group.start}`}>

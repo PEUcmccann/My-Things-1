@@ -11,6 +11,7 @@ import { orderingActions, type ListRef } from "./ordering";
 import { planningActions } from "./planning";
 import type { Store } from "./store";
 import { quickFindQueries } from "./quickFind";
+import { smartListActions } from "./smartLists";
 import { tagActions } from "./tags";
 import { toDoActions, type NewToDo } from "./toDos";
 import { trashActions } from "./trash";
@@ -86,6 +87,7 @@ export function createMyThings({ clock, store, newId = randomId, owner = localOw
     ...base,
     ...ordering,
     ...bulkActions(ctx, base),
+    ...smartListActions(ctx, base),
 
     /** Creates a To-do, optionally at a spot in a list (before a To-do, or at the end). */
     createToDo(input: NewToDo & { at?: { list: ListRef; beforeId: string | null } }): string {

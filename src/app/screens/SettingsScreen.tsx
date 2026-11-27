@@ -5,6 +5,7 @@ import { Button } from "../components/Button";
 import { Choice } from "../components/Choice";
 import { MenuSheet } from "../components/MenuSheet";
 import { Screen } from "../components/Screen";
+import { AccountSection } from "./AccountSection";
 import { csvFileName, exportDateText, exportFileName, restoreProblemText } from "../dataFiles";
 import { pickTextFile, saveFile } from "../fileSaving";
 import { useNavigation } from "../navigation";
@@ -32,6 +33,7 @@ export function SettingsScreen() {
   const mode = app.logbookMode();
   return (
     <Screen title="Settings" icon="settings" testID="screen-settings">
+      <AccountSection />
       <Text style={[styles.section, { color: theme.muted }]}>Move to the Logbook</Text>
       <Choice
         options={logbookOptions}

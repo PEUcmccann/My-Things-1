@@ -10,6 +10,7 @@ import { addDays, deadlineFlag, type DeadlineFlag } from "./dates";
 import { headingActions } from "./headings";
 import { listQueries } from "./lists";
 import { logbookActions } from "./logbook";
+import { localOwner, ownerActions } from "./owner";
 import { orderingActions, type ListRef } from "./ordering";
 import { planningActions } from "./planning";
 import { repeatActions } from "./repeat";
@@ -56,7 +57,10 @@ export interface Options {
    * `randomUUID`; tests pass a counter.
    */
   newEditId?: () => string;
-  /** The user who owns new records. There is one user for now; sharing comes later. */
+  /**
+   * The Owner of new records: the signed-in account's user id, or "me" (the default)
+   * while signed out. `changeOwner` and `eraseDevice` change it later.
+   */
   owner?: string;
 }
 
@@ -64,7 +68,7 @@ function randomId(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
-export const localOwner = "me";
+export { localOwner };
 
 /** The core of MyThings: every rule, as actions and list queries. */
 export function createMyThings({
@@ -75,7 +79,7 @@ export function createMyThings({
   owner = localOwner,
 }: Options) {
   // Every write records per-field edits for sync, so no action needs to know about it.
-  const { store, sync, replaceEverything } = syncedStore(saved, clock, newEditId);
+  const { store, sync, replaceEverything, eraseEverything } = syncedStore(saved, clock, newEditId);
   const ctx = createContext({ clock, store, newId, owner });
   const base = {
     ...toDoActions(ctx),
@@ -93,6 +97,7 @@ export function createMyThings({
     ...exportActions(ctx, replaceEverything),
     ...csvQueries(ctx),
     ...sync,
+    ...ownerActions(ctx, eraseEverything),
 
     /** Whether to flag a Deadline as close or passed, as of today. */
     deadlineFlag(deadline: LocalDate | null): DeadlineFlag {

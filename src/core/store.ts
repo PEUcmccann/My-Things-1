@@ -123,7 +123,7 @@ export interface MemoryStore extends Store {
   snapshot(): Snapshot;
 }
 
-function emptySyncBook(): SyncBook {
+export function emptySyncBook(): SyncBook {
   return { deviceId: null, stamps: {}, removed: {}, unsent: {} };
 }
 

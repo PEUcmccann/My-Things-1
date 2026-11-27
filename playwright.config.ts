@@ -17,7 +17,8 @@ export default defineConfig({
     screenshot: "only-on-failure",
   },
   webServer: {
-    command: `npx expo export --platform web && PORT=${port} node scripts/serve-web.mjs`,
+    // EXPO_PUBLIC_FAKE_BACKEND swaps Supabase for fakes (src/app/backendConfig.ts) in this build only.
+    command: `EXPO_PUBLIC_FAKE_BACKEND=1 npx expo export --platform web && PORT=${port} node scripts/serve-web.mjs`,
     url: `http://localhost:${port}`,
     reuseExistingServer: !process.env.CI,
     timeout: 300_000,

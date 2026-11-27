@@ -1,6 +1,8 @@
 import type { Clock } from "./clock";
 import {
   collectionNames,
+  defaultSettings,
+  emptySyncBook,
   recordDefaults,
   type CollectionName,
   type Collections,
@@ -95,6 +97,7 @@ export function syncedStore(
   store: Store;
   sync: SyncActions;
   replaceEverything: (records: Snapshot["records"], settings: Settings) => void;
+  eraseEverything: () => void;
 } {
   const book = inner.syncBook();
 
@@ -274,5 +277,21 @@ export function syncedStore(
     inner.syncBookChanged();
   }
 
-  return { store, sync, replaceEverything };
+  /**
+   * Empties this device: no records, default settings, and fresh sync bookkeeping
+   * (only the device id is kept). Nothing is recorded as an edit, so other devices and
+   * the account keep everything.
+   */
+  function eraseEverything(): void {
+    for (const name of collectionNames) {
+      for (const live of inner.all(name)) inner.remove(name, live.id);
+    }
+    inner.saveSettings(defaultSettings);
+    const { deviceId: id } = book;
+    for (const key of Object.keys(book)) delete (book as unknown as Record<string, unknown>)[key];
+    Object.assign(book, emptySyncBook(), { deviceId: id });
+    inner.syncBookChanged();
+  }
+
+  return { store, sync, replaceEverything, eraseEverything };
 }

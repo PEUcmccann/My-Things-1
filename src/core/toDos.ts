@@ -1,4 +1,4 @@
-import type { Context } from "./context";
+import { byCreation, type Context } from "./context";
 import type { LocalDate, ToDo } from "./types";
 
 /** A choice of "When" for a To-do: what the Start date picker offers. */
@@ -64,6 +64,7 @@ export function toDoActions(ctx: Context) {
   return {
     createToDo(input: NewToDo): string {
       const parent = input.parentId ? ctx.require("toDos", input.parentId) : null;
+      if (parent?.parentId) throw new Error("Sub-to-dos are only one level deep");
       const heading = input.headingId ? ctx.require("headings", input.headingId) : null;
       const projectId = parent ? parent.projectId : (heading?.projectId ?? input.projectId ?? null);
       const meta = ctx.meta();
@@ -139,6 +140,19 @@ export function toDoActions(ctx: Context) {
       for (const child of store.all("toDos")) {
         if (child.parentId === id) ctx.update("toDos", child.id, place);
       }
+    },
+
+    /** Turns a Sub-to-do into a normal To-do, in the same place. */
+    promote(id: string): void {
+      ctx.update("toDos", id, { parentId: null });
+    },
+
+    /** A To-do's Sub-to-dos, oldest first, including finished ones. */
+    subToDos(parentId: string): ToDo[] {
+      return store
+        .all("toDos")
+        .filter((t) => t.parentId === parentId && !t.deletedAt)
+        .sort(byCreation);
     },
 
     getToDo(id: string): ToDo {

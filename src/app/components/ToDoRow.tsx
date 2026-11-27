@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { ToDoEntry } from "../../core";
+import { useFinishToDo } from "../finish";
 import { useMyThings } from "../state";
 import { useTheme } from "../theme";
 import { Checkbox } from "./Checkbox";
@@ -35,9 +36,10 @@ interface Props {
 export function ToDoRow({ entry, onPress }: Props) {
   const app = useMyThings();
   const theme = useTheme();
+  const finish = useFinishToDo();
   const { toDo, parentTitle } = entry;
   const finished = toDo.outcome !== "active";
-  const toggle = () => (finished ? app.reopen(toDo.id) : app.complete(toDo.id));
+  const toggle = () => (finished ? app.reopen(toDo.id) : finish(toDo.id, "completed"));
   return (
     <Pressable
       onPress={onPress}

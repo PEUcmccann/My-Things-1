@@ -9,7 +9,7 @@ export interface LogbookDay {
   entries: LogbookEntry[];
 }
 
-/** What to do with a Project's open To-dos when the Project is finished. */
+/** What to do with the open To-dos left in a Project or parent To-do when it is finished. */
 export type Remaining = "complete" | "cancel";
 
 export interface FinishOptions {
@@ -30,6 +30,26 @@ export function logbookActions(ctx: Context) {
 
   function finishToDo(id: string, outcome: "completed" | "cancelled"): void {
     ctx.update("toDos", id, finishedFields(outcome));
+  }
+
+  function openSubToDosOf(parentId: string) {
+    return store
+      .all("toDos")
+      .filter((t) => t.parentId === parentId && t.outcome === "active" && !t.deletedAt);
+  }
+
+  /** Finishes a To-do. A parent with open Sub-to-dos needs a choice for them. */
+  function finishWithChildren(
+    id: string,
+    outcome: "completed" | "cancelled",
+    opts: FinishOptions,
+  ): void {
+    const open = openSubToDosOf(id);
+    if (open.length > 0 && !opts.remaining) {
+      throw new Error("This To-do has open Sub-to-dos: choose to complete or cancel them");
+    }
+    for (const t of open) finishToDo(t.id, outcomeOf[opts.remaining!]);
+    finishToDo(id, outcome);
   }
 
   function openToDosOf(projectId: string) {
@@ -59,12 +79,22 @@ export function logbookActions(ctx: Context) {
   }
 
   return {
-    complete(id: string): void {
-      finishToDo(id, "completed");
+    /**
+     * Completes a To-do. If it has open Sub-to-dos, `remaining` says whether to
+     * complete or cancel them too.
+     */
+    complete(id: string, opts: FinishOptions = {}): void {
+      finishWithChildren(id, "completed", opts);
     },
 
-    cancel(id: string): void {
-      finishToDo(id, "cancelled");
+    /** Cancels a To-do, with the same choice for its open Sub-to-dos. */
+    cancel(id: string, opts: FinishOptions = {}): void {
+      finishWithChildren(id, "cancelled", opts);
+    },
+
+    /** How many active Sub-to-dos a To-do still has. */
+    openSubToDoCount(id: string): number {
+      return openSubToDosOf(id).length;
     },
 
     /** Makes a Completed or Cancelled To-do active again, in its original place. */

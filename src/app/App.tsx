@@ -1,6 +1,7 @@
 import { StatusBar } from "expo-status-bar";
 import { ActivityIndicator, StyleSheet, useWindowDimensions, View } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { FinishProvider } from "./finish";
 import { NavigationProvider, useNavigation, type Route } from "./navigation";
 import { AreaScreen } from "./screens/AreaScreen";
 import { ListScreen } from "./screens/ListScreen";
@@ -77,7 +78,9 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <MyThingsProvider loading={<Loading />}>
-        <Layout />
+        <FinishProvider>
+          <Layout />
+        </FinishProvider>
       </MyThingsProvider>
     </SafeAreaProvider>
   );

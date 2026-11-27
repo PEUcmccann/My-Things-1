@@ -1,19 +1,22 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import type { MyThings, ToDo } from "../../core";
 import { Button } from "../components/Button";
 import { Checkbox } from "../components/Checkbox";
 import { ChecklistEditor } from "../components/ChecklistEditor";
-import { NotesField } from "../components/NotesField";
+import { FieldRow } from "../components/FieldRow";
 import { MovePicker } from "../components/MovePicker";
-import { DatePicker, WhenPicker } from "../components/WhenPicker";
+import { NotesField } from "../components/NotesField";
 import { Screen } from "../components/Screen";
+import { ToDoList } from "../components/ToDoList";
+import { DatePicker, WhenPicker } from "../components/WhenPicker";
+import { useFinishToDo } from "../finish";
 import { formatDate } from "../format";
 import { useNavigation } from "../navigation";
 import { useMyThings } from "../state";
 import { useTheme } from "../theme";
-import type { MyThings, ToDo } from "../../core";
 
-function whenText(toDo: ToDo, today: string): string {
+export function whenText(toDo: Pick<ToDo, "someday" | "startDate" | "evening">, today: string) {
   if (toDo.someday) return "📦 Someday";
   if (!toDo.startDate) return "No Start date";
   if (toDo.startDate <= today) return toDo.evening ? "🌙 This Evening" : "☀️ Today";
@@ -31,13 +34,17 @@ function placeText(app: MyThings, toDo: ToDo): string {
   return toDo.startDate || toDo.someday ? "No Area or Project" : "📥 Inbox";
 }
 
+type Picker = "when" | "deadline" | "move" | null;
+
 export function ToDoScreen({ id }: { id: string }) {
   const app = useMyThings();
   const theme = useTheme();
   const nav = useNavigation();
+  const finish = useFinishToDo();
   const toDo = app.findToDo(id);
   const [title, setTitle] = useState(toDo?.title ?? "");
-  const [picker, setPicker] = useState<"when" | "deadline" | "move" | null>(null);
+  const [newChild, setNewChild] = useState("");
+  const [picker, setPicker] = useState<Picker>(null);
 
   if (!toDo) {
     return (
@@ -48,26 +55,32 @@ export function ToDoScreen({ id }: { id: string }) {
   }
   const today = app.currentDate();
   const trashed = app.isInTrash(id);
+  const parent = toDo.parentId ? app.findToDo(toDo.parentId) : undefined;
+  const children = toDo.parentId
+    ? []
+    : app.subToDos(id).map((t) => ({ toDo: t, parentTitle: null }));
   const saveTitle = () => app.editToDo(id, { title });
-
-  const row = (label: string, value: string, onPress: () => void, testID: string) => (
-    <Pressable
-      onPress={onPress}
-      style={[styles.field, { borderColor: theme.border, backgroundColor: theme.surface }]}
-      testID={testID}
-      accessibilityRole="button"
-    >
-      <Text style={[styles.fieldLabel, { color: theme.muted }]}>{label}</Text>
-      <Text style={[styles.fieldValue, { color: theme.text }]}>{value}</Text>
-    </Pressable>
-  );
+  const addChild = () => {
+    if (!newChild.trim()) return;
+    app.createToDo({ title: newChild.trim(), parentId: id });
+    setNewChild("");
+  };
 
   return (
-    <Screen title="To-do" testID="screen-todo">
+    <Screen title={parent ? "Sub-to-do" : "To-do"} testID="screen-todo">
+      {parent ? (
+        <Pressable
+          onPress={() => nav.push({ name: "toDo", id: parent.id })}
+          style={styles.parent}
+          testID="todo-parent"
+        >
+          <Text style={{ color: theme.muted }}>↳ in {parent.title}</Text>
+        </Pressable>
+      ) : null}
       <View style={styles.titleRow}>
         <Checkbox
           outcome={toDo.outcome}
-          onPress={() => (toDo.outcome === "active" ? app.complete(id) : app.reopen(id))}
+          onPress={() => (toDo.outcome === "active" ? finish(id, "completed") : app.reopen(id))}
           testID="todo-detail-check"
         />
         <TextInput
@@ -83,18 +96,69 @@ export function ToDoScreen({ id }: { id: string }) {
       <View style={styles.fields}>
         <NotesField value={toDo.notes} onSave={(notes) => app.editToDo(id, { notes })} />
         <ChecklistEditor toDoId={id} />
-        {row("When", whenText(toDo, today), () => setPicker("when"), "todo-when")}
-        {row(
-          "Deadline",
-          toDo.deadline ? formatDate(toDo.deadline, today) : "None",
-          () => setPicker("deadline"),
-          "todo-deadline",
+        <FieldRow
+          label="When"
+          value={whenText(toDo, today)}
+          onPress={() => setPicker("when")}
+          testID="todo-when"
+        />
+        <FieldRow
+          label="Deadline"
+          value={toDo.deadline ? formatDate(toDo.deadline, today) : "None"}
+          onPress={() => setPicker("deadline")}
+          testID="todo-deadline"
+        />
+        {parent ? null : (
+          <FieldRow
+            label="Move"
+            value={placeText(app, toDo)}
+            onPress={() => setPicker("move")}
+            testID="todo-move"
+          />
         )}
-        {toDo.parentId
-          ? null
-          : row("Move", placeText(app, toDo), () => setPicker("move"), "todo-move")}
       </View>
+
+      {parent ? null : (
+        <View style={styles.children} testID="sub-todos">
+          <Text style={[styles.section, { color: theme.muted }]}>Sub-to-dos</Text>
+          <ToDoList entries={children} />
+          <TextInput
+            value={newChild}
+            onChangeText={setNewChild}
+            onSubmitEditing={addChild}
+            blurOnSubmit={false}
+            placeholder="＋ Add Sub-to-do"
+            placeholderTextColor={theme.muted}
+            style={[styles.newChild, { color: theme.text, borderColor: theme.border }]}
+            testID="sub-todo-new"
+          />
+        </View>
+      )}
+
       <View style={styles.actions}>
+        {toDo.outcome === "active" ? (
+          <>
+            <Button
+              title="Complete"
+              onPress={() => finish(id, "completed")}
+              testID="todo-complete"
+            />
+            <Button
+              title="Cancel To-do"
+              onPress={() => finish(id, "cancelled")}
+              testID="todo-cancel"
+            />
+          </>
+        ) : (
+          <Button
+            title={toDo.outcome === "completed" ? "Reopen (Completed)" : "Reopen (Cancelled)"}
+            onPress={() => app.reopen(id)}
+            testID="todo-reopen"
+          />
+        )}
+        {parent ? (
+          <Button title="Promote to To-do" onPress={() => app.promote(id)} testID="todo-promote" />
+        ) : null}
         {trashed ? (
           <Button
             title="Restore from Trash"
@@ -110,18 +174,6 @@ export function ToDoScreen({ id }: { id: string }) {
               nav.back();
             }}
             testID="todo-delete"
-          />
-        )}
-        {toDo.outcome === "active" ? (
-          <>
-            <Button title="Complete" onPress={() => app.complete(id)} testID="todo-complete" />
-            <Button title="Cancel To-do" onPress={() => app.cancel(id)} testID="todo-cancel" />
-          </>
-        ) : (
-          <Button
-            title={toDo.outcome === "completed" ? "Reopen (Completed)" : "Reopen (Cancelled)"}
-            onPress={() => app.reopen(id)}
-            testID="todo-reopen"
           />
         )}
       </View>
@@ -149,6 +201,7 @@ export function ToDoScreen({ id }: { id: string }) {
 }
 
 const styles = StyleSheet.create({
+  parent: { marginLeft: 8, marginBottom: 4 },
   titleRow: { flexDirection: "row", alignItems: "center", gap: 4, marginLeft: 8 },
   actions: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 24 },
   title: {
@@ -160,13 +213,13 @@ const styles = StyleSheet.create({
     marginHorizontal: 8,
   },
   fields: { marginTop: 16, gap: 8 },
-  field: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    padding: 14,
-    borderRadius: 10,
-    borderWidth: StyleSheet.hairlineWidth,
+  children: { marginTop: 20 },
+  section: {
+    fontSize: 13,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    marginBottom: 6,
+    marginLeft: 8,
   },
-  fieldLabel: { fontSize: 15 },
-  fieldValue: { fontSize: 15, fontWeight: "500" },
+  newChild: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 10, padding: 12, fontSize: 15 },
 });

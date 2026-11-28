@@ -113,7 +113,7 @@ function setUp(inner = fakeStorage()) {
   const { storage, calls } = watched(inner);
   const backups = createBackups({
     storage,
-    userId: user,
+    owner: user,
     exportText: () => JSON.stringify(app.exportAll()),
     now: () => clockAt,
   });

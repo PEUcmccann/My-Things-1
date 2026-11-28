@@ -32,8 +32,8 @@ export function backupName(at: number): string {
   return `mythings-backup-${time}Z.json`;
 }
 
-export function backupPath(userId: string, at: number): string {
-  return `${userId}/${backupName(at)}`;
+export function backupPath(owner: string, at: number): string {
+  return `${owner}/${backupName(at)}`;
 }
 
 /** When the backup with this file name was made, or null if it isn't a backup's name. */
@@ -77,13 +77,13 @@ export interface Backups {
 
 export function createBackups({
   storage,
-  userId,
+  owner,
   exportText,
   now = Date.now,
 }: {
   /** The `backups` bucket, opened so uploads don't replace files. */
   storage: FileStorage;
-  userId: string;
+  owner: string;
   /** Everything as an export file's text, at the time of the backup. */
   exportText: () => string;
   now?: () => number;
@@ -91,11 +91,11 @@ export function createBackups({
   let running: Promise<Backup[]> | null = null;
 
   async function list(): Promise<Backup[]> {
-    const files = await storage.list(userId);
+    const files = await storage.list(owner);
     const backups: Backup[] = [];
     for (const file of files) {
       const at = backupTime(file.name);
-      if (at !== null) backups.push({ path: `${userId}/${file.name}`, at, size: file.size });
+      if (at !== null) backups.push({ path: `${owner}/${file.name}`, at, size: file.size });
     }
     return newestFirst(backups);
   }
@@ -105,7 +105,7 @@ export function createBackups({
     const newest = backups[0]?.at ?? -Infinity;
     const at = Math.max(Math.floor(now() / 1000) * 1000, newest + 1000);
     const body = new TextEncoder().encode(exportText());
-    const made: Backup = { path: backupPath(userId, at), at, size: body.byteLength };
+    const made: Backup = { path: backupPath(owner, at), at, size: body.byteLength };
     // A failed upload throws here, before anything is deleted.
     await storage.upload(made.path, body.buffer as ArrayBuffer, backupType);
     const all = [made, ...backups];

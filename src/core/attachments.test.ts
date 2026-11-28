@@ -67,7 +67,7 @@ describe("adding an Attachment", () => {
     const tooLarge = () =>
       app.prepareAttachment(toDo, { name: "b.mov", mimeType: "video/quicktime", size: 26_214_401 });
     expect(tooLarge).toThrow(AttachmentError);
-    expect(tooLarge).toThrow("Files can be up to 25 MB");
+    expect(tooLarge).toThrow("Attachments can be up to 25 MB");
     expect(names(toDo)).toEqual(["a.mov"]);
   });
 
@@ -75,7 +75,7 @@ describe("adding an Attachment", () => {
     const toDo = app.createToDo({ title: "Video" });
     const prepared = app.prepareAttachment(toDo, photo);
     expect(() => app.addAttachment({ ...prepared, size: maxAttachmentSize + 1 })).toThrow(
-      "Files can be up to 25 MB",
+      "Attachments can be up to 25 MB",
     );
     expect(names(toDo)).toEqual([]);
   });

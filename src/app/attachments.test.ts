@@ -6,8 +6,8 @@ import {
   formatFileSize,
   openAttachmentUrl,
   restoreEverything,
-  uploadAttachment,
-  UploadError,
+  attachPicked,
+  AttachingError,
   type PickedFile,
 } from "./attachments";
 import { fakeStorage, StorageError, storageError, type FileStorage } from "./fileStorage";
@@ -70,7 +70,7 @@ function watched(inner: FileStorage, fail: { on?: (path: string) => boolean } = 
 describe("adding an Attachment", () => {
   it("uploads the file first and adds the record only once it is stored", async () => {
     const { storage, log } = watched(fakeStorage());
-    const id = await uploadAttachment(app, storage, toDo, textFile);
+    const id = await attachPicked(app, storage, toDo, textFile);
     expect(log).toEqual([`upload ${account}/${id}/notes.txt (records: 0)`]);
     expect(app.attachments(toDo)).toEqual([
       expect.objectContaining({ id, name: "notes.txt", thumbnailPath: null }),
@@ -80,7 +80,7 @@ describe("adding an Attachment", () => {
   it("uploads an image's thumbnail with it", async () => {
     const inner = fakeStorage();
     const { storage, log } = watched(inner);
-    const id = await uploadAttachment(app, storage, toDo, photo);
+    const id = await attachPicked(app, storage, toDo, photo);
     expect(log).toEqual([
       `upload ${account}/${id}/Beach_day.jpg (records: 0)`,
       `upload ${account}/${id}/thumbnail.jpg (records: 0)`,
@@ -91,17 +91,17 @@ describe("adding an Attachment", () => {
 
   it("leaves nothing behind when the upload fails", async () => {
     const { storage } = watched(fakeStorage(), { on: () => true });
-    const upload = uploadAttachment(app, storage, toDo, textFile);
-    await expect(upload).rejects.toThrow(UploadError);
-    await expect(upload).rejects.toThrow("Couldn't upload notes.txt. Try again.");
+    const upload = attachPicked(app, storage, toDo, textFile);
+    await expect(upload).rejects.toThrow(AttachingError);
+    await expect(upload).rejects.toThrow("Couldn't attach notes.txt. Try again.");
     expect(app.attachments(toDo)).toEqual([]);
   });
 
   it("deletes the uploaded file when its thumbnail fails, and adds no record", async () => {
     const inner = fakeStorage();
     const { storage, log } = watched(inner, { on: (p) => p.endsWith("thumbnail.jpg") });
-    await expect(uploadAttachment(app, storage, toDo, photo)).rejects.toThrow(
-      "Couldn't upload Beach day.jpg. Try again.",
+    await expect(attachPicked(app, storage, toDo, photo)).rejects.toThrow(
+      "Couldn't attach Beach day.jpg. Try again.",
     );
     expect(app.attachments(toDo)).toEqual([]);
     const file = log[0].split(" ")[1];
@@ -112,8 +112,8 @@ describe("adding an Attachment", () => {
   it("refuses a file over 25 MB before anything is uploaded", async () => {
     const { storage, log } = watched(fakeStorage());
     const huge = { ...textFile, size: 26_214_401 };
-    await expect(uploadAttachment(app, storage, toDo, huge)).rejects.toThrow(
-      "Files can be up to 25 MB",
+    await expect(attachPicked(app, storage, toDo, huge)).rejects.toThrow(
+      "Attachments can be up to 25 MB",
     );
     expect(log).toEqual([]);
   });
@@ -122,7 +122,7 @@ describe("adding an Attachment", () => {
 describe("removing an Attachment", () => {
   it("deletes its file and thumbnail", async () => {
     const inner = fakeStorage();
-    const id = await uploadAttachment(app, inner, toDo, photo);
+    const id = await attachPicked(app, inner, toDo, photo);
     const removed = app.removeAttachment(id);
     await deleteAttachmentFiles(inner, [removed]);
     await expect(inner.signedUrl(removed.storagePath, 3600)).rejects.toMatchObject({
@@ -155,9 +155,9 @@ describe("restoring an export", () => {
 
   it("deletes the files of Attachments the file doesn't hold", async () => {
     const storage = fakeStorage();
-    const kept = await uploadAttachment(app, storage, toDo, textFile);
+    const kept = await attachPicked(app, storage, toDo, textFile);
     const text = JSON.stringify(app.exportAll());
-    const added = await uploadAttachment(app, storage, toDo, photo);
+    const added = await attachPicked(app, storage, toDo, photo);
     const [keptPath, addedPath] = app.attachments(toDo).map((a) => a.storagePath);
     await restoreEverything(app, storage, text);
     expect(app.attachments(toDo).map((a) => a.id)).toEqual([kept]);
@@ -168,7 +168,7 @@ describe("restoring an export", () => {
 
   it("deletes the files of Attachments on To-dos the restore empties from the Trash", async () => {
     const storage = fakeStorage();
-    await uploadAttachment(app, storage, toDo, textFile);
+    await attachPicked(app, storage, toDo, textFile);
     const [path] = app.attachments(toDo).map((a) => a.storagePath);
     app.delete(toDo);
     const text = JSON.stringify(app.exportAll());
@@ -180,7 +180,7 @@ describe("restoring an export", () => {
 
   it("refuses a file that isn't an export, changing nothing", async () => {
     const storage = fakeStorage();
-    await uploadAttachment(app, storage, toDo, textFile);
+    await attachPicked(app, storage, toDo, textFile);
     expect(() => restoreEverything(app, storage, "not json")).toThrow(RestoreError);
     expect(app.attachments(toDo)).toHaveLength(1);
   });
@@ -194,18 +194,18 @@ describe("opening an Attachment", () => {
       ...inner,
       signedUrl: (path, seconds) => (asked.push(seconds), inner.signedUrl(path, seconds)),
     };
-    const id = await uploadAttachment(app, storage, toDo, textFile);
+    const id = await attachPicked(app, storage, toDo, textFile);
     const result = await openAttachmentUrl(storage, app.attachments(toDo)[0]);
     expect(result).toEqual({ kind: "url", url: expect.any(String) });
     expect(asked).toEqual([3600]);
     expect(id).toBeTruthy();
   });
 
-  it("says 'File not available' when the file isn't in Storage, as after a restore", async () => {
+  it("says 'Attachment not available' when its file isn't in Storage, as after a restore", async () => {
     const result = await openAttachmentUrl(fakeStorage(), {
       storagePath: "another-account/x/notes.txt",
     } as never);
-    expect(result).toEqual({ kind: "problem", text: "File not available" });
+    expect(result).toEqual({ kind: "problem", text: "Attachment not available" });
   });
 
   it("says when it can't be opened while offline", async () => {

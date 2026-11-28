@@ -28,7 +28,7 @@ export class AttachmentError extends Error {
   constructor(readonly problem: AttachmentProblem) {
     super(
       {
-        tooLarge: "Files can be up to 25 MB",
+        tooLarge: "Attachments can be up to 25 MB",
         signedOut: "Sign in to add attachments",
       }[problem],
     );

@@ -8,7 +8,7 @@ import {
   deleteAttachmentFiles,
   formatFileSize,
   signedLink,
-  uploadAttachment,
+  attachPicked,
   type PickedFile,
 } from "../attachments";
 import type { FileStorage } from "../fileStorage";
@@ -27,8 +27,8 @@ const kindIcons: Record<ReturnType<typeof attachmentKind>, IconName> = {
   other: "file",
 };
 
-/** A file on its way to Storage, shown until its Attachment is added. */
-interface Uploading {
+/** An Attachment on its way to Storage, shown until it is added. */
+interface Attaching {
   key: number;
   name: string;
   size: number;
@@ -42,7 +42,7 @@ export function AttachmentsEditor({ toDoId }: { toDoId: string }) {
   const theme = useTheme();
   const { storage, unavailable } = useAttachmentStorage();
   const [menu, setMenu] = useState(false);
-  const [uploading, setUploading] = useState<Uploading[]>([]);
+  const [attaching, setAttaching] = useState<Attaching[]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [removing, setRemoving] = useState<Attachment | null>(null);
   const [viewing, setViewing] = useState<string | null>(null);
@@ -60,13 +60,13 @@ export function AttachmentsEditor({ toDoId }: { toDoId: string }) {
     }
     if (!picked || !storage) return;
     const row = { key: ++nextKey, name: picked.name, size: picked.size };
-    setUploading((rows) => [...rows, row]);
+    setAttaching((rows) => [...rows, row]);
     try {
-      await uploadAttachment(app, storage, toDoId, picked);
+      await attachPicked(app, storage, toDoId, picked);
     } catch (error) {
       setMessage(addProblemText(error));
     } finally {
-      setUploading((rows) => rows.filter((r) => r.key !== row.key));
+      setAttaching((rows) => rows.filter((r) => r.key !== row.key));
     }
   }
 
@@ -133,11 +133,11 @@ export function AttachmentsEditor({ toDoId }: { toDoId: string }) {
           />
         </Pressable>
       ))}
-      {uploading.map((u) => (
+      {attaching.map((u) => (
         <View
           key={u.key}
           style={[styles.row, { borderColor: theme.border, backgroundColor: theme.surface }]}
-          testID="attachment-uploading"
+          testID="attachment-attaching"
         >
           <View style={[styles.thumb, styles.iconBox]}>
             <Icon name="attachment" size={22} color={theme.muted} />
@@ -146,7 +146,7 @@ export function AttachmentsEditor({ toDoId }: { toDoId: string }) {
             <Text style={[styles.name, { color: theme.text }]} numberOfLines={1}>
               {u.name}
             </Text>
-            <Text style={[styles.detail, { color: theme.muted }]}>Uploading…</Text>
+            <Text style={[styles.detail, { color: theme.muted }]}>Attaching…</Text>
           </View>
         </View>
       ))}
@@ -179,10 +179,10 @@ export function AttachmentsEditor({ toDoId }: { toDoId: string }) {
             testID: "attachment-add-photo",
           },
           {
-            title: "File",
+            title: "Document",
             icon: "file",
             onPress: () => void add(pickDocument),
-            testID: "attachment-add-file",
+            testID: "attachment-add-document",
           },
         ]}
       />
@@ -244,7 +244,7 @@ function Preview({
     void signedLink(storage, path).then((link) => {
       if (!live) return;
       if (link.kind === "url") setUri(link.url);
-      else if (link.text === "File not available") onMissing(link.text);
+      else if (link.text === "Attachment not available") onMissing(link.text);
     });
     return () => {
       live = false;

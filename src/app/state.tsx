@@ -98,7 +98,7 @@ export function MyThingsProvider({
       app && account
         ? createBackups({
             storage: deviceFileStorage("backups"),
-            userId: account.id,
+            owner: account.id,
             exportText: () => JSON.stringify(app.exportAll(), null, 2),
           })
         : null,

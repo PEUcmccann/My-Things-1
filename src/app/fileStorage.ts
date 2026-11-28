@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { didNotGetThrough, settled } from "./requests";
 
 // Files in one private Supabase Storage bucket, each account in its own folder
 // (supabase/migrations/). Attachments use the `attachments` bucket, Backups the
@@ -62,20 +63,15 @@ export function storageError(error: unknown): StorageError {
   if (e.statusCode === "404" || e.status === 404 || /not found/i.test(message)) {
     return new StorageError("missing", message);
   }
-  if (/fetch|network|load failed/i.test(message)) return new StorageError("offline", message);
+  if (didNotGetThrough(message)) return new StorageError("offline", message);
   return new StorageError("failed", message);
 }
 
 /** Runs a storage-js call, turning its returned or thrown error into a StorageError. */
 async function run<T>(call: () => Promise<{ data: T; error: unknown }>): Promise<T> {
-  let result: { data: T; error: unknown };
-  try {
-    result = await call();
-  } catch (thrown) {
-    throw storageError(thrown);
-  }
+  const result = await settled(Promise.resolve().then(call));
   if (result.error) throw storageError(result.error);
-  return result.data;
+  return result.data as T;
 }
 
 /** One bucket of Supabase Storage, as the signed-in account. */

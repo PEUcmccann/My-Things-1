@@ -49,6 +49,7 @@ const photo: PickedFile = {
 function watched(inner: FileStorage, fail: { on?: (path: string) => boolean } = {}) {
   const log: string[] = [];
   const storage: FileStorage = {
+    ...inner,
     async upload(path, body, contentType) {
       log.push(`upload ${path} (records: ${app.attachments(toDo).length})`);
       if (fail.on?.(path)) throw new StorageError("offline", "Failed to fetch");

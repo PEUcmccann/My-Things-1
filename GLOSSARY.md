@@ -136,3 +136,7 @@ _Avoid_: Perspective, filter, saved search
 **Owner**:
 The account a record belongs to: "me" until you sign in, then the account's user id. Signing in makes every record on the device the account's; signing out erases the device.
 _Avoid_: User, author, creator
+
+**Backup**:
+An automatic weekly export of everything, kept in the account's Storage while you're signed in; the last 8 are kept, and any one can be restored. It is made when the app opens or comes to the foreground and the newest is 7 days old or more.
+_Avoid_: Snapshot, archive

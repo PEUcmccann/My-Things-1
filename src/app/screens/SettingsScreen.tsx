@@ -6,6 +6,7 @@ import { Choice } from "../components/Choice";
 import { MenuSheet } from "../components/MenuSheet";
 import { Screen } from "../components/Screen";
 import { AccountSection } from "./AccountSection";
+import { BackupsSection } from "./BackupsSection";
 import { csvFileName, exportDateText, exportFileName, restoreProblemText } from "../dataFiles";
 import { pickTextFile, saveFile } from "../fileSaving";
 import { useNavigation } from "../navigation";
@@ -183,6 +184,7 @@ function DataSection() {
           },
         ]}
       />
+      <BackupsSection />
     </>
   );
 }

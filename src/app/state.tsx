@@ -1,5 +1,6 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -13,6 +14,7 @@ import { createMyThings, systemClock, type MyThings } from "../core";
 import * as flow from "./account";
 import { deleteAttachmentFiles } from "./attachments";
 import type { Account, Auth } from "./authAdapter";
+import { backupErrorText, createBackups, type Backup, type Backups } from "./backups";
 import { deviceAuth } from "./deviceAuth";
 import { deviceFileStorage } from "./deviceFileStorage";
 import { deviceRemote } from "./deviceRemote";
@@ -40,7 +42,23 @@ interface MyThingsState {
   restartSync: () => void;
   /** The account's Attachment files, while signed in. */
   attachmentStorage: FileStorage | null;
+  /** The account's Backups, while signed in. */
+  backups: Backups | null;
+  backupStatus: BackupStatus;
+  /** Runs a backup step, showing its outcome in `backupStatus`. */
+  runBackups: (step: (backups: Backups) => Promise<Backup[]>) => Promise<void>;
 }
+
+/** What Settings → Data shows about Backups. */
+export interface BackupStatus {
+  /** Newest first; null until they have been listed since signing in. */
+  list: Backup[] | null;
+  busy: boolean;
+  /** Why the last backup step failed, or null. */
+  error: string | null;
+}
+
+const noBackups: BackupStatus = { list: null, busy: false, error: null };
 
 /**
  * Deletes the files of Attachments this device removed, when it can: signed in, and
@@ -75,6 +93,39 @@ export function MyThingsProvider({
     () => (account ? deviceFileStorage("attachments") : null),
     [account],
   );
+  const backups = useMemo(
+    () =>
+      app && account
+        ? createBackups({
+            storage: deviceFileStorage("backups"),
+            userId: account.id,
+            exportText: () => JSON.stringify(app.exportAll(), null, 2),
+          })
+        : null,
+    [app, account],
+  );
+  const [backupStatus, setBackupStatus] = useState<BackupStatus>(noBackups);
+  // The backups of the account signed in now, so a step that finishes after signing out
+  // or into another account shows nothing.
+  const currentBackups = useRef<Backups | null>(null);
+  currentBackups.current = backups;
+  const runBackups = useCallback(async (step: (b: Backups) => Promise<Backup[]>) => {
+    const running = currentBackups.current;
+    if (!running) return;
+    setBackupStatus((s) => ({ ...s, busy: true, error: null }));
+    try {
+      const list = await step(running);
+      if (currentBackups.current === running) setBackupStatus({ list, busy: false, error: null });
+    } catch (error) {
+      console.warn("Backup failed", error);
+      if (currentBackups.current === running) {
+        setBackupStatus((s) => ({ ...s, busy: false, error: backupErrorText(error) }));
+      }
+    }
+  }, []);
+  useEffect(() => {
+    setBackupStatus(noBackups);
+  }, [backups]);
 
   useEffect(() => {
     let cancelled = false;
@@ -124,6 +175,13 @@ export function MyThingsProvider({
     const running = createSyncer(app, deviceRemote(account), { onStatus: setSyncStatus });
     syncer.current = running;
     const sync = () => void running.sync();
+    // On opening and coming to the foreground, a Backup check follows a successful sync,
+    // so the Backup holds other devices' latest edits too (M3-08).
+    let stopped = false;
+    const syncThenBackUp = () =>
+      void running.sync().then((result) => {
+        if (result && !stopped) void runBackups((b) => b.check());
+      });
     let changeTimer: ReturnType<typeof setTimeout> | undefined;
     onChange.current = () => {
       if (running.isWriting()) return;
@@ -134,10 +192,11 @@ export function MyThingsProvider({
       if (AppState.currentState === "active") sync();
     }, pollMs);
     const foreground = AppState.addEventListener("change", (state) => {
-      if (state === "active") sync();
+      if (state === "active") syncThenBackUp();
     });
-    sync();
+    syncThenBackUp();
     return () => {
+      stopped = true;
       running.stop();
       if (syncer.current === running) syncer.current = null;
       onChange.current = () => {};
@@ -146,7 +205,7 @@ export function MyThingsProvider({
       foreground.remove();
       setSyncStatus({ kind: "notYet" });
     };
-  }, [app, account, syncRun]);
+  }, [app, account, syncRun, runBackups]);
 
   const value = useMemo(
     () =>
@@ -160,8 +219,11 @@ export function MyThingsProvider({
         syncer,
         restartSync: () => setSyncRun((n) => n + 1),
         attachmentStorage,
+        backups,
+        backupStatus,
+        runBackups,
       },
-    [app, version, auth, account, syncStatus, attachmentStorage],
+    [app, version, auth, account, syncStatus, attachmentStorage, backups, backupStatus, runBackups],
   );
 
   if (!value) return <>{loading}</>;
@@ -245,6 +307,28 @@ export function useAttachmentStorage(): {
       : syncStatus.kind === "offline"
         ? "You're offline"
         : null,
+  };
+}
+
+/**
+ * The account's Backups for Settings → Data: null while signed out. Restoring one
+ * replaces everything through the export's restore, so it syncs to other devices.
+ */
+export function useBackups() {
+  const state = useContext(Context);
+  if (!state) throw new Error("useBackups must be used inside MyThingsProvider");
+  const { app, backups, backupStatus, runBackups } = state;
+  if (!backups) return null;
+  return {
+    ...backupStatus,
+    backUpNow: () => runBackups((b) => b.backUpNow()),
+    /** Replaces everything with the backup. Throws a StorageError or a RestoreError. */
+    async restore(backup: Backup) {
+      const text = await backups.read(backup);
+      app.restoreExport(text);
+      // As when the app opens: Trash older than 30 days in the file goes for good.
+      app.purgeExpiredTrash();
+    },
   };
 }
 

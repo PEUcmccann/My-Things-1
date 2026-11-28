@@ -56,6 +56,7 @@ const names: Record<CollectionName, string> = {
   tags: "Tag",
   toDos: "To-do",
   smartLists: "Smart List",
+  attachments: "Attachment",
 };
 
 export function createContext(opts: {

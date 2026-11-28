@@ -4,12 +4,14 @@ import { Button } from "../components/Button";
 import { Empty } from "../components/Empty";
 import { MenuSheet } from "../components/MenuSheet";
 import { Screen } from "../components/Screen";
-import { useMyThings } from "../state";
+import { deleteAttachmentFiles } from "../attachments";
+import { useAttachmentStorage, useMyThings } from "../state";
 import { useTheme } from "../theme";
 
 export function TrashScreen() {
   const app = useMyThings();
   const theme = useTheme();
+  const { storage } = useAttachmentStorage();
   const [confirm, setConfirm] = useState(false);
   const entries = app.trash();
   return (
@@ -72,7 +74,8 @@ export function TrashScreen() {
           {
             title: "Empty Trash",
             danger: true,
-            onPress: () => app.emptyTrash(),
+            // Signed in and online, the removed Attachments' files go too.
+            onPress: () => void deleteAttachmentFiles(storage, app.emptyTrash()),
             testID: "empty-trash-confirm",
           },
         ]}

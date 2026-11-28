@@ -1,6 +1,6 @@
 import type { Context, ToDoEntry } from "./context";
 import type { Store } from "./store";
-import type { Project, ToDo } from "./types";
+import type { Attachment, Project, ToDo } from "./types";
 
 /** How long deleted items stay in the Trash. */
 export const trashDays = 30;
@@ -8,15 +8,26 @@ export const trashDays = 30;
 export type TrashEntry =
   ({ kind: "toDo" } & ToDoEntry) | { kind: "project"; project: Project; toDoCount: number };
 
-/** Removes a To-do for good, with its Sub-to-dos and Checklist. */
-export function eraseToDoFrom(store: Store, id: string): void {
+/**
+ * Removes a To-do for good, with its Sub-to-dos, Checklist and Attachments. Returns
+ * the Attachments removed, so the app can delete their files.
+ */
+export function eraseToDoFrom(store: Store, id: string): Attachment[] {
+  const removed: Attachment[] = [];
   for (const child of store.all("toDos")) {
-    if (child.parentId === id) eraseToDoFrom(store, child.id);
+    if (child.parentId === id) removed.push(...eraseToDoFrom(store, child.id));
   }
   for (const c of store.all("checklistItems")) {
     if (c.toDoId === id) store.remove("checklistItems", c.id);
   }
+  for (const a of store.all("attachments")) {
+    if (a.toDoId === id) {
+      store.remove("attachments", a.id);
+      removed.push(a);
+    }
+  }
   store.remove("toDos", id);
+  return removed;
 }
 
 export function trashActions(ctx: Context) {
@@ -24,15 +35,17 @@ export function trashActions(ctx: Context) {
 
   const eraseToDo = (id: string) => eraseToDoFrom(store, id);
 
-  /** Removes a Project for good, with everything in it. */
-  function eraseProject(id: string): void {
+  /** Removes a Project for good, with everything in it. Returns the Attachments removed. */
+  function eraseProject(id: string): Attachment[] {
+    const removed: Attachment[] = [];
     for (const t of store.all("toDos")) {
-      if (t.projectId === id && store.get("toDos", t.id)) eraseToDo(t.id);
+      if (t.projectId === id && store.get("toDos", t.id)) removed.push(...eraseToDo(t.id));
     }
     for (const h of store.all("headings")) {
       if (h.projectId === id) store.remove("headings", h.id);
     }
     store.remove("projects", id);
+    return removed;
   }
 
   function trashContents(): { toDos: ToDo[]; projects: Project[] } {
@@ -102,19 +115,31 @@ export function trashActions(ctx: Context) {
       return entries.sort((a, b) => b.at.localeCompare(a.at)).map(({ at: _at, ...e }) => e);
     },
 
-    /** Removes everything deleted more than 30 days ago. */
-    purgeExpiredTrash(): void {
+    /**
+     * Removes everything deleted more than 30 days ago. Returns the Attachments removed
+     * with it, whose files the app deletes from Storage.
+     */
+    purgeExpiredTrash(): Attachment[] {
       const cutoff = new Date(ctx.clock.now().getTime() - trashDays * 86_400_000).toISOString();
       const { toDos, projects } = trashContents();
-      for (const p of projects) if (p.deletedAt! < cutoff) eraseProject(p.id);
-      for (const t of toDos) if (t.deletedAt! < cutoff && store.get("toDos", t.id)) eraseToDo(t.id);
+      const removed: Attachment[] = [];
+      for (const p of projects) if (p.deletedAt! < cutoff) removed.push(...eraseProject(p.id));
+      for (const t of toDos) {
+        if (t.deletedAt! < cutoff && store.get("toDos", t.id)) removed.push(...eraseToDo(t.id));
+      }
+      return removed;
     },
 
-    /** Removes everything in the Trash for good. */
-    emptyTrash(): void {
+    /**
+     * Removes everything in the Trash for good. Returns the Attachments removed with it,
+     * whose files the app deletes from Storage.
+     */
+    emptyTrash(): Attachment[] {
       const { toDos, projects } = trashContents();
-      for (const p of projects) eraseProject(p.id);
-      for (const t of toDos) if (store.get("toDos", t.id)) eraseToDo(t.id);
+      const removed: Attachment[] = [];
+      for (const p of projects) removed.push(...eraseProject(p.id));
+      for (const t of toDos) if (store.get("toDos", t.id)) removed.push(...eraseToDo(t.id));
+      return removed;
     },
   };
 }

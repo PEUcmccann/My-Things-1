@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { formatEstimate, type MyThings, type SeriesScope, type ToDo } from "../../core";
+import { AttachmentsEditor } from "../components/AttachmentsEditor";
 import { Button } from "../components/Button";
 import { Checkbox } from "../components/Checkbox";
 import { ChecklistEditor } from "../components/ChecklistEditor";
@@ -168,6 +169,7 @@ export function ToDoScreen({ id }: { id: string }) {
           onSave={(notes) => edit(() => app.editToDo(id, { notes }))}
         />
         <ChecklistEditor toDoId={id} edit={edit} />
+        <AttachmentsEditor toDoId={id} />
         <FieldRow
           label="When"
           value={whenText(toDo, today)}

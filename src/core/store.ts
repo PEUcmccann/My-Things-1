@@ -1,5 +1,6 @@
 import type {
   Area,
+  Attachment,
   ChecklistItem,
   Edit,
   Heading,
@@ -19,6 +20,7 @@ export interface Collections {
   checklistItems: ChecklistItem;
   tags: Tag;
   smartLists: SmartList;
+  attachments: Attachment;
 }
 
 export type CollectionName = keyof Collections;
@@ -93,6 +95,7 @@ export const collectionNames: CollectionName[] = [
   "checklistItems",
   "tags",
   "smartLists",
+  "attachments",
 ];
 
 /** Defaults for fields that records saved by earlier versions, or synced in part, may lack. */
@@ -122,6 +125,7 @@ export const recordDefaults: { [C in CollectionName]: Partial<Collections[C]> } 
   checklistItems: {},
   tags: {},
   smartLists: {},
+  attachments: { thumbnailPath: null, width: null, height: null },
 };
 
 export interface MemoryStore extends Store {

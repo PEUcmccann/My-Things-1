@@ -16,7 +16,7 @@ import { MovePicker } from "./MovePicker";
 import { TagChips } from "./TagChips";
 import { WhenPicker } from "./WhenPicker";
 
-/** Small hints on a row: repeating, notes, and Checklist progress such as 2/5. */
+/** Small hints on a row: repeating, notes, Attachments, and Checklist progress such as 2/5. */
 function Indicators({
   toDoId,
   hasNotes,
@@ -29,7 +29,8 @@ function Indicators({
   const app = useMyThings();
   const theme = useTheme();
   const { ticked, total } = app.checklistProgress(toDoId);
-  if (!hasNotes && total === 0 && !repeats) return null;
+  const attached = app.hasAttachments(toDoId);
+  if (!hasNotes && total === 0 && !repeats && !attached) return null;
   return (
     <View style={styles.indicators}>
       {repeats ? (
@@ -40,6 +41,11 @@ function Indicators({
       {hasNotes ? (
         <View testID="row-notes" accessibilityLabel="Has notes">
           <Icon name="notes" size={13} color={theme.muted} />
+        </View>
+      ) : null}
+      {attached ? (
+        <View testID="row-attachments" accessibilityLabel="Has attachments">
+          <Icon name="attachment" size={13} color={theme.muted} />
         </View>
       ) : null}
       {total > 0 ? (

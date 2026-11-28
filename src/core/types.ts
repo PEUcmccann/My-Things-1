@@ -228,6 +228,27 @@ export interface ChecklistItem extends RecordMeta {
   position: number;
 }
 
+/**
+ * A file attached to a To-do: its details and where its file (and an image's
+ * thumbnail) are stored in the account's Storage folder. The file itself is never
+ * part of the record, so it never syncs as an edit or goes into an export.
+ */
+export interface Attachment extends RecordMeta {
+  toDoId: string;
+  /** The original file name, as the app shows it. */
+  name: string;
+  mimeType: string;
+  /** In bytes. */
+  size: number;
+  /** "<user id>/<attachment id>/<file name>", with the name made safe for a path. */
+  storagePath: string;
+  /** "<user id>/<attachment id>/thumbnail.jpg" for an image, else null. */
+  thumbnailPath: string | null;
+  /** An image's size in pixels; null for other files. */
+  width: number | null;
+  height: number | null;
+}
+
 /** The accent colours to choose from. Teal is the default. */
 export const accentColours = ["teal", "blue", "indigo", "orange", "rose", "green"] as const;
 export type AccentColour = (typeof accentColours)[number];

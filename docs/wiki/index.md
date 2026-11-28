@@ -28,6 +28,7 @@ A historical record kept by the chief-of-staff sessions (`.claude/skills/chief-o
 
 - [Milestone 1 run log](runs/milestone-1.md): what each delegated M1 ticket produced, and the retros on them.
 - [Milestone 2 run log](runs/milestone-2.md): the M2 tickets and the defaults chosen for them.
+- [Milestone 3 run log](runs/milestone-3.md): the M3 sync tickets, order, deployments and code review, 2026-11-27/28.
 
 ## Retros
 

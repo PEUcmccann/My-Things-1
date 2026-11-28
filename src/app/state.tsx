@@ -12,7 +12,7 @@ import { randomUUID } from "expo-crypto";
 import { AppState, LayoutAnimation, Platform } from "react-native";
 import { createMyThings, systemClock, type MyThings } from "../core";
 import * as flow from "./account";
-import { deleteAttachmentFiles } from "./attachments";
+import { deleteAttachmentFiles, restoreEverything } from "./attachments";
 import type { Account, Auth } from "./authAdapter";
 import { backupErrorText, createBackups, type Backup, type Backups } from "./backups";
 import { deviceAuth } from "./deviceAuth";
@@ -317,7 +317,7 @@ export function useAttachmentStorage(): {
 export function useBackups() {
   const state = useContext(Context);
   if (!state) throw new Error("useBackups must be used inside MyThingsProvider");
-  const { app, backups, backupStatus, runBackups } = state;
+  const { app, backups, backupStatus, runBackups, attachmentStorage } = state;
   if (!backups) return null;
   return {
     ...backupStatus,
@@ -325,9 +325,7 @@ export function useBackups() {
     /** Replaces everything with the backup. Throws a StorageError or a RestoreError. */
     async restore(backup: Backup) {
       const text = await backups.read(backup);
-      app.restoreExport(text);
-      // As when the app opens: Trash older than 30 days in the file goes for good.
-      app.purgeExpiredTrash();
+      void restoreEverything(app, attachmentStorage, text);
     },
   };
 }

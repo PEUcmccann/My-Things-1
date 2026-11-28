@@ -6,7 +6,7 @@ import {
   type CollectionName,
   type Snapshot,
 } from "./store";
-import type { Moment, Settings } from "./types";
+import type { Attachment, Moment, Settings } from "./types";
 
 export const exportFormat = "mythings-export";
 /** The newest export version this core reads, and the one it writes. */
@@ -108,15 +108,19 @@ export function exportActions(ctx: Context, replaceEverything: ReplaceEverything
     /**
      * Replaces everything with an export file's contents, or throws a RestoreError and
      * changes nothing. Every restored record belongs to the current owner, and the
-     * restore syncs to other devices as edits made now.
+     * restore syncs to other devices as edits made now. Returns the Attachments it
+     * removed because the file doesn't hold them, so the app can delete their files.
      */
-    restoreExport(text: string): void {
+    restoreExport(text: string): Attachment[] {
       const file = readExport(text);
+      const restored = new Set(file.records.attachments.map((a) => a.id));
+      const removed = store.all("attachments").filter((a) => !restored.has(a.id));
       const records = {} as Record<CollectionName, unknown[]>;
       for (const name of collectionNames) {
         records[name] = file.records[name].map((r) => ({ ...r, owner: ctx.owner }));
       }
       replaceEverything(records as unknown as Snapshot["records"], file.settings);
+      return removed;
     },
   };
 }

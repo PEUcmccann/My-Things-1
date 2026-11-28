@@ -217,6 +217,22 @@ describe("export and restore", () => {
     ]);
   });
 
+  it("returns the Attachments a restore removes, so their files can be deleted", () => {
+    const toDo = app.createToDo({ title: "Holiday" });
+    const kept = attach(toDo);
+    const text = JSON.stringify(app.exportAll());
+    const added = attach(toDo, { ...photo, name: "Sea.jpg" });
+    const removed = app.restoreExport(text);
+    expect(removed.map((a) => a.id)).toEqual([added]);
+    expect(app.attachments(toDo).map((a) => a.id)).toEqual([kept]);
+  });
+
+  it("removes nothing to delete when restoring a file with the same Attachments", () => {
+    const toDo = app.createToDo({ title: "Holiday" });
+    attach(toDo);
+    expect(app.restoreExport(JSON.stringify(app.exportAll()))).toEqual([]);
+  });
+
   it("restores Attachments with the storage path they had", () => {
     const toDo = app.createToDo({ title: "Holiday" });
     const id = attach(toDo);

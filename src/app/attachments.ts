@@ -87,6 +87,21 @@ export async function deleteAttachmentFiles(
   });
 }
 
+/**
+ * Replaces everything with an export's contents, from a file or a Backup, then empties
+ * Trash older than 30 days in it, as when the app opens. Throws a RestoreError,
+ * changing nothing, before it starts. The returned promise settles once the files of
+ * Attachments the restore removed are deleted, when they can be.
+ */
+export function restoreEverything(
+  app: Pick<MyThings, "restoreExport" | "purgeExpiredTrash">,
+  storage: FileStorage | null,
+  text: string,
+): Promise<void> {
+  const removed = app.restoreExport(text);
+  return deleteAttachmentFiles(storage, [...removed, ...app.purgeExpiredTrash()]);
+}
+
 export type OpenResult = { kind: "url"; url: string } | { kind: "problem"; text: string };
 
 /** Why a file can't be read from Storage, as the app says it. */

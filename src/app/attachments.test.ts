@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { createMyThings, fixedClock, memoryStore, type MyThings } from "../core";
+import { createMyThings, fixedClock, memoryStore, RestoreError, type MyThings } from "../core";
 import {
   attachmentKind,
   deleteAttachmentFiles,
   formatFileSize,
   openAttachmentUrl,
+  restoreEverything,
   uploadAttachment,
   UploadError,
   type PickedFile,
@@ -13,12 +14,14 @@ import { fakeStorage, StorageError, storageError, type FileStorage } from "./fil
 
 const account = "00000000-0000-4000-8000-0000000000aa";
 let app: MyThings;
+let clock: ReturnType<typeof fixedClock>;
 let toDo: string;
 
 beforeEach(() => {
   let n = 0;
+  clock = fixedClock("2026-11-28T10:00:00");
   app = createMyThings({
-    clock: fixedClock("2026-11-28T10:00:00"),
+    clock,
     store: memoryStore(),
     newId: () => `id-${++n}`,
   });
@@ -140,6 +143,46 @@ describe("removing an Attachment", () => {
     await expect(
       deleteAttachmentFiles(offline, [{ storagePath: "a/b/c.txt", thumbnailPath: null } as never]),
     ).resolves.toBeUndefined();
+  });
+});
+
+describe("restoring an export", () => {
+  const isStored = (storage: FileStorage, path: string) =>
+    storage.signedUrl(path, 60).then(
+      () => true,
+      () => false,
+    );
+
+  it("deletes the files of Attachments the file doesn't hold", async () => {
+    const storage = fakeStorage();
+    const kept = await uploadAttachment(app, storage, toDo, textFile);
+    const text = JSON.stringify(app.exportAll());
+    const added = await uploadAttachment(app, storage, toDo, photo);
+    const [keptPath, addedPath] = app.attachments(toDo).map((a) => a.storagePath);
+    await restoreEverything(app, storage, text);
+    expect(app.attachments(toDo).map((a) => a.id)).toEqual([kept]);
+    expect(added).not.toBe(kept);
+    expect(await isStored(storage, keptPath!)).toBe(true);
+    expect(await isStored(storage, addedPath!)).toBe(false);
+  });
+
+  it("deletes the files of Attachments on To-dos the restore empties from the Trash", async () => {
+    const storage = fakeStorage();
+    await uploadAttachment(app, storage, toDo, textFile);
+    const [path] = app.attachments(toDo).map((a) => a.storagePath);
+    app.delete(toDo);
+    const text = JSON.stringify(app.exportAll());
+    clock.set("2027-01-05T10:00:00");
+    await restoreEverything(app, storage, text);
+    expect(app.trash()).toEqual([]);
+    expect(await isStored(storage, path!)).toBe(false);
+  });
+
+  it("refuses a file that isn't an export, changing nothing", async () => {
+    const storage = fakeStorage();
+    await uploadAttachment(app, storage, toDo, textFile);
+    expect(() => restoreEverything(app, storage, "not json")).toThrow(RestoreError);
+    expect(app.attachments(toDo)).toHaveLength(1);
   });
 });
 

@@ -1,4 +1,5 @@
 import type { Clock } from "./clock";
+import { attachmentActions } from "./attachments";
 import { bulkActions } from "./bulk";
 import { checklistActions } from "./checklist";
 import { containerActions } from "./containers";
@@ -25,6 +26,7 @@ import { toDoActions, type NewToDo } from "./toDos";
 import { trashActions } from "./trash";
 import { accentColours, type AccentColour, type LocalDate } from "./types";
 
+export type { AttachmentDetails, AttachmentProblem, NewAttachment } from "./attachments";
 export type { ChecklistProgress } from "./checklist";
 export type { DayTimeline, TimelineEntry } from "./dayTimeline";
 export type { ExportFile, RestoreProblem } from "./exportRestore";
@@ -86,6 +88,7 @@ export function createMyThings({
     ...containerActions(ctx),
     ...headingActions(ctx),
     ...checklistActions(ctx),
+    ...attachmentActions(ctx),
     ...tagActions(ctx),
     ...planningActions(ctx),
     ...repeatActions(ctx),

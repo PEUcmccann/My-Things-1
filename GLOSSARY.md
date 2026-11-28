@@ -28,6 +28,10 @@ _Avoid_: Subtask, child task
 A lightweight step inside a To-do that can only be ticked off. It has no dates, Tags or other properties.
 _Avoid_: Subtask, step
 
+**Attachment**:
+A file attached to a To-do, up to 25 MB, kept in the account's Storage; images show as thumbnails. Its details sync like any record, but adding or opening one needs you signed in and online. The next occurrence of a repeating To-do doesn't copy it.
+_Avoid_: File, upload
+
 **Tag**:
 A label attached to To-dos, Projects or Areas, used to filter across the whole hierarchy. Tags can be nested, and a parent Tag includes everything tagged with its children.
 _Avoid_: Label, context, category

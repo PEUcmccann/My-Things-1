@@ -75,7 +75,16 @@ describe("exporting", () => {
       settings: { logbookMode: "immediately", accentColour: "rose" },
     });
     expect(Object.keys(file.records).sort()).toEqual(
-      ["areas", "checklistItems", "headings", "projects", "smartLists", "tags", "toDos"].sort(),
+      [
+        "areas",
+        "attachments",
+        "checklistItems",
+        "headings",
+        "projects",
+        "smartLists",
+        "tags",
+        "toDos",
+      ].sort(),
     );
     const ids = (c: keyof ExportFile["records"]) => file.records[c].map((r) => r.id);
     expect(ids("toDos")).toEqual(expect.arrayContaining([today, trashed]));

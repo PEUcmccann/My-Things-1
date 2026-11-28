@@ -11,9 +11,12 @@ import { randomUUID } from "expo-crypto";
 import { AppState, LayoutAnimation, Platform } from "react-native";
 import { createMyThings, systemClock, type MyThings } from "../core";
 import * as flow from "./account";
+import { deleteAttachmentFiles } from "./attachments";
 import type { Account, Auth } from "./authAdapter";
 import { deviceAuth } from "./deviceAuth";
+import { deviceFileStorage } from "./deviceFileStorage";
 import { deviceRemote } from "./deviceRemote";
+import type { FileStorage } from "./fileStorage";
 import { loadDeviceStore } from "./storage";
 import { createSyncer, type Syncer, type SyncStatus } from "./syncer";
 
@@ -35,6 +38,19 @@ interface MyThingsState {
   syncer: { current: Syncer | null };
   /** Starts syncing again after a sign-out that failed. */
   restartSync: () => void;
+  /** The account's Attachment files, while signed in. */
+  attachmentStorage: FileStorage | null;
+}
+
+/**
+ * Deletes the files of Attachments this device removed, when it can: signed in, and
+ * online. Files it can't delete now stay in Storage (M3-05).
+ */
+function cleanUp(
+  storage: FileStorage | null,
+  removed: Parameters<typeof deleteAttachmentFiles>[1],
+) {
+  if (removed.length) void deleteAttachmentFiles(storage, removed);
 }
 
 const Context = createContext<MyThingsState | null>(null);
@@ -55,6 +71,10 @@ export function MyThingsProvider({
   const syncer = useRef<Syncer | null>(null);
   // Called after every change to the records, by the store; the sync effect sets it.
   const onChange = useRef<() => void>(() => {});
+  const attachmentStorage = useMemo(
+    () => (account ? deviceFileStorage("attachments") : null),
+    [account],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -73,7 +93,8 @@ export function MyThingsProvider({
         return null;
       });
       if (cancelled) return;
-      created.purgeExpiredTrash();
+      const expired = created.purgeExpiredTrash();
+      cleanUp(restored && deviceFileStorage("attachments"), expired);
       setAccount(restored);
       setApp(created);
     });
@@ -90,11 +111,11 @@ export function MyThingsProvider({
     const timer = setInterval(() => {
       if (app.currentDate() === day) return;
       day = app.currentDate();
-      app.purgeExpiredTrash();
+      cleanUp(attachmentStorage, app.purgeExpiredTrash());
       setVersion((v) => v + 1);
     }, 30_000);
     return () => clearInterval(timer);
-  }, [app]);
+  }, [app, attachmentStorage]);
 
   // Sync while signed in: at sign-in and start-up, on coming to the foreground, shortly
   // after a change here, and every 30 seconds in the foreground. Signed out, none of it.
@@ -138,8 +159,9 @@ export function MyThingsProvider({
         syncStatus,
         syncer,
         restartSync: () => setSyncRun((n) => n + 1),
+        attachmentStorage,
       },
-    [app, version, auth, account, syncStatus],
+    [app, version, auth, account, syncStatus, attachmentStorage],
   );
 
   if (!value) return <>{loading}</>;
@@ -202,6 +224,28 @@ export function useAccount() {
       },
     };
   }, [app, auth, account, setAccount, syncer, restartSync]);
+}
+
+/**
+ * The account's Attachment files: null while signed out. `unavailable` says why
+ * Attachments can't be added or opened now ("Sign in to add attachments", "You're
+ * offline"), or is null when they can.
+ */
+export function useAttachmentStorage(): {
+  storage: FileStorage | null;
+  unavailable: string | null;
+} {
+  const state = useContext(Context);
+  if (!state) throw new Error("useAttachmentStorage must be used inside MyThingsProvider");
+  const { attachmentStorage, syncStatus } = state;
+  return {
+    storage: attachmentStorage,
+    unavailable: !attachmentStorage
+      ? "Sign in to add attachments"
+      : syncStatus.kind === "offline"
+        ? "You're offline"
+        : null,
+  };
 }
 
 /** Sync's status for Settings, and a way to sync now. */

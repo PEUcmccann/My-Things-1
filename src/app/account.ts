@@ -1,5 +1,6 @@
 import type { MyThings } from "../core";
 import type { Account, Auth } from "./authAdapter";
+import type { Syncer } from "./syncer";
 
 // Signing in and out, between the auth adapter and the core's Owner (plan.md: "Every
 // record carries an owner"). A device holds one account's data at a time.
@@ -51,6 +52,41 @@ export function finishSignIn(app: MyThings, account: Account): void {
 /** The user kept the other account's records: forget the new session. */
 export async function cancelSignIn(auth: Auth): Promise<void> {
   await auth.signOut();
+}
+
+/** Syncs before signing out: edits made during one sync go in the next, up to this many. */
+export const signOutSyncs = 3;
+
+/**
+ * Sends every unsent edit, then erases this device's data and signs out. Returns false,
+ * changing nothing, when edits are still unsent (offline, or still arriving), so the
+ * app can ask again. The check, stopping sync and the erase run with nothing awaited
+ * in between, so no edit can slip in unsent; an edit made while the session ends
+ * stays here as signed-out data.
+ */
+export async function syncAndSignOut(
+  app: MyThings,
+  auth: Auth,
+  syncer: Pick<Syncer, "sync" | "stop">,
+): Promise<boolean> {
+  for (let round = 0; round < signOutSyncs; round++) {
+    const result = await syncer.sync();
+    if (app.unsentEdits().length === 0) {
+      syncer.stop();
+      const owner = app.owner();
+      app.eraseDevice();
+      try {
+        await auth.signOut();
+      } catch (error) {
+        // Still signed in: the account's data comes back with the next sync.
+        app.changeOwner(owner);
+        throw error;
+      }
+      return true;
+    }
+    if (!result) return false;
+  }
+  return false;
 }
 
 /** Signs out and erases this device's data; it stays in the account. */

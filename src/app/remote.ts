@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Edit, Moment } from "../core";
+import { didNotGetThrough, settled } from "./requests";
 
 // The account's edits on the server (supabase/migrations/*_edits.sql): one append-only
 // table, one row per edit, each account seeing only its own rows. All merging happens
@@ -39,7 +40,7 @@ export function syncError(error: unknown): SyncError {
   const e = (error ?? {}) as { name?: string; code?: string; message?: string };
   const message = e.message?.trim() || "unknown error";
   // postgrest-js reports a failed fetch as an error without a code.
-  if (!e.code && /fetch|network|load failed/i.test(message)) {
+  if (!e.code && didNotGetThrough(message)) {
     return new SyncError("offline", message);
   }
   return new SyncError("failed", message);
@@ -74,26 +75,20 @@ export function supabaseRemote(client: SupabaseClient): Remote {
         edited_at: e.editedAt,
         device_id: e.deviceId,
       }));
-      const { error } = await client
-        .from("edits")
-        .upsert(rows, { onConflict: "id", ignoreDuplicates: true })
-        .then(
-          (r) => r,
-          (thrown: unknown) => ({ error: thrown }),
-        );
+      const { error } = await settled(
+        client.from("edits").upsert(rows, { onConflict: "id", ignoreDuplicates: true }),
+      );
       if (error) throw syncError(error);
     },
     async fetch(after, offset, limit) {
       let query = client.from("edits").select(columns);
       if (after) query = query.gt("received_at", after);
-      const { data, error } = await query
-        .order("received_at")
-        .order("id")
-        .range(offset, offset + limit - 1)
-        .then(
-          (r) => r,
-          (thrown: unknown) => ({ data: null, error: thrown }),
-        );
+      const { data, error } = await settled(
+        query
+          .order("received_at")
+          .order("id")
+          .range(offset, offset + limit - 1),
+      );
       if (error) throw syncError(error);
       return ((data ?? []) as Row[]).map((r) => ({
         id: r.id,

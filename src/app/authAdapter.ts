@@ -136,7 +136,7 @@ export const fakeCode = "123456";
 const fakeKey = "mythings:fake-auth";
 
 /** A v4-shaped UUID that is always the same for one email. */
-function fakeUserId(email: string): string {
+function fakeAccountId(email: string): string {
   let hex = "";
   for (let seed = 0; hex.length < 32; seed++) {
     // FNV-1a, once per seed, for 8 hex digits at a time.
@@ -162,7 +162,7 @@ export function fakeAuth(storage: KeyValueStorage): Auth {
     },
     async verifyCode(email, code) {
       if (code !== fakeCode) throw new AuthError("wrongCode");
-      const account = { id: fakeUserId(email.trim()), email: email.trim() };
+      const account = { id: fakeAccountId(email.trim()), email: email.trim() };
       await storage.setItem(fakeKey, JSON.stringify(account));
       return account;
     },

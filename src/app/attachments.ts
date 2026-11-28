@@ -27,19 +27,19 @@ export interface Opening {
 }
 
 /** An upload that failed; its message is what the app shows. */
-export class UploadError extends Error {
+export class AttachingError extends Error {
   constructor(name: string) {
-    super(`Couldn't upload ${name}. Try again.`);
-    this.name = "UploadError";
+    super(`Couldn't attach ${name}. Try again.`);
+    this.name = "AttachingError";
   }
 }
 
 /**
  * Uploads a picked file (and its thumbnail) to the To-do's Attachment paths, then adds
  * the Attachment. Throws an AttachmentError (over 25 MB, signed out) before uploading,
- * or an UploadError once the files that did upload have been deleted again.
+ * or an AttachingError once the files that did upload have been deleted again.
  */
-export async function uploadAttachment(
+export async function attachPicked(
   app: Pick<MyThings, "prepareAttachment" | "addAttachment">,
   storage: FileStorage,
   toDoId: string,
@@ -62,9 +62,9 @@ export async function uploadAttachment(
       uploaded.push(prepared.thumbnailPath);
     }
   } catch (error) {
-    console.warn("Attachment upload failed", error);
+    console.warn("Attaching failed", error);
     await storage.remove(uploaded).catch(() => {});
-    throw new UploadError(file.name);
+    throw new AttachingError(file.name);
   }
   return app.addAttachment(prepared);
 }
@@ -87,14 +87,29 @@ export async function deleteAttachmentFiles(
   });
 }
 
+/**
+ * Replaces everything with an export's contents, from a file or a Backup, then empties
+ * Trash older than 30 days in it, as when the app opens. Throws a RestoreError,
+ * changing nothing, before it starts. The returned promise settles once the files of
+ * Attachments the restore removed are deleted, when they can be.
+ */
+export function restoreEverything(
+  app: Pick<MyThings, "restoreExport" | "purgeExpiredTrash">,
+  storage: FileStorage | null,
+  text: string,
+): Promise<void> {
+  const removed = app.restoreExport(text);
+  return deleteAttachmentFiles(storage, [...removed, ...app.purgeExpiredTrash()]);
+}
+
 export type OpenResult = { kind: "url"; url: string } | { kind: "problem"; text: string };
 
 /** Why a file can't be read from Storage, as the app says it. */
 export function storageProblemText(error: unknown): string {
   const { kind } = error instanceof StorageError ? error : storageError(error);
-  if (kind === "missing") return "File not available";
+  if (kind === "missing") return "Attachment not available";
   if (kind === "offline") return "You're offline";
-  return "Couldn't open the file. Try again.";
+  return "Couldn't open the attachment. Try again.";
 }
 
 /** A link valid for an hour to a stored file, or why there is none. */
@@ -116,7 +131,7 @@ export function openAttachmentUrl(
 
 /** What the app says when an Attachment can't be added. */
 export function addProblemText(error: unknown): string {
-  if (error instanceof AttachmentError || error instanceof UploadError) return error.message;
+  if (error instanceof AttachmentError || error instanceof AttachingError) return error.message;
   return "Couldn't add the attachment. Try again.";
 }
 

@@ -6,10 +6,12 @@ import { Choice } from "../components/Choice";
 import { MenuSheet } from "../components/MenuSheet";
 import { Screen } from "../components/Screen";
 import { AccountSection } from "./AccountSection";
+import { BackupsSection } from "./BackupsSection";
 import { csvFileName, exportDateText, exportFileName, restoreProblemText } from "../dataFiles";
 import { pickTextFile, saveFile } from "../fileSaving";
 import { useNavigation } from "../navigation";
-import { useMyThings } from "../state";
+import { useAttachmentStorage, useMyThings } from "../state";
+import { restoreEverything } from "../attachments";
 import { accents, useTheme } from "../theme";
 
 const logbookOptions: { value: LogbookMode; title: string; detail: string }[] = [
@@ -91,6 +93,7 @@ const csvType = "text/csv";
 /** Export all data as one JSON file and restore such a file, or export To-dos as CSV. */
 function DataSection() {
   const app = useMyThings();
+  const { storage } = useAttachmentStorage();
   const theme = useTheme();
   const [status, setStatus] = useState<{ text: string; error: boolean } | null>(null);
   // A picked file waiting for the user to confirm the restore.
@@ -135,9 +138,7 @@ function DataSection() {
 
   function replace(text: string) {
     try {
-      app.restoreExport(text);
-      // As when the app opens: Trash older than 30 days in the file goes for good.
-      app.purgeExpiredTrash();
+      void restoreEverything(app, storage, text);
       setStatus({ text: "Restored", error: false });
     } catch (error) {
       setStatus({
@@ -183,6 +184,7 @@ function DataSection() {
           },
         ]}
       />
+      <BackupsSection />
     </>
   );
 }

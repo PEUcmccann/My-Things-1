@@ -19,10 +19,10 @@ async function signIn(page: Page) {
   await expect(page.getByTestId("account-status")).toHaveText("Signed in");
 }
 
-/** Chooses "Photo" or "File" under Add attachment and picks `file`. */
+/** Chooses "Photo" or "Document" under Add attachment and picks `file`. */
 async function attach(
   page: Page,
-  choice: "photo" | "file",
+  choice: "photo" | "document",
   file: { name: string; mimeType: string; buffer: Buffer },
 ) {
   await page.getByTestId("attachment-add").click();
@@ -43,7 +43,7 @@ test("attaches a photo and a text file to a To-do, then removes one", async ({ p
   await expect(photo).toBeVisible();
   await expect(page.getByText("map.png")).toBeVisible();
 
-  await attach(page, "file", {
+  await attach(page, "document", {
     name: "packing list.txt",
     mimeType: "text/plain",
     buffer: Buffer.from("socks\nhat\n"),
@@ -51,7 +51,7 @@ test("attaches a photo and a text file to a To-do, then removes one", async ({ p
   await expect(page.getByText("packing list.txt")).toBeVisible();
   await expect(page.getByText("10 bytes")).toBeVisible();
   await expect(page.locator('[data-testid^="attachment-icon-"]')).toHaveCount(1);
-  await expect(page.getByTestId("attachment-uploading")).toHaveCount(0);
+  await expect(page.getByTestId("attachment-attaching")).toHaveCount(0);
 
   // Remove the text file, after confirming.
   await page.getByRole("button", { name: "Remove packing list.txt" }).click();

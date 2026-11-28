@@ -103,8 +103,7 @@ export function csvQueries(ctx: Context) {
       slot ? `${clockTime(slot.start)}-${clockTime(slot.end)}` : "",
       toDo.repeat?.rrule ?? "",
       checklistText(toDo.id),
-      // Attachments arrive with #47; until then there are none.
-      "0",
+      String(store.all("attachments").filter((a) => a.toDoId === toDo.id).length),
       localMoment(toDo.createdAt),
       localMoment(toDo.finishedAt),
       yes(ctx.isInLogbook(toDo)),

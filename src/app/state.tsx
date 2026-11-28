@@ -279,9 +279,15 @@ export function useAccount() {
       signOut,
       /** Syncs, then signs out if everything was sent. Returns false if it wasn't. */
       async syncAndSignOut(): Promise<boolean> {
-        await syncer.current?.sync();
-        if (app.unsentEdits().length > 0) return false;
-        await signOut();
+        const running = syncer.current;
+        if (!running) return false;
+        try {
+          if (!(await flow.syncAndSignOut(app, auth, running))) return false;
+        } catch (error) {
+          restartSync();
+          throw error;
+        }
+        setAccount(null);
         return true;
       },
     };

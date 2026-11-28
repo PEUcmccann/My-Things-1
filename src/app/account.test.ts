@@ -1,7 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { createMyThings, fixedClock, localOwner, memoryStore, type MyThings } from "../core";
-import { cancelSignIn, finishSignIn, restoreAccount, signIn, signOut } from "./account";
+import {
+  cancelSignIn,
+  finishSignIn,
+  restoreAccount,
+  signIn,
+  signOut,
+  syncAndSignOut,
+} from "./account";
 import { fakeAuth, fakeCode, memoryStorage, type Auth } from "./authAdapter";
+import { fakeRemote, memorySyncStorage, SyncError, type Remote } from "./remote";
+import { createSyncer } from "./syncer";
 
 function setup() {
   const store = memoryStore();
@@ -101,5 +110,92 @@ describe("signing out", () => {
     expect(app.exportAll().records.toDos).toEqual([]);
     expect(app.accentColour()).toBe("teal");
     expect(app.owner()).toBe(localOwner);
+  });
+});
+
+describe("syncing, then signing out", () => {
+  /** A signed-in device syncing through a fake remote; `onSend` runs inside each send. */
+  async function syncing(onSend: (app: MyThings) => void = () => {}) {
+    const { app, auth } = setup();
+    const account = await signedInAs(app, auth, "sam@example.com");
+    const inner = fakeRemote(memorySyncStorage(), account.id);
+    let online = true;
+    const remote: Remote = {
+      async send(edits) {
+        if (!online) throw new SyncError("offline", "Failed to fetch");
+        onSend(app);
+        return inner.send(edits);
+      },
+      fetch: (after, offset, limit) => inner.fetch(after, offset, limit),
+    };
+    const syncer = createSyncer(app, remote);
+    const sent = async () => (await inner.fetch(null, 0, 1000)).map((e) => e.value);
+    return { app, auth, syncer, sent, goOffline: () => (online = false) };
+  }
+
+  it("sends everything, then erases this device and signs out", async () => {
+    const { app, auth, syncer, sent } = await syncing();
+    app.createToDo({ title: "Buy milk" });
+    expect(await syncAndSignOut(app, auth, syncer)).toBe(true);
+    expect(await sent()).toContain("Buy milk");
+    expect(app.exportAll().records.toDos).toEqual([]);
+    expect(await auth.currentAccount()).toBeNull();
+  });
+
+  it("also sends an edit made while the sync was under way", async () => {
+    let edited = false;
+    const { app, auth, syncer, sent } = await syncing((on) => {
+      if (edited) return;
+      edited = true;
+      on.createToDo({ title: "Made during the sync" });
+    });
+    app.createToDo({ title: "Buy milk" });
+    expect(await syncAndSignOut(app, auth, syncer)).toBe(true);
+    expect(await sent()).toEqual(expect.arrayContaining(["Buy milk", "Made during the sync"]));
+    expect(app.exportAll().records.toDos).toEqual([]);
+  });
+
+  it("asks again, erasing nothing, when edits keep arriving faster than they're sent", async () => {
+    const { app, auth, syncer } = await syncing((on) => void on.createToDo({ title: "More" }));
+    app.createToDo({ title: "Buy milk" });
+    expect(await syncAndSignOut(app, auth, syncer)).toBe(false);
+    expect(app.unsentEdits().length).toBeGreaterThan(0);
+    expect(await auth.currentAccount()).not.toBeNull();
+  });
+
+  it("asks again, erasing nothing, when offline", async () => {
+    const { app, auth, syncer, goOffline } = await syncing();
+    app.createToDo({ title: "Buy milk" });
+    goOffline();
+    expect(await syncAndSignOut(app, auth, syncer)).toBe(false);
+    expect(app.inbox().map((e) => e.toDo.title)).toEqual(["Buy milk"]);
+    expect(await auth.currentAccount()).not.toBeNull();
+  });
+
+  it("keeps an edit made while signing out, as this device's own", async () => {
+    const { app, auth, syncer } = await syncing();
+    const slow: Auth = {
+      ...auth,
+      async signOut() {
+        app.createToDo({ title: "Made while signing out" });
+        await auth.signOut();
+      },
+    };
+    expect(await syncAndSignOut(app, slow, syncer)).toBe(true);
+    expect(app.inbox().map((e) => e.toDo.title)).toEqual(["Made while signing out"]);
+    expect(owners(app)).toEqual(new Set([localOwner]));
+  });
+
+  it("stays the account's device when the session can't be ended", async () => {
+    const { app, auth, syncer } = await syncing();
+    const account = await auth.currentAccount();
+    const failing: Auth = {
+      ...auth,
+      signOut: async () => {
+        throw new Error("Failed to fetch");
+      },
+    };
+    await expect(syncAndSignOut(app, failing, syncer)).rejects.toThrow("Failed to fetch");
+    expect(app.owner()).toBe(account!.id);
   });
 });

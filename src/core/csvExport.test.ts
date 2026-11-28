@@ -145,6 +145,17 @@ describe("the CSV of To-dos", () => {
     });
   });
 
+  it("counts a To-do's Attachments", () => {
+    app.changeOwner("user-1");
+    const id = app.createToDo({ title: "Holiday" });
+    app.createToDo({ title: "Other" });
+    const photo = { name: "Beach.jpg", mimeType: "image/jpeg", size: 1000 };
+    app.addAttachment(app.prepareAttachment(id, photo));
+    app.addAttachment(app.prepareAttachment(id, { ...photo, name: "Sea.jpg" }));
+    expect(byTitle("Holiday").Attachments).toBe("2");
+    expect(byTitle("Other").Attachments).toBe("0");
+  });
+
   it("marks This Evening and Someday", () => {
     app.createToDo({ title: "Read", when: { kind: "thisEvening" } });
     app.createToDo({ title: "Cello", when: { kind: "someday" } });
